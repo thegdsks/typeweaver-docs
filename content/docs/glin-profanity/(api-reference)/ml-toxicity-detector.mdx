@@ -1,0 +1,489 @@
+---
+title: ToxicityDetector
+description: ML-based toxicity detection using TensorFlow.js for contextual content analysis
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+The `ToxicityDetector` class provides neural network-based toxicity detection using TensorFlow.js. It can identify various types of harmful content including insults, threats, identity attacks, and obscenity — even without explicit profanity words.
+
+<Callout type="warning">
+**Requires optional dependencies:** Install TensorFlow.js before using:
+```bash
+npm install @tensorflow/tfjs @tensorflow-models/toxicity
+```
+</Callout>
+
+## Import
+
+```typescript
+import { ToxicityDetector } from 'glin-profanity/ml';
+```
+
+## Constructor
+
+```typescript
+constructor(config?: MLDetectorConfig)
+```
+
+Creates a new ToxicityDetector instance with configurable threshold and label filtering.
+
+### Configuration Options
+
+<TypeTable
+  type={{
+    threshold: {
+      description: "Confidence threshold for toxicity detection (0-1)",
+      type: "number",
+      default: "0.85"
+    },
+    labels: {
+      description: "Specific toxicity categories to check",
+      type: "ToxicityLabel[]",
+      default: "All 7 labels"
+    },
+    preloadModel: {
+      description: "Load model immediately on instantiation",
+      type: "boolean",
+      default: "false"
+    }
+  }}
+/>
+
+### Basic Usage
+
+```typescript
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+// Default configuration (threshold: 0.85)
+const detector = new ToxicityDetector();
+
+// Custom threshold for higher precision
+const strictDetector = new ToxicityDetector({ threshold: 0.95 });
+
+// Check only specific categories
+const customDetector = new ToxicityDetector({
+  threshold: 0.8,
+  labels: ['insult', 'threat', 'obscene'],
+});
+```
+
+## Static Properties
+
+### ALL_LABELS
+
+```typescript
+static readonly ALL_LABELS: ToxicityLabel[]
+```
+
+Array of all available toxicity labels:
+- `identity_attack` — Attacks based on identity (race, religion, gender, etc.)
+- `insult` — Personal insults and put-downs
+- `obscene` — Obscene or vulgar content
+- `severe_toxicity` — Highly toxic content
+- `sexual_explicit` — Sexually explicit content
+- `threat` — Threats of violence or harm
+- `toxicity` — General toxic content
+
+## Public Methods
+
+<Accordions>
+
+<Accordion title="loadModel(): Promise<ToxicityModel>">
+
+Loads the TensorFlow.js toxicity model. Called automatically on first `analyze()` call if not called explicitly.
+
+```typescript
+async loadModel(): Promise<ToxicityModel>
+```
+
+**Returns:** Promise resolving to the loaded model
+
+**Throws:** Error if TensorFlow.js dependencies are not installed
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+
+// Explicitly preload model for faster first analysis
+await detector.loadModel();
+console.log('Model ready!');
+
+// Or let it load automatically on first use
+const result = await detector.analyze('text');
+```
+
+<Callout type="tip">
+Preloading the model is recommended in production to avoid cold-start latency on the first request.
+</Callout>
+
+</Accordion>
+
+<Accordion title="analyze(text: string): Promise<MLAnalysisResult>">
+
+Analyzes text for toxicity using the ML model.
+
+```typescript
+async analyze(text: string): Promise<MLAnalysisResult>
+```
+
+**Parameters:**
+- `text: string` — Text to analyze
+
+**Returns:** `MLAnalysisResult` — Detailed analysis with predictions and scores
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+const result = await detector.analyze('you are stupid and worthless');
+
+console.log(result.isToxic);           // true
+console.log(result.overallScore);      // 0.92
+console.log(result.matchedCategories); // ['insult', 'toxicity']
+console.log(result.processingTimeMs); // 45.2
+```
+
+**Result Object:**
+```typescript
+interface MLAnalysisResult {
+  isToxic: boolean;              // True if any category matched
+  overallScore: number;          // Max score across all categories (0-1)
+  predictions: ToxicityPrediction[];  // Detailed per-category predictions
+  matchedCategories: ToxicityLabel[]; // Categories that exceeded threshold
+  processingTimeMs: number;      // Processing time in milliseconds
+}
+```
+
+</Accordion>
+
+<Accordion title="analyzeBatch(texts: string[]): Promise<MLAnalysisResult[]>">
+
+Analyzes multiple texts in a single batch for better performance.
+
+```typescript
+async analyzeBatch(texts: string[]): Promise<MLAnalysisResult[]>
+```
+
+**Parameters:**
+- `texts: string[]` — Array of texts to analyze
+
+**Returns:** Array of `MLAnalysisResult` objects
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+const results = await detector.analyzeBatch([
+  'hello friend',
+  'you are terrible at this',
+  'great work on the project!',
+]);
+
+results.forEach((result, i) => {
+  console.log(`Text ${i + 1}: ${result.isToxic ? 'toxic' : 'clean'}`);
+});
+// Text 1: clean
+// Text 2: toxic
+// Text 3: clean
+```
+
+<Callout type="tip">
+Batch processing is significantly faster than analyzing texts individually when processing multiple inputs.
+</Callout>
+
+</Accordion>
+
+<Accordion title="isToxic(text: string): Promise<boolean>">
+
+Simple boolean check for toxicity.
+
+```typescript
+async isToxic(text: string): Promise<boolean>
+```
+
+**Parameters:**
+- `text: string` — Text to check
+
+**Returns:** `true` if text is detected as toxic
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+
+if (await detector.isToxic(userInput)) {
+  console.log('Content flagged as toxic');
+  return rejectMessage();
+}
+```
+
+</Accordion>
+
+<Accordion title="getScore(text: string): Promise<number>">
+
+Gets the toxicity score for text.
+
+```typescript
+async getScore(text: string): Promise<number>
+```
+
+**Parameters:**
+- `text: string` — Text to score
+
+**Returns:** Toxicity score from 0 (clean) to 1 (highly toxic)
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+
+const score = await detector.getScore('some user comment');
+console.log(`Toxicity score: ${(score * 100).toFixed(1)}%`);
+
+// Use for tiered moderation
+if (score > 0.9) {
+  blockImmediately();
+} else if (score > 0.7) {
+  flagForReview();
+}
+```
+
+</Accordion>
+
+<Accordion title="checkAvailability(): Promise<boolean>">
+
+Checks if TensorFlow.js dependencies are available.
+
+```typescript
+async checkAvailability(): Promise<boolean>
+```
+
+**Returns:** `true` if ML dependencies are installed and available
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+
+if (await detector.checkAvailability()) {
+  console.log('ML detection available');
+} else {
+  console.log('Falling back to rule-based only');
+}
+```
+
+</Accordion>
+
+<Accordion title="dispose(): void">
+
+Disposes of the model to free memory. The model will be reloaded on next `analyze()` call.
+
+```typescript
+dispose(): void
+```
+
+**Example:**
+```typescript
+const detector = new ToxicityDetector();
+await detector.loadModel();
+
+// ... use detector ...
+
+// Free memory when done
+detector.dispose();
+```
+
+</Accordion>
+
+<Accordion title="getConfig(): Required<MLDetectorConfig>">
+
+Gets the current configuration.
+
+```typescript
+getConfig(): Required<MLDetectorConfig>
+```
+
+**Returns:** Current configuration with all defaults applied
+
+</Accordion>
+
+<Accordion title="isModelLoaded(): boolean">
+
+Checks if the model is currently loaded.
+
+```typescript
+isModelLoaded(): boolean
+```
+
+**Returns:** `true` if model is loaded and ready
+
+</Accordion>
+
+</Accordions>
+
+## Complete Example
+
+<Tabs items={['Basic Detection', 'Chat Moderation', 'Batch Processing']}>
+  <Tab value="Basic Detection">
+    ```typescript
+    import { ToxicityDetector } from 'glin-profanity/ml';
+
+    async function moderateContent(text: string) {
+      const detector = new ToxicityDetector({ threshold: 0.85 });
+
+      // Preload model for faster response
+      await detector.loadModel();
+
+      const result = await detector.analyze(text);
+
+      if (result.isToxic) {
+        console.log('Toxic content detected!');
+        console.log('Categories:', result.matchedCategories.join(', '));
+        console.log('Score:', result.overallScore.toFixed(2));
+        return { allowed: false, reason: result.matchedCategories };
+      }
+
+      return { allowed: true };
+    }
+
+    // Usage
+    const result = await moderateContent('you are an idiot');
+    // { allowed: false, reason: ['insult', 'toxicity'] }
+    ```
+  </Tab>
+
+  <Tab value="Chat Moderation">
+    ```typescript
+    import { ToxicityDetector } from 'glin-profanity/ml';
+
+    class ChatModerator {
+      private detector: ToxicityDetector;
+      private initialized = false;
+
+      constructor() {
+        this.detector = new ToxicityDetector({
+          threshold: 0.8,
+          labels: ['insult', 'threat', 'toxicity'],
+        });
+      }
+
+      async init() {
+        if (!this.initialized) {
+          await this.detector.loadModel();
+          this.initialized = true;
+        }
+      }
+
+      async checkMessage(message: string) {
+        await this.init();
+
+        const result = await this.detector.analyze(message);
+
+        return {
+          allowed: !result.isToxic,
+          score: result.overallScore,
+          categories: result.matchedCategories,
+          processingTime: result.processingTimeMs,
+        };
+      }
+    }
+
+    // Singleton instance
+    const moderator = new ChatModerator();
+
+    // Usage in message handler
+    app.post('/chat', async (req, res) => {
+      const check = await moderator.checkMessage(req.body.message);
+
+      if (!check.allowed) {
+        return res.status(400).json({
+          error: 'Message rejected',
+          reason: check.categories
+        });
+      }
+
+      // Process message...
+    });
+    ```
+  </Tab>
+
+  <Tab value="Batch Processing">
+    ```typescript
+    import { ToxicityDetector } from 'glin-profanity/ml';
+
+    async function moderateComments(comments: string[]) {
+      const detector = new ToxicityDetector({ threshold: 0.85 });
+      await detector.loadModel();
+
+      // Batch process for efficiency
+      const results = await detector.analyzeBatch(comments);
+
+      return comments.map((comment, i) => ({
+        text: comment,
+        isToxic: results[i].isToxic,
+        score: results[i].overallScore,
+        categories: results[i].matchedCategories,
+      }));
+    }
+
+    // Usage
+    const comments = [
+      'Great article, thanks for sharing!',
+      'You are such a moron',
+      'I disagree with your point about taxes',
+      'Kill yourself loser',
+    ];
+
+    const moderated = await moderateComments(comments);
+    moderated.forEach((result) => {
+      console.log(`"${result.text.substring(0, 30)}..." - ${result.isToxic ? 'BLOCKED' : 'OK'}`);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Considerations
+
+<Callout type="info">
+The ML model adds latency compared to rule-based detection. Use strategically based on your requirements.
+</Callout>
+
+| Metric | Value |
+|--------|-------|
+| Model load time | ~2-5 seconds (first load) |
+| Single analysis | ~30-100ms |
+| Batch analysis | ~10-30ms per item |
+| Memory usage | ~50-100MB |
+
+### Optimization Tips
+
+1. **Preload the model** on application startup
+2. **Use batch processing** when analyzing multiple texts
+3. **Consider `rules-first` mode** in HybridFilter for speed with ML fallback
+4. **Dispose when done** to free memory in serverless environments
+
+## Error Handling
+
+```typescript
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+const detector = new ToxicityDetector();
+
+try {
+  await detector.loadModel();
+  const result = await detector.analyze(text);
+} catch (error) {
+  if (error.message.includes('dependencies not installed')) {
+    console.error('Install TensorFlow.js: npm install @tensorflow/tfjs @tensorflow-models/toxicity');
+    // Fallback to rule-based detection
+  } else {
+    console.error('ML analysis failed:', error);
+  }
+}
+```
+
+## Cross-References
+
+- **[HybridFilter](/docs/glin-profanity/hybrid-filter)** — Combine ML with rule-based detection
+- **[Toxicity Labels](/docs/glin-profanity/toxicity-labels)** — Detailed explanation of each category
+- **[ML Integration Guide](/docs/glin-profanity/ml-integration)** — Setup and best practices
+- **[TensorFlow Installation](/docs/glin-profanity/installation/tensorflow)** — Installation guide

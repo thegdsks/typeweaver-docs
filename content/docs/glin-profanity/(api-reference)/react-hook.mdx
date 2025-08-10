@@ -1,0 +1,328 @@
+---
+title: React Hook
+description: useProfanityChecker hook for React integration with state management
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+The `useProfanityChecker` hook provides stateful profanity checking for React applications with built-in caching, error handling, and performance optimizations.
+
+## Hook Signature
+
+```typescript
+const useProfanityChecker = (config?: ProfanityCheckerConfig) => {
+  result: CheckProfanityResult | null;        // Cached last result
+  checkText: (text: string) => ProfanityCheckResult;
+  checkTextAsync: (text: string) => Promise<ProfanityCheckResult>;
+  reset: () => void;                          // Clear cached state
+  isDirty: boolean;                           // True if profanity found
+  isWordProfane: (word: string) => boolean;   // No state update
+}
+```
+
+## State Variables
+
+<TypeTable
+  type={{
+    result: {
+      description: 'Cached result from the last profanity check operation',
+      type: 'CheckProfanityResult | null',
+      default: 'null'
+    },
+    isDirty: {
+      description: 'Boolean flag indicating if profanity was detected in the last check',
+      type: 'boolean',
+      default: 'false'
+    }
+  }}
+/>
+
+## Methods
+
+<TypeTable
+  type={{
+    checkText: {
+      description: 'Synchronous profanity check that updates hook state',
+      type: '(text: string) => ProfanityCheckResult',
+      default: 'N/A'
+    },
+    checkTextAsync: {
+      description: 'Asynchronous profanity check that updates hook state',
+      type: '(text: string) => Promise<ProfanityCheckResult>',
+      default: 'N/A'
+    },
+    reset: {
+      description: 'Clear cached result and reset isDirty flag',
+      type: '() => void',
+      default: 'N/A'
+    },
+    isWordProfane: {
+      description: 'Quick word check without updating hook state',
+      type: '(word: string) => boolean',
+      default: 'N/A'
+    }
+  }}
+/>
+
+## Form Submission Usage Flow
+
+<Steps>
+
+<Step>
+**Initialize the hook** with your configuration options.
+
+```jsx
+const { checkText, result, isDirty, reset } = useProfanityChecker({
+  languages: ['english', 'spanish'],
+  enableContextAware: true,
+  autoReplace: true
+});
+```
+</Step>
+
+<Step>
+**Check user input** before form submission using `checkText()`.
+
+```jsx
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const checkResult = checkText(message);
+  
+  if (checkResult.containsProfanity) {
+    // Handle profanity detection
+    return;
+  }
+  
+  // Proceed with clean message
+  submitMessage(message);
+};
+```
+</Step>
+
+<Step>
+**Handle profanity results** by checking `result.containsProfanity` and displaying warnings.
+
+```jsx
+{result?.containsProfanity && (
+  <div className="error">
+    Found inappropriate content: {result.profaneWords.join(', ')}
+  </div>
+)}
+```
+</Step>
+
+<Step>
+**Reset state** when needed using the `reset()` method to clear cached results.
+
+```jsx
+const clearForm = () => {
+  setMessage('');
+  reset(); // Clear profanity check results
+};
+```
+</Step>
+
+</Steps>
+
+## Usage Examples
+
+<Tabs items={['Basic Usage', 'Async Usage']}>
+  <Tab value="Basic Usage">
+    ```jsx
+    import React, { useState } from 'react';
+    import { useProfanityChecker } from 'glin-profanity';
+
+    function ChatInput() {
+      const [message, setMessage] = useState('');
+      const { checkText, result, isDirty, reset } = useProfanityChecker();
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const checkResult = checkText(message);
+        
+        if (checkResult.containsProfanity) {
+          alert(`Found inappropriate content: ${checkResult.profaneWords.join(', ')}`);
+          return;
+        }
+        
+        console.log('Clean message:', message);
+        setMessage('');
+        reset();
+      };
+
+      return (
+        <form onSubmit={handleSubmit}>
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type your message..."
+            className={isDirty ? 'border-red-500' : 'border-gray-300'}
+          />
+          <button type="submit" disabled={isDirty}>
+            Send Message
+          </button>
+          {result?.containsProfanity && (
+            <div className="text-red-500 text-sm mt-1">
+              Please remove: {result.profaneWords.join(', ')}
+            </div>
+          )}
+        </form>
+      );
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Async Usage">
+    ```jsx
+    import React, { useState } from 'react';
+    import { useProfanityChecker } from 'glin-profanity';
+
+    function AsyncCommentForm() {
+      const [comment, setComment] = useState('');
+      const [isChecking, setIsChecking] = useState(false);
+      const { checkTextAsync, result, isDirty, reset } = useProfanityChecker({
+        languages: ['english', 'spanish'],
+        enableContextAware: true
+      });
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsChecking(true);
+        
+        try {
+          const checkResult = await checkTextAsync(comment);
+          
+          if (checkResult.containsProfanity) {
+            // Show profanity warning
+            return;
+          }
+          
+          // Submit clean comment
+          await submitComment(comment);
+          setComment('');
+          reset();
+        } catch (error) {
+          console.error('Error checking profanity:', error);
+        } finally {
+          setIsChecking(false);
+        }
+      };
+
+      return (
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Write your comment..."
+            rows={4}
+          />
+          <button type="submit" disabled={isChecking || isDirty}>
+            {isChecking ? 'Checking...' : 'Post Comment'}
+          </button>
+          {result?.containsProfanity && (
+            <div className="bg-red-100 p-2 rounded mt-2">
+              <p>Please revise your comment:</p>
+              <ul>
+                {result.profaneWords.map(word => (
+                  <li key={word}>• "{word}" → Use alternative language</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </form>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Error Handling
+
+<Accordions>
+
+<Accordion title="Configuration Error Handling">
+
+```jsx
+import React, { useState } from 'react';
+import { useProfanityChecker } from 'glin-profanity';
+
+function ErrorHandlingExample() {
+  const [error, setError] = useState(null);
+  
+  try {
+    const { checkText, result } = useProfanityChecker({
+      languages: ['english'],
+      fuzzyToleranceLevel: 0.8 // Valid range: 0.5-1.0
+    });
+    
+    const handleCheck = (text) => {
+      try {
+        const result = checkText(text);
+        setError(null);
+        return result;
+      } catch (err) {
+        setError(`Check failed: ${err.message}`);
+        return null;
+      }
+    };
+
+    return (
+      <div>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        {/* Rest of component */}
+      </div>
+    );
+  } catch (configError) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        Configuration Error: {configError.message}
+      </div>
+    );
+  }
+}
+```
+
+</Accordion>
+
+</Accordions>
+
+## Performance Optimization
+
+<Callout type="tip">
+**Performance Tips**:
+- The hook automatically caches results to avoid redundant checks
+- Use `isWordProfane()` for lightweight single-word checks without state updates
+- Reset state with `reset()` to free memory when form is cleared
+- Consider debouncing for real-time input validation
+</Callout>
+
+## Hook Configuration
+
+The hook accepts the same [ProfanityCheckerConfig](/docs/glin-profanity/core-functions) options as the core functions:
+
+```typescript
+const { checkText } = useProfanityChecker({
+  languages: ['english', 'spanish'],
+  enableContextAware: true,
+  contextWindow: 5,
+  confidenceThreshold: 0.8,
+  severityLevels: true,
+  autoReplace: true,
+  fuzzyToleranceLevel: 0.7
+});
+```
+
+## Cross-References
+
+- **[Core Functions](/docs/glin-profanity/core-functions)** - Learn about `checkProfanity()` and `isWordProfane()` functions  
+- **[Filter Class](/docs/glin-profanity/filter-class)** - Object-oriented API for persistent configuration
+- **[Quick Start](/docs/glin-profanity/quickstart)** - Basic React integration example
+- **[Installation](/docs/glin-profanity/installation)** - React framework setup guide

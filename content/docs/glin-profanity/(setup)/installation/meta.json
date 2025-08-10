@@ -1,0 +1,5 @@
+{
+  "title": "Installation",
+  "defaultOpen": false,
+  "pages": ["index", "package-managers", "tensorflow", "frameworks", "docker", "browser"]
+}

@@ -1,0 +1,93 @@
+---
+title: Getting Started
+order: 1
+status: published
+description: Quick start guide and architecture overview for CommitWeave
+---
+
+<EnhancedOverview />
+
+## Quick Value Proposition
+
+• **AI-Powered**: Leverages GPT and Claude to generate contextual commit messages
+• **Standards-Based**: Full conventional commit compliance with 11 predefined types  
+• **Beautiful CLI**: Interactive prompts with animations, colors, and emojis
+• **Fast Performance**: Lightning-fast execution with optimized caching
+• **Highly Configurable**: Customize everything from commit types to AI models
+
+<Callout type="info">
+**Performance Note**: CommitWeave achieves a cold start time of just 23ms, making it one of the fastest AI-powered Git tools available.
+</Callout>
+
+## Installation
+
+Get started quickly with your preferred package manager:
+
+<Tabs items={['npm', 'yarn', 'pnpm']}>
+<Tab>
+```bash copy
+npm install -g commitweave
+```
+</Tab>
+<Tab>
+```bash copy  
+yarn global add commitweave
+```
+</Tab>
+<Tab>
+```bash copy
+pnpm add -g commitweave
+```
+</Tab>
+</Tabs>
+
+## Getting Started Options
+
+Choose your preferred way to integrate CommitWeave into your workflow:
+
+<Cards>
+  <Card 
+    title="Command Line Interface" 
+    description="Full-featured CLI with interactive prompts, AI generation, and powerful validation tools"
+    href="/docs/commitweave/installation"
+    icon="Terminal"
+  />
+  <Card 
+    title="VS Code Extension" 
+    description="Seamless IDE integration with SCM view, quick commits, and intelligent suggestions"
+    href="/docs/commitweave/vscode-extension"
+    icon="Code"
+  />
+  <Card 
+    title="Configuration Templates" 
+    description="Pre-configured setups for teams, open source projects, and enterprise environments"
+    href="/docs/commitweave/config-templates"
+    icon="Settings"
+  />
+</Cards>
+
+## Supported Commit Types
+
+CommitWeave includes 11 predefined conventional commit types:
+
+| Type | Emoji | Description |
+|------|--------|-------------|
+| `feat` | ✨ | A new feature |
+| `fix` | 🐛 | A bug fix |
+| `docs` | 📚 | Documentation changes |
+| `style` | 💎 | Code style changes (formatting) |
+| `refactor` | 📦 | Code refactoring |
+| `perf` | 🚀 | Performance improvements |
+| `test` | 🚨 | Adding or correcting tests |
+| `build` | 🛠 | Build system or external dependencies |
+| `ci` | ⚙️ | CI configuration changes |
+| `chore` | ♻️ | Maintenance tasks |
+| `revert` | 🗑 | Revert previous commit |
+
+## Community and Support
+
+CommitWeave is built by the GLINR team and published by @typeweaver. Join our community for support, feature requests, and contributions.
+
+---
+
+*Transform your Git workflow with intelligent, beautiful commit messages.*

@@ -1,0 +1,600 @@
+---
+title: Configuration Presets
+description: Ready-to-use configuration templates for common use cases
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Ready-to-use configuration templates for common profanity filtering scenarios. Copy and customize these presets to get started quickly with optimal settings for your specific use case.
+
+<Callout type="info">
+These presets are battle-tested configurations that provide excellent performance and accuracy across different application types. All presets maintain cross-language compatibility between JavaScript and Python implementations.
+</Callout>
+
+## Chat Moderation
+
+Optimized for real-time chat systems with multi-language support and automatic text replacement for immediate moderation.
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript title="Chat Moderation Configuration"
+    const chatModerationConfig = {
+      // Multi-language detection for global chat rooms
+      languages: ['english', 'spanish', 'french', 'german', 'italian', 'portuguese'],
+      allLanguages: false,           // Specific languages for performance
+      
+      // Auto-replacement for immediate clean display
+      autoReplace: true,             // Automatically replace detected profanity
+      replacementChar: '●',          // Professional replacement character
+      preserveLength: true,          // Maintain word length for context
+      
+      // Moderate sensitivity for chat environments
+      enableContextAware: true,      // Reduce false positives in casual chat
+      confidenceThreshold: 0.7,      // Balanced context sensitivity
+      severityFilter: 'MODERATE',    // Allow mild expressions, block moderate+
+      
+      // Fuzzy matching for obfuscated attempts
+      fuzzyMatching: true,           // Catch character substitutions
+      fuzzyTolerance: 0.8,           // Standard fuzzy matching
+      enableObfuscationDetection: true, // Detect sh1t, f*ck, etc.
+      
+      // Performance optimizations
+      caseSensitive: false,          // Case insensitive for user convenience
+      enableCaching: true,           // Cache for repeated phrases
+      logLevel: 'INFO'               // Moderate logging for monitoring
+    };
+    
+    // Usage in chat application
+    import { checkProfanity } from 'glin-profanity';
+    
+    function moderateChatMessage(message) {
+      const result = checkProfanity(message, chatModerationConfig);
+      
+      return {
+        allowed: !result.containsProfanity,
+        cleanMessage: result.cleanText || message,
+        flaggedWords: result.detectedWords,
+        severity: result.maxSeverity,
+        action: result.containsProfanity ? 'replace' : 'allow'
+      };
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python title="Chat Moderation Configuration"
+    chat_moderation_config = {
+        # Multi-language detection for global chat rooms
+        "languages": ["english", "spanish", "french", "german", "italian", "portuguese"],
+        "all_languages": False,           # Specific languages for performance
+        
+        # Auto-replacement for immediate clean display
+        "auto_replace": True,             # Automatically replace detected profanity
+        "replacement_char": "●",          # Professional replacement character
+        "preserve_length": True,          # Maintain word length for context
+        
+        # Moderate sensitivity for chat environments
+        "enable_context_aware": True,     # Reduce false positives in casual chat
+        "confidence_threshold": 0.7,      # Balanced context sensitivity
+        "severity_filter": "MODERATE",    # Allow mild expressions, block moderate+
+        
+        # Fuzzy matching for obfuscated attempts
+        "fuzzy_matching": True,           # Catch character substitutions
+        "fuzzy_tolerance": 0.8,           # Standard fuzzy matching
+        "enable_obfuscation_detection": True, # Detect sh1t, f*ck, etc.
+        
+        # Performance optimizations
+        "case_sensitive": False,          # Case insensitive for user convenience
+        "enable_caching": True,           # Cache for repeated phrases
+        "log_level": "INFO"               # Moderate logging for monitoring
+    }
+    
+    # Usage in chat application
+    from glin_profanity import Filter
+    
+    def moderate_chat_message(message):
+        filter_instance = Filter(chat_moderation_config)
+        result = filter_instance.check_profanity(message)
+        
+        return {
+            "allowed": not result["contains_profanity"],
+            "clean_message": result.get("clean_text", message),
+            "flagged_words": result["detected_words"],
+            "severity": result.get("max_severity"),
+            "action": "replace" if result["contains_profanity"] else "allow"
+        }
+    ```
+  </Tab>
+</Tabs>
+
+**Key Features:**
+- ✅ **Multi-language support** for international chat rooms
+- ✅ **Automatic text replacement** for immediate content cleaning
+- ✅ **Context-aware filtering** to reduce false positives in casual conversation
+- ✅ **Obfuscation detection** to catch creative spelling attempts
+- ✅ **Performance optimized** for high-volume real-time messaging
+
+**Best for:** Discord bots, Slack apps, gaming chat systems, live streaming chat
+
+---
+
+## Game Chat Filter
+
+Aggressive filtering optimized for gaming environments with low tolerance for obfuscation and gaming-specific whitelisting.
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript title="Game Chat Filter Configuration"
+    const gameChatFilterConfig = {
+      // Focus on primary gaming languages
+      languages: ['english'],        // Single language for gaming performance
+      allLanguages: false,
+      
+      // Aggressive obfuscation detection
+      fuzzyMatching: true,
+      fuzzyTolerance: 0.6,           // Lower tolerance = more aggressive matching
+      enableObfuscationDetection: true,
+      
+      // Gaming-specific context handling
+      enableContextAware: true,
+      enableWhitelisting: true,
+      customWhitelist: [
+        // Gaming terminology that may trigger false positives
+        'boss', 'enemy', 'kill', 'dead', 'weapon', 'attack', 'fight',
+        'battle', 'war', 'destruction', 'annihilate', 'demolish'
+      ],
+      
+      # Strict filtering for competitive environments
+      severityFilter: 'MILD',        # Flag everything including mild profanity
+      caseSensitive: false,
+      
+      // No auto-replacement for gaming (context matters)
+      autoReplace: false,            # Let game systems handle replacement
+      returnSeverity: true,          # Provide severity for escalation
+      
+      // Performance settings for real-time gaming
+      enableCaching: true,
+      wordBoundaries: false,         # Catch partial matches in usernames
+      logLevel: 'WARN'               # Log only problematic detections
+    };
+    
+    // Usage in game chat system
+    function moderateGameChat(message, playerId, gameContext = 'general') {
+      const result = checkProfanity(message, gameChatFilterConfig);
+      
+      // Gaming-specific escalation system
+      if (result.containsProfanity) {
+        const actions = {
+          'MILD': 'warn',           // Warning for mild profanity
+          'MODERATE': 'timeout',    # 5-minute timeout
+          'SEVERE': 'kick'          # Remove from game session
+        };
+        
+        return {
+          action: actions[result.maxSeverity] || 'warn',
+          severity: result.maxSeverity,
+          flaggedWords: result.detectedWords,
+          contextAnalysis: result.contextAnalysis,
+          escalate: result.maxSeverity === 'SEVERE'
+        };
+      }
+      
+      return { action: 'allow', clean: true };
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python title="Game Chat Filter Configuration"
+    game_chat_filter_config = {
+        # Focus on primary gaming languages
+        "languages": ["english"],        # Single language for gaming performance
+        "all_languages": False,
+        
+        # Aggressive obfuscation detection
+        "fuzzy_matching": True,
+        "fuzzy_tolerance": 0.6,           # Lower tolerance = more aggressive matching
+        "enable_obfuscation_detection": True,
+        
+        # Gaming-specific context handling
+        "enable_context_aware": True,
+        "enable_whitelisting": True,
+        "custom_whitelist": [
+            # Gaming terminology that may trigger false positives
+            "boss", "enemy", "kill", "dead", "weapon", "attack", "fight",
+            "battle", "war", "destruction", "annihilate", "demolish"
+        ],
+        
+        # Strict filtering for competitive environments
+        "severity_filter": "MILD",        # Flag everything including mild profanity
+        "case_sensitive": False,
+        
+        # No auto-replacement for gaming (context matters)
+        "auto_replace": False,            # Let game systems handle replacement
+        "return_severity": True,          # Provide severity for escalation
+        
+        # Performance settings for real-time gaming
+        "enable_caching": True,
+        "word_boundaries": False,         # Catch partial matches in usernames
+        "log_level": "WARN"               # Log only problematic detections
+    }
+    
+    # Usage in game chat system
+    def moderate_game_chat(message, player_id, game_context="general"):
+        filter_instance = Filter(game_chat_filter_config)
+        result = filter_instance.check_profanity(message)
+        
+        # Gaming-specific escalation system
+        if result["contains_profanity"]:
+            actions = {
+                "MILD": "warn",           # Warning for mild profanity
+                "MODERATE": "timeout",    # 5-minute timeout
+                "SEVERE": "kick"          # Remove from game session
+            }
+            
+            return {
+                "action": actions.get(result.get("max_severity"), "warn"),
+                "severity": result.get("max_severity"),
+                "flagged_words": result["detected_words"],
+                "context_analysis": result.get("context_analysis"),
+                "escalate": result.get("max_severity") == "SEVERE"
+            }
+        
+        return {"action": "allow", "clean": True}
+    ```
+  </Tab>
+</Tabs>
+
+**Key Features:**
+- ✅ **Low fuzzy tolerance** (0.6) for aggressive obfuscation detection
+- ✅ **Gaming terminology whitelist** to prevent false positives
+- ✅ **Severity-based escalation** from warnings to kicks
+- ✅ **Performance optimized** for real-time gaming environments
+- ✅ **No auto-replacement** to preserve gaming context and allow custom handling
+
+**Best for:** Online multiplayer games, competitive gaming platforms, esports chat, gaming Discord servers
+
+---
+
+## Content Publishing
+
+Conservative filtering for published content with exact matching only and no auto-replacement for editorial control.
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript title="Content Publishing Configuration"
+    const contentPublishingConfig = {
+      // Comprehensive language support for global content
+      languages: ['english', 'spanish', 'french', 'german', 'italian'],
+      allLanguages: false,           # Specific languages for consistency
+      
+      # Conservative exact matching only
+      severityFilter: 'EXACT',       # Only flag exact dictionary matches
+      fuzzyMatching: false,          # Disable fuzzy matching for precision
+      enableObfuscationDetection: false, # No obfuscation detection
+      
+      # Editorial control - no automatic changes
+      autoReplace: false,            # Never auto-replace content
+      returnSeverity: true,          # Provide severity for editorial decisions
+      returnConfidence: true,        # Confidence scores for borderline cases
+      
+      # Context awareness for editorial judgment
+      enableContextAware: true,
+      confidenceThreshold: 0.8,      # High confidence required
+      enableWhitelisting: true,
+      customWhitelist: [
+        # Publishing contexts that may contain profanity legally
+        'quote', 'historical', 'academic', 'literary', 'journalistic',
+        'documentary', 'research', 'educational', 'artistic'
+      ],
+      
+      # Strict editorial standards
+      caseSensitive: false,
+      wordBoundaries: true,          # Exact word boundaries for precision
+      
+      # Detailed logging for editorial review
+      logLevel: 'DEBUG',             # Full logging for editorial decisions
+      enableCaching: false           # Fresh analysis for each content piece
+    };
+    
+    // Usage in content management system
+    function reviewContentForPublication(content, contentType, author) {
+      const result = checkProfanity(content, contentPublishingConfig);
+      
+      if (result.containsProfanity) {
+        return {
+          status: 'needs_review',
+          flaggedWords: result.detectedWords,
+          confidence: result.confidence,
+          contextAnalysis: result.contextAnalysis,
+          editorial_note: generateEditorialNote(result),
+          recommendations: [
+            'Review flagged content in context',
+            'Consider editorial standards for content type',
+            'Evaluate if content serves legitimate purpose',
+            'Apply editorial judgment for borderline cases'
+          ]
+        };
+      }
+      
+      return {
+        status: 'approved',
+        clean: true,
+        analysis_complete: true
+      };
+    }
+    
+    function generateEditorialNote(result) {
+      const severityMap = {
+        'MILD': 'Consider context and editorial standards',
+        'MODERATE': 'Editorial review recommended',
+        'SEVERE': 'Strong editorial justification required'
+      };
+      
+      return severityMap[result.maxSeverity] || 'Standard editorial review';
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python title="Content Publishing Configuration"
+    content_publishing_config = {
+        # Comprehensive language support for global content
+        "languages": ["english", "spanish", "french", "german", "italian"],
+        "all_languages": False,           # Specific languages for consistency
+        
+        # Conservative exact matching only
+        "severity_filter": "EXACT",       # Only flag exact dictionary matches
+        "fuzzy_matching": False,          # Disable fuzzy matching for precision
+        "enable_obfuscation_detection": False, # No obfuscation detection
+        
+        # Editorial control - no automatic changes
+        "auto_replace": False,            # Never auto-replace content
+        "return_severity": True,          # Provide severity for editorial decisions
+        "return_confidence": True,        # Confidence scores for borderline cases
+        
+        # Context awareness for editorial judgment
+        "enable_context_aware": True,
+        "confidence_threshold": 0.8,      # High confidence required
+        "enable_whitelisting": True,
+        "custom_whitelist": [
+            # Publishing contexts that may contain profanity legally
+            "quote", "historical", "academic", "literary", "journalistic",
+            "documentary", "research", "educational", "artistic"
+        ],
+        
+        # Strict editorial standards
+        "case_sensitive": False,
+        "word_boundaries": True,          # Exact word boundaries for precision
+        
+        # Detailed logging for editorial review
+        "log_level": "DEBUG",             # Full logging for editorial decisions
+        "enable_caching": False           # Fresh analysis for each content piece
+    }
+    
+    # Usage in content management system
+    def review_content_for_publication(content, content_type, author):
+        filter_instance = Filter(content_publishing_config)
+        result = filter_instance.check_profanity(content)
+        
+        if result["contains_profanity"]:
+            return {
+                "status": "needs_review",
+                "flagged_words": result["detected_words"],
+                "confidence": result.get("confidence"),
+                "context_analysis": result.get("context_analysis"),
+                "editorial_note": generate_editorial_note(result),
+                "recommendations": [
+                    "Review flagged content in context",
+                    "Consider editorial standards for content type",
+                    "Evaluate if content serves legitimate purpose",
+                    "Apply editorial judgment for borderline cases"
+                ]
+            }
+        
+        return {
+            "status": "approved",
+            "clean": True,
+            "analysis_complete": True
+        }
+    
+    def generate_editorial_note(result):
+        severity_map = {
+            "MILD": "Consider context and editorial standards",
+            "MODERATE": "Editorial review recommended",
+            "SEVERE": "Strong editorial justification required"
+        }
+        
+        return severity_map.get(result.get("max_severity"), "Standard editorial review")
+    ```
+  </Tab>
+</Tabs>
+
+**Key Features:**
+- ✅ **EXACT severity only** - no fuzzy matching or obfuscation detection
+- ✅ **No auto-replacement** - preserves original content for editorial review
+- ✅ **Context-aware analysis** with high confidence threshold (0.8)
+- ✅ **Editorial whitelisting** for academic, journalistic, and artistic contexts
+- ✅ **Detailed logging** and confidence scoring for editorial decisions
+
+**Best for:** News websites, academic publications, literary platforms, content management systems, editorial workflows
+
+---
+
+## Quick Configuration Comparison
+
+<div className="overflow-x-auto">
+
+| Feature | Chat Moderation | Game Chat Filter | Content Publishing |
+|---------|----------------|------------------|-------------------|
+| **Languages** | 6 languages | English only | 5 languages |
+| **Auto Replace** | ✅ Yes (●) | ❌ No | ❌ No |
+| **Fuzzy Tolerance** | 0.8 (Standard) | 0.6 (Aggressive) | N/A (Disabled) |
+| **Severity Filter** | MODERATE | MILD | EXACT |
+| **Context Aware** | ✅ Yes (0.7) | ✅ Yes | ✅ Yes (0.8) |
+| **Obfuscation Detection** | ✅ Enabled | ✅ Enabled | ❌ Disabled |
+| **Custom Whitelist** | None | Gaming terms | Editorial contexts |
+| **Caching** | ✅ Enabled | ✅ Enabled | ❌ Disabled |
+| **Best For** | Real-time chat | Competitive gaming | Published content |
+
+</div>
+
+## Customizing Presets
+
+All presets can be customized by modifying specific configuration options:
+
+<Tabs items={['Add Languages', 'Adjust Sensitivity', 'Custom Whitelists']}>
+  <Tab value="Add Languages">
+    ```javascript
+    // Add more languages to any preset
+    const customConfig = {
+      ...chatModerationConfig,
+      languages: [...chatModerationConfig.languages, 'japanese', 'korean', 'chinese']
+    };
+    ```
+  </Tab>
+  
+  <Tab value="Adjust Sensitivity">
+    ```javascript
+    // Make game chat filter more lenient
+    const lenientGameConfig = {
+      ...gameChatFilterConfig,
+      severityFilter: 'MODERATE',    // Instead of 'MILD'
+      fuzzyTolerance: 0.7            # Less aggressive
+    };
+    ```
+  </Tab>
+  
+  <Tab value="Custom Whitelists">
+    ```javascript
+    // Add domain-specific whitelist terms
+    const customContentConfig = {
+      ...contentPublishingConfig,
+      customWhitelist: [
+        ...contentPublishingConfig.customWhitelist,
+        'medical', 'scientific', 'technical'  // Add more contexts
+      ]
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Environment Configuration
+
+Use different presets based on your environment:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript title="Environment-Based Configuration"
+    const getPresetConfig = (environment, useCase) => {
+      const presets = {
+        chat: chatModerationConfig,
+        gaming: gameChatFilterConfig,
+        publishing: contentPublishingConfig
+      };
+      
+      const baseConfig = presets[useCase] || presets.chat;
+      
+      // Environment overrides
+      const environmentOverrides = {
+        development: {
+          logLevel: 'DEBUG',
+          enableCaching: false,
+          returnConfidence: true
+        },
+        staging: {
+          logLevel: 'INFO',
+          enableCaching: true,
+        },
+        production: {
+          logLevel: 'WARN',
+          enableCaching: true,
+          enableAnalytics: true
+        }
+      };
+      
+      return {
+        ...baseConfig,
+        ...environmentOverrides[environment]
+      };
+    };
+    
+    // Usage
+    const config = getPresetConfig(process.env.NODE_ENV, 'chat');
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python title="Environment-Based Configuration"
+    import os
+    
+    def get_preset_config(environment, use_case):
+        presets = {
+            "chat": chat_moderation_config,
+            "gaming": game_chat_filter_config,
+            "publishing": content_publishing_config
+        }
+        
+        base_config = presets.get(use_case, presets["chat"])
+        
+        # Environment overrides
+        environment_overrides = {
+            "development": {
+                "log_level": "DEBUG",
+                "enable_caching": False,
+                "return_confidence": True
+            },
+            "staging": {
+                "log_level": "INFO",
+                "enable_caching": True,
+            },
+            "production": {
+                "log_level": "WARN",
+                "enable_caching": True,
+                "enable_analytics": True
+            }
+        }
+        
+        return {
+            **base_config,
+            **environment_overrides.get(environment, {})
+        }
+    
+    # Usage
+    config = get_preset_config(os.getenv('ENVIRONMENT', 'development'), 'chat')
+    ```
+  </Tab>
+</Tabs>
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="📖 Configuration Reference"
+    description="Complete guide to all configuration options"
+    href="/docs/glin-profanity/configuration"
+  />
+  <Card
+    title="🧠 Context-Aware Filtering" 
+    description="Advanced sentiment analysis and domain whitelisting"
+    href="/docs/glin-profanity/context-analysis"
+  />
+  <Card
+    title="⚖️ Severity Levels"
+    description="Understanding EXACT vs FUZZY classification"
+    href="/docs/glin-profanity/severity-levels"
+  />
+  <Card
+    title="🔧 API Reference"
+    description="Core functions and advanced usage patterns"
+    href="/docs/glin-profanity/core-functions"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Pro Tip**: Start with one of these presets and customize incrementally. Monitor your application's specific needs and adjust the configuration based on user feedback and content analysis results.
+</Callout>

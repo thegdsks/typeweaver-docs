@@ -1,0 +1,274 @@
+---
+title: TensorFlow.js Setup
+description: Install and configure TensorFlow.js for ML-powered toxicity detection
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+ML-powered toxicity detection requires TensorFlow.js and the toxicity model. This guide covers installation for different environments.
+
+<Callout type="info">
+TensorFlow.js is an **optional** peer dependency. The core glin-profanity package works without it — ML features are only loaded when you import from `glin-profanity/ml`.
+</Callout>
+
+## Quick Install
+
+<Tabs items={['npm', 'yarn', 'pnpm']}>
+  <Tab value="npm">
+    ```bash
+    npm install glin-profanity @tensorflow/tfjs @tensorflow-models/toxicity
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add glin-profanity @tensorflow/tfjs @tensorflow-models/toxicity
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add glin-profanity @tensorflow/tfjs @tensorflow-models/toxicity
+    ```
+  </Tab>
+</Tabs>
+
+## Environment-Specific Setup
+
+### Node.js (Server)
+
+For server-side usage, install the Node.js-optimized TensorFlow backend:
+
+```bash
+npm install glin-profanity @tensorflow/tfjs-node @tensorflow-models/toxicity
+```
+
+<Callout type="tip">
+`@tensorflow/tfjs-node` uses native C++ bindings for significantly better performance than the pure JavaScript version.
+</Callout>
+
+**Usage:**
+```typescript
+// Import tfjs-node BEFORE glin-profanity/ml
+import '@tensorflow/tfjs-node';
+import { ToxicityDetector, HybridFilter } from 'glin-profanity/ml';
+
+const detector = new ToxicityDetector({ threshold: 0.85 });
+await detector.loadModel();
+```
+
+### Browser (Client)
+
+For browser usage, the standard package works:
+
+```bash
+npm install glin-profanity @tensorflow/tfjs @tensorflow-models/toxicity
+```
+
+**Usage with bundlers (Vite, webpack, etc.):**
+```typescript
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+const detector = new ToxicityDetector();
+await detector.loadModel(); // Model loads from CDN automatically
+```
+
+**CDN Usage:**
+```html
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
+<script src="https://cdn.jsdelivr.net/npm/glin-profanity"></script>
+<script>
+  const detector = new GlinProfanity.ToxicityDetector();
+  detector.loadModel().then(() => {
+    console.log('Model ready');
+  });
+</script>
+```
+
+### Next.js / SSR
+
+For server-side rendering frameworks, configure to avoid client-side TensorFlow issues:
+
+```typescript
+// lib/moderator.ts
+import { HybridFilter } from 'glin-profanity/ml';
+
+let filter: HybridFilter | null = null;
+
+export async function getModerator() {
+  if (!filter) {
+    // Only load on server
+    if (typeof window === 'undefined') {
+      // Dynamic import for tfjs-node
+      await import('@tensorflow/tfjs-node');
+    }
+
+    filter = new HybridFilter({
+      enableML: true,
+      languages: ['english'],
+    });
+    await filter.initialize();
+  }
+  return filter;
+}
+```
+
+**API Route usage:**
+```typescript
+// pages/api/moderate.ts or app/api/moderate/route.ts
+import { getModerator } from '@/lib/moderator';
+
+export async function POST(req: Request) {
+  const { text } = await req.json();
+  const moderator = await getModerator();
+  const result = await moderator.checkProfanityAsync(text);
+
+  return Response.json({
+    allowed: !result.isToxic,
+    reason: result.reason,
+  });
+}
+```
+
+### Edge Runtime (Vercel Edge, Cloudflare Workers)
+
+<Callout type="warning">
+TensorFlow.js has limited Edge runtime support. For edge deployments, consider using rule-based detection only or calling a serverless function for ML.
+</Callout>
+
+```typescript
+// Use rule-based only on edge
+import { Filter } from 'glin-profanity';
+
+export const runtime = 'edge';
+
+export async function POST(req: Request) {
+  const { text } = await req.json();
+
+  const filter = new Filter({
+    languages: ['english'],
+    detectLeetspeak: true,
+  });
+
+  const result = filter.checkProfanity(text);
+  return Response.json({ profane: result.containsProfanity });
+}
+```
+
+## Verification
+
+<Steps>
+
+<Step>
+### Install packages
+```bash
+npm install glin-profanity @tensorflow/tfjs @tensorflow-models/toxicity
+```
+</Step>
+
+<Step>
+### Create test file
+```typescript
+// test-ml.ts
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+async function test() {
+  console.log('Loading model...');
+  const detector = new ToxicityDetector({ threshold: 0.85 });
+
+  const available = await detector.checkAvailability();
+  console.log('TensorFlow available:', available);
+
+  if (available) {
+    await detector.loadModel();
+    console.log('Model loaded!');
+
+    const result = await detector.analyze('you are stupid');
+    console.log('Result:', result.isToxic ? 'TOXIC' : 'CLEAN');
+    console.log('Categories:', result.matchedCategories);
+  }
+}
+
+test().catch(console.error);
+```
+</Step>
+
+<Step>
+### Run test
+```bash
+npx tsx test-ml.ts
+```
+
+Expected output:
+```
+Loading model...
+TensorFlow available: true
+Model loaded!
+Result: TOXIC
+Categories: [ 'insult', 'toxicity' ]
+```
+</Step>
+
+</Steps>
+
+## Troubleshooting
+
+### "Cannot find module '@tensorflow/tfjs'"
+
+TensorFlow.js is not installed:
+```bash
+npm install @tensorflow/tfjs @tensorflow-models/toxicity
+```
+
+### "Failed to load toxicity model"
+
+The model downloads from a CDN on first load. Check:
+- Internet connectivity
+- Firewall/proxy blocking TensorFlow model URLs
+- Sufficient memory (model requires ~50-100MB)
+
+### Slow model loading
+
+First load downloads the model (~10MB). Solutions:
+- Preload during app initialization
+- Use `preloadModel: true` in config
+- Cache model files if possible
+
+```typescript
+const detector = new ToxicityDetector({
+  preloadModel: true, // Start loading immediately
+});
+```
+
+### Memory issues
+
+The model uses significant memory. In serverless:
+```typescript
+// Dispose after use
+const detector = new ToxicityDetector();
+await detector.loadModel();
+const result = await detector.analyze(text);
+detector.dispose(); // Free memory
+```
+
+### TypeScript errors
+
+Ensure types are installed:
+```bash
+npm install -D @types/node
+```
+
+## Performance Tips
+
+1. **Preload the model** on app startup, not per-request
+2. **Use batch processing** for multiple texts
+3. **Use `@tensorflow/tfjs-node`** on server for 5-10x faster inference
+4. **Consider `rules-first` mode** in HybridFilter for balanced performance
+5. **Dispose models** in serverless to avoid memory leaks
+
+## Next Steps
+
+- **[ToxicityDetector API](/docs/glin-profanity/ml-toxicity-detector)** — Complete API reference
+- **[HybridFilter API](/docs/glin-profanity/hybrid-filter)** — Combined rule + ML detection
+- **[ML Integration Guide](/docs/glin-profanity/ml-integration)** — Best practices and patterns

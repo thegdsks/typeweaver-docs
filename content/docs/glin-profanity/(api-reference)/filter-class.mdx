@@ -1,0 +1,369 @@
+---
+title: Filter Class
+description: Object-oriented JavaScript/TypeScript API with persistent configuration
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+The `Filter` class provides an object-oriented interface for profanity detection with persistent configuration and advanced state management capabilities for JavaScript and TypeScript applications.
+
+## Constructor
+
+```typescript
+constructor(config?: FilterConfig)
+```
+
+Initialize profanity filter with comprehensive configuration options including context-aware filtering, multi-language support, and custom word lists.
+
+### Configuration Options
+
+<TypeTable
+  type={{
+    languages: {
+      description: "Specific languages to check",
+      type: "Language[]",
+      default: "['english']"
+    },
+    allLanguages: {
+      description: "Check all 23 supported languages",
+      type: "boolean",
+      default: "false"
+    },
+    caseSensitive: {
+      description: "Enable case-sensitive matching",
+      type: "boolean", 
+      default: "false"
+    },
+    wordBoundaries: {
+      description: "Enforce word boundaries in matching",
+      type: "boolean",
+      default: "!allowObfuscatedMatch"
+    },
+    allowObfuscatedMatch: {
+      description: "Detect disguised profanity (e.g. sh*t, f**k)",
+      type: "boolean",
+      default: "false"
+    },
+    fuzzyToleranceLevel: {
+      description: "Character similarity threshold for fuzzy matching",
+      type: "number",
+      default: "0.8"
+    },
+    customWords: {
+      description: "Additional words to treat as profanity",
+      type: "string[]",
+      default: "[]"
+    },
+    ignoreWords: {
+      description: "Words to exclude from profanity detection",
+      type: "string[]",
+      default: "globalWhitelist"
+    },
+    replaceWith: {
+      description: "String to replace detected profanity",
+      type: "string",
+      default: "undefined"
+    },
+    severityLevels: {
+      description: "Enable EXACT/FUZZY severity classification",
+      type: "boolean",
+      default: "false"
+    },
+    enableContextAware: {
+      description: "Enable advanced context analysis",
+      type: "boolean",
+      default: "false"
+    },
+    contextWindow: {
+      description: "Number of words before/after match to analyze",
+      type: "number",
+      default: "3"
+    },
+    confidenceThreshold: {
+      description: "Context confidence threshold (0.0-1.0)",
+      type: "number",
+      default: "0.7"
+    },
+    domainWhitelists: {
+      description: "Domain-specific whitelist mappings",
+      type: "Record<string, string[]>",
+      default: "{}"
+    },
+    logProfanity: {
+      description: "Enable debug console logging",
+      type: "boolean",
+      default: "false"
+    }
+  }}
+/>
+
+### Basic Usage Example
+
+```typescript
+import { Filter } from 'glin-profanity';
+
+// Create filter with default configuration
+const filter = new Filter();
+
+// Check text for profanity
+const result = filter.checkProfanity("This is damn good!");
+console.log(result.containsProfanity); // true
+console.log(result.profaneWords); // ["damn"]
+```
+
+## Public Methods
+
+<Accordions>
+
+<Accordion title="isProfane(value: string): boolean">
+
+Check if text contains profanity using configured filter rules.
+
+```typescript
+isProfane(value: string): boolean
+```
+
+**Parameters:**
+- `value: string` - Text to analyze
+
+**Returns:** `boolean` - True if profanity detected
+
+**Example:**
+```typescript
+const filter = new Filter();
+
+console.log(filter.isProfane("hello world")); // false
+console.log(filter.isProfane("damn good")); // true
+console.log(filter.isProfane("sh*t happens")); // true with obfuscation enabled
+```
+
+</Accordion>
+
+<Accordion title="matches(word: string): boolean">
+
+Alias for isProfane for API compatibility.
+
+```typescript
+matches(word: string): boolean
+```
+
+**Parameters:**
+- `word: string` - Text to analyze
+
+**Returns:** `boolean` - True if profanity detected
+
+**Example:**
+```typescript
+const filter = new Filter();
+
+// Identical functionality to isProfane
+console.log(filter.matches("damn")); // true
+console.log(filter.isProfane("damn")); // true
+```
+
+</Accordion>
+
+<Accordion title="checkProfanity(text: string): CheckProfanityResult">
+
+Comprehensive profanity analysis with context-aware filtering support.
+
+```typescript
+checkProfanity(text: string): CheckProfanityResult
+```
+
+**Parameters:**
+- `text: string` - Text to analyze
+
+**Returns:** `CheckProfanityResult` - Detailed analysis including matches, severity, and context scores
+
+**Example:**
+```typescript
+const filter = new Filter({
+  enableContextAware: true,
+  severityLevels: true
+});
+
+const result = filter.checkProfanity("This movie is fucking amazing!");
+
+console.log(result.containsProfanity); // false (positive context)
+console.log(result.contextScore); // 0.85 (positive sentiment)
+console.log(result.reason); // "Positive emotional context detected"
+```
+
+</Accordion>
+
+<Accordion title="checkProfanityWithMinSeverity(text: string, minSeverity: SeverityLevel): FilteredProfanityResult">
+
+Check profanity with minimum severity threshold filtering.
+
+```typescript
+checkProfanityWithMinSeverity(
+  text: string, 
+  minSeverity: SeverityLevel = SeverityLevel.EXACT
+): { filteredWords: string[]; result: CheckProfanityResult }
+```
+
+**Parameters:**
+- `text: string` - Text to analyze
+- `minSeverity: SeverityLevel` - Minimum severity level to include (default: EXACT)
+
+**Returns:** Object with filtered words and complete result
+
+**Example:**
+```typescript
+import { Filter, SeverityLevel } from 'glin-profanity';
+
+const filter = new Filter({ severityLevels: true });
+const text = "What the hell is this f*ck?";
+
+// Only include FUZZY matches (obfuscated)
+const fuzzyOnly = filter.checkProfanityWithMinSeverity(text, SeverityLevel.FUZZY);
+console.log(fuzzyOnly.filteredWords); // ["f*ck"]
+
+// Include all matches  
+const allMatches = filter.checkProfanityWithMinSeverity(text, SeverityLevel.EXACT);
+console.log(allMatches.filteredWords); // ["hell", "f*ck"]
+```
+
+</Accordion>
+
+</Accordions>
+
+## Private Methods
+
+<Accordions>
+
+<Accordion title="Private Implementation Details" defaultOpen={false}>
+
+The Filter class includes several private methods for internal processing:
+
+### debugLog(...args: any[])
+Debug logging when `logProfanity: true` is enabled in configuration.
+
+### normalizeObfuscated(text: string): string
+Handle obfuscated text normalization with character substitution mappings:
+- `@` → `a`, `$` → `s`, `!` → `i`, `1` → `i`, `*` → ``
+
+### getRegex(word: string): RegExp
+Generate regex patterns with boundary and case handling based on configuration.
+
+### isFuzzyToleranceMatch(word: string, text: string): boolean
+Fuzzy matching algorithm using character similarity threshold.
+
+**Algorithm:** `score = matchCount / simplifiedWord.length`
+
+### evaluateSeverity(word: string, text: string): SeverityLevel | undefined
+Determine match severity level (EXACT vs FUZZY) for classification.
+
+</Accordion>
+
+</Accordions>
+
+## Advanced Usage Examples
+
+<Tabs items={['Multi-Language', 'Context-Aware', 'Batch Processing']}>
+  <Tab value="Multi-Language">
+    ```typescript
+    import { Filter } from 'glin-profanity';
+
+    // Multi-language filter
+    const globalFilter = new Filter({
+      languages: ['english', 'spanish', 'french'],
+      caseSensitive: false
+    });
+
+    // Check different languages
+    console.log(globalFilter.isProfane('shit')); // true (English)
+    console.log(globalFilter.isProfane('mierda')); // true (Spanish)  
+    console.log(globalFilter.isProfane('merde')); // true (French)
+
+    // Or check all 23 languages
+    const universalFilter = new Filter({ allLanguages: true });
+    const result = universalFilter.checkProfanity("Text with profanity");
+    ```
+  </Tab>
+  
+  <Tab value="Context-Aware">
+    ```typescript
+    import { Filter } from 'glin-profanity';
+
+    // Context-aware filtering
+    const contextFilter = new Filter({
+      enableContextAware: true,
+      contextWindow: 5,
+      confidenceThreshold: 0.8,
+      domainWhitelists: {
+        english: ['boss', 'enemy', 'game', 'character']
+      }
+    });
+
+    // Gaming context - not flagged
+    const gaming = contextFilter.checkProfanity("That boss fight is badass!");
+    console.log(gaming.containsProfanity); // false
+    console.log(gaming.reason); // "Gaming context detected"
+
+    // Negative context - flagged
+    const negative = contextFilter.checkProfanity("You fucking idiot!");
+    console.log(negative.containsProfanity); // true
+    console.log(negative.reason); // "Negative emotional context"
+    ```
+  </Tab>
+  
+  <Tab value="Batch Processing">
+    ```typescript
+    import { Filter } from 'glin-profanity';
+
+    // Efficient batch processing
+    const filter = new Filter({
+      enableContextAware: true,
+      severityLevels: true
+    });
+
+    const comments = [
+      "Great product, love it!",
+      "This shit is broken as hell",
+      "Fucking amazing movie, best ever!",
+      "You damn moron, fix this crap"
+    ];
+
+    // Process multiple texts efficiently  
+    const results = comments.map(text => filter.checkProfanity(text));
+
+    results.forEach((result, i) => {
+      console.log(`Comment ${i + 1}:`);
+      console.log(`- Contains profanity: ${result.containsProfanity}`);
+      console.log(`- Context score: ${result.contextScore || 'N/A'}`);
+      console.log(`- Reason: ${result.reason || 'No context analysis'}`);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Features
+
+<Callout type="tip">
+The Filter class is optimized for performance with efficient algorithms, lazy loading, and optional caching for repeated text analysis.
+</Callout>
+
+### Built-in Optimizations
+- **Early termination**: Stops processing on first match when possible
+- **Regex compilation**: Pre-compiled patterns for faster matching
+- **Memory management**: Efficient dictionary loading and cleanup
+- **Algorithm efficiency**: Optimized fuzzy matching with configurable tolerance
+
+### Usage Tips
+- Reuse Filter instances for better performance
+- Enable context-aware filtering only when needed
+- Use appropriate `fuzzyToleranceLevel` for your use case
+- Consider `caseSensitive: false` for better coverage
+
+## Cross-References
+
+- **[Core Functions](/docs/glin-profanity/core-functions)** - Functional programming interface  
+- **[React Hook](/docs/glin-profanity/react-hook)** - React integration with useProfanityChecker
+- **[Python API](/docs/glin-profanity/python-api)** - Python Filter class equivalent
+- **[Quick Start](/docs/glin-profanity/quickstart)** - Basic usage examples
+- **[Context-Aware Filtering](/docs/glin-profanity/advanced-features)** - Advanced sentiment analysis

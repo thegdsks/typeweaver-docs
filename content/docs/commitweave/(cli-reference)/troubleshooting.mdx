@@ -1,0 +1,725 @@
+---
+title: Troubleshooting
+description: Solutions to common issues and problems when using CommitWeave
+---
+
+## Common Issues
+
+<Accordions>
+
+<Accordion title="Rate Limits - AI Service Quota Exceeded" id="rate-limits">
+
+**Problem:** Your AI requests are being rate limited by OpenAI, Anthropic, or other providers.
+
+**Symptoms:**
+```bash
+Error: Rate limit exceeded for gpt-4-turbo
+HTTP 429: Too Many Requests
+AI service temporarily unavailable
+```
+
+**Solutions:**
+
+**For OpenAI Rate Limits:**
+```bash
+# Wait and retry (recommended)
+sleep 60 && commitweave ai
+
+# Switch to lower-tier model temporarily  
+commitweave ai --model gpt-3.5-turbo
+
+# Use fallback provider
+commitweave ai --fallback --provider anthropic
+```
+
+**For Anthropic Rate Limits:**
+```bash
+# Switch to OpenAI as fallback
+export OPENAI_API_KEY="your-openai-key"
+commitweave ai --provider openai
+
+# Use Haiku model (faster, lower rate limits)
+commitweave ai --model claude-3-haiku-20240307
+```
+
+**Prevention:**
+```bash
+# Set lower token limits to reduce rate usage
+commitweave ai --max-tokens 80 --temperature 0.3
+
+# Enable caching to reuse responses
+commitweave config --set ai.cache true
+```
+
+</Accordion>
+
+<Accordion title="Invalid API Keys - Authentication Failed" id="invalid-api-keys">
+
+**Problem:** Your AI provider API keys are invalid, expired, or missing required permissions.
+
+**Symptoms:**
+```bash
+Error: Invalid API key provided
+401 Unauthorized - OpenAI API
+Authentication failed - check your API key
+```
+
+**Solutions:**
+
+**Check API Key Format:**
+```bash
+# OpenAI keys start with sk-
+echo $OPENAI_API_KEY | grep "^sk-"
+
+# Anthropic keys start with sk-ant-
+echo $CLAUDE_API_KEY | grep "^sk-ant-"
+```
+
+**Set API Keys Correctly:**
+```bash
+# Environment variables (recommended)
+export OPENAI_API_KEY="sk-proj-your-actual-key-here"  
+export CLAUDE_API_KEY="sk-ant-your-actual-key-here"
+
+# Verify they're set
+env | grep "_API_KEY"
+```
+
+**Test API Key Validity:**
+```bash
+# Test OpenAI key
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+  https://api.openai.com/v1/models
+
+# Test Anthropic key
+curl -H "x-api-key: $CLAUDE_API_KEY" \
+  https://api.anthropic.com/v1/messages
+```
+
+**Configuration File Method:**
+```json
+{
+  "ai": {
+    "provider": "openai",
+    "apiKey": "${OPENAI_API_KEY}",
+    "fallback": {
+      "provider": "anthropic", 
+      "apiKey": "${CLAUDE_API_KEY}"
+    }
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Git Repository Not Found" id="git-repo-not-found">
+
+**Problem:** CommitWeave cannot locate a valid Git repository in the current directory or its parents.
+
+**Symptoms:**
+```bash
+fatal: not a git repository (or any of the parent directories): .git
+Error: No Git repository found
+CommitWeave requires a Git repository to function
+```
+
+**Solutions:**
+
+**Initialize New Repository:**
+```bash
+# Initialize Git repository
+git init
+
+# Add initial commit  
+echo "# My Project" > README.md
+git add README.md
+git commit -m "Initial commit"
+
+# Now use CommitWeave
+commitweave ai
+```
+
+**Navigate to Existing Repository:**
+```bash
+# Find Git repositories
+find . -name ".git" -type d 2>/dev/null
+
+# Navigate to repository root
+cd /path/to/your/project
+
+# Verify Git repository
+git status
+git log --oneline -5
+```
+
+**Check Git Repository Health:**
+```bash
+# Verify .git directory integrity
+ls -la .git/
+
+# Check if repository is corrupted
+git fsck --full
+
+# Repair if needed
+git gc --aggressive --prune=now
+```
+
+**Submodule Issues:**
+```bash
+# If in a Git submodule, navigate to parent
+cd "$(git rev-parse --show-superproject-working-tree)"
+
+# Or work within submodule
+git rev-parse --show-toplevel
+cd "$(git rev-parse --show-toplevel)"
+```
+
+</Accordion>
+
+<Accordion title="Commit Rejected by Git Hooks" id="commit-rejected">
+
+**Problem:** Your commit is being rejected by pre-commit hooks, commit-msg hooks, or other Git hooks.
+
+**Symptoms:**
+```bash
+Pre-commit hook failed with exit code 1
+Commit message validation failed
+ESLint errors prevent commit
+Tests failed - commit rejected
+```
+
+**Solutions:**
+
+**Bypass Hooks Temporarily:**
+```bash
+# Skip all hooks for urgent fixes
+git commit --no-verify -m "hotfix: critical security patch"
+
+# Use CommitWeave with no-verify
+commitweave ai --no-verify
+```
+
+**Fix Hook Issues:**
+```bash
+# Run pre-commit hooks manually
+git hook run pre-commit
+
+# Fix linting issues
+npm run lint --fix
+# or
+yarn lint --fix
+
+# Fix formatting issues
+npm run format
+# or
+prettier --write .
+```
+
+**Hook-Specific Solutions:**
+
+**ESLint/Prettier Issues:**
+```bash
+# Fix all auto-fixable issues
+npx eslint . --fix
+npx prettier --write .
+
+# Stage the fixes and retry
+git add .
+commitweave ai
+```
+
+**Test Failures:**
+```bash
+# Run tests and fix failures
+npm test
+# or
+yarn test
+
+# Run specific failing tests
+npm test -- --testNamePattern="failing-test"
+```
+
+**Husky Hook Problems:**
+```bash
+# Reinstall husky hooks
+npx husky install
+
+# Skip husky for one commit
+HUSKY=0 git commit -m "skip hooks"
+
+# Debug husky configuration
+npx husky --version
+cat .husky/pre-commit
+```
+
+**CommitLint Issues:**
+```bash
+# Test commit message format
+echo "feat: add new feature" | npx commitlint
+
+# Show commitlint configuration
+npx commitlint --help-config
+
+# Use CommitWeave to generate valid message
+commitweave ai --strict
+```
+
+</Accordion>
+
+<Accordion title="No Staged Changes Found" id="no-staged-changes">
+
+**Problem:** CommitWeave requires staged changes to generate commit messages, but none are found.
+
+**Symptoms:**
+```bash
+No staged changes found. Please stage your changes first.
+Nothing to commit, working tree clean
+Use "git add" to stage changes for commit
+```
+
+**Solutions:**
+
+**Stage Your Changes:**
+```bash
+# Stage all modified files
+git add .
+
+# Stage specific files
+git add src/components/Button.tsx src/styles/button.css
+
+# Stage by pattern
+git add "*.js" "*.ts"
+
+# Interactive staging
+git add -p
+```
+
+**Check What Needs Staging:**
+```bash
+# See all changes (staged and unstaged)
+git status
+
+# See unstaged changes
+git diff
+
+# See staged changes  
+git diff --cached
+
+# See both in detail
+git status --porcelain
+```
+
+**Common Staging Scenarios:**
+```bash
+# New files (untracked)
+git add new-file.js
+
+# Modified files  
+git add modified-file.js
+
+# Deleted files
+git add deleted-file.js
+# or
+git rm deleted-file.js
+
+# Renamed files
+git mv old-name.js new-name.js
+```
+
+**Work with Partial Changes:**
+```bash
+# Stage only parts of a file
+git add -p file.js
+
+# Use interactive mode
+git add -i
+
+# Stage specific lines
+git gui  # If you have Git GUI installed
+```
+
+</Accordion>
+
+<Accordion title="Network Connectivity Issues" id="network-issues">
+
+**Problem:** CommitWeave cannot reach AI services due to network, proxy, or firewall issues.
+
+**Symptoms:**
+```bash
+Error: ENOTFOUND api.openai.com
+Connection timeout to api.anthropic.com
+Network error: Unable to resolve host
+SSL/TLS certificate verification failed
+```
+
+**Solutions:**
+
+**Test Network Connectivity:**
+```bash
+# Test basic connectivity
+ping api.openai.com
+ping api.anthropic.com
+
+# Test HTTPS connectivity
+curl -I https://api.openai.com/v1/models
+curl -I https://api.anthropic.com/v1/messages
+```
+
+**Corporate Proxy Configuration:**
+```bash
+# Set HTTP proxy
+export HTTP_PROXY=http://proxy.company.com:8080
+export HTTPS_PROXY=http://proxy.company.com:8080
+
+# With authentication
+export HTTPS_PROXY=http://username:password@proxy.company.com:8080
+
+# Test with proxy
+commitweave ai --verbose
+```
+
+**Certificate Issues:**
+```bash
+# Skip certificate verification (temporary)
+export NODE_TLS_REJECT_UNAUTHORIZED=0
+commitweave ai
+
+# Use custom CA bundle
+export SSL_CERT_FILE=/path/to/corporate-ca-bundle.pem
+export SSL_CERT_DIR=/path/to/certs/
+
+# Update certificates (Linux)
+sudo apt-get update && sudo apt-get install ca-certificates
+```
+
+**Firewall Configuration:**
+```bash
+# Required outbound connections:
+# - api.openai.com:443 (OpenAI)
+# - api.anthropic.com:443 (Anthropic)
+# - Raw IP ranges may vary
+
+# Test with alternative DNS
+nslookup api.openai.com 8.8.8.8
+nslookup api.anthropic.com 1.1.1.1
+```
+
+**Local AI Alternative:**
+```bash
+# Use local AI service (Ollama example)
+export COMMITWEAVE_AI_BASE_URL="http://localhost:11434/v1"
+commitweave ai --provider local --model llama2
+```
+
+</Accordion>
+
+<Accordion title="Performance and Memory Issues" id="performance-issues">
+
+**Problem:** CommitWeave is running slowly or consuming excessive memory.
+
+**Symptoms:**
+```bash
+CommitWeave startup takes >10 seconds
+High memory usage (>500MB)
+AI requests timing out
+File analysis taking too long
+```
+
+**Solutions:**
+
+**Optimize for Speed:**
+```bash
+# Use fast mode (skip expensive operations)
+commitweave ai --fast
+
+# Disable file analysis for large repos
+commitweave ai --no-analysis
+
+# Use lighter AI models
+commitweave ai --model gpt-3.5-turbo
+commitweave ai --model claude-3-haiku-20240307
+```
+
+**Memory Optimization:**
+```bash
+# Limit AI token usage
+commitweave ai --max-tokens 50
+
+# Disable verbose logging
+commitweave ai --quiet
+
+# Clear cache periodically
+rm -rf ~/.commitweave/cache
+
+# Set memory limits (Node.js)
+export NODE_OPTIONS="--max-old-space-size=512"
+```
+
+**Large Repository Handling:**
+```bash
+# Skip large file analysis
+echo "*.zip\n*.tar.gz\n*.pdf\nnode_modules/" > .commitweaveignore
+
+# Use .gitignore patterns
+commitweave config --set analysis.respectGitignore true
+
+# Limit diff context
+git config diff.context 3
+```
+
+**Profile and Debug:**
+```bash
+# Profile memory usage
+node --inspect commitweave ai
+# Then connect Chrome DevTools
+
+# Monitor memory in real-time
+top -p $(pgrep -f commitweave)
+
+# Check Node.js heap usage
+node -pe "process.memoryUsage()"
+```
+
+</Accordion>
+
+<Accordion title="Configuration and Permissions" id="config-permissions">
+
+**Problem:** Issues with configuration files, permissions, or file access.
+
+**Symptoms:**
+```bash
+Error: EACCES: permission denied, open '.commitweave.json'
+Invalid configuration file format
+Cannot write to config directory
+Configuration not found in expected locations
+```
+
+**Solutions:**
+
+**Fix File Permissions:**
+```bash
+# Make config file writable
+chmod 644 .commitweave.json
+
+# Fix directory permissions
+chmod 755 ~/.commitweave/
+
+# Check ownership
+ls -la .commitweave.json
+ls -la ~/.commitweave/
+```
+
+**Configuration Locations:**
+```bash
+# Check all config locations
+commitweave config --show-paths
+
+# Use global config
+commitweave config --global --set ai.enabled true
+
+# Use project-specific config
+commitweave config --local --set ai.model gpt-4
+```
+
+**Reset and Recreate Config:**
+```bash
+# Backup existing config
+cp .commitweave.json .commitweave.json.backup
+
+# Reset to defaults
+commitweave config --reset
+
+# Recreate with wizard
+commitweave init --interactive
+
+# Validate configuration
+commitweave config --validate
+```
+
+**JSON Configuration Validation:**
+```bash
+# Validate JSON syntax
+python -m json.tool .commitweave.json
+
+# Or use jq
+jq empty .commitweave.json
+
+# Or use Node.js
+node -e "JSON.parse(require('fs').readFileSync('.commitweave.json', 'utf8'))"
+```
+
+**Environment Variable Issues:**
+```bash
+# List all CommitWeave environment variables
+env | grep COMMITWEAVE
+
+# Test variable expansion
+echo "API Key: ${OPENAI_API_KEY:0:10}..."
+
+# Use quotes to prevent shell expansion
+export COMMITWEAVE_CONFIG_PATH="/path/with spaces/config.json"
+```
+
+</Accordion>
+
+<Accordion title="Interactive Mode Problems" id="interactive-mode">
+
+**Problem:** Issues with interactive prompts, terminal compatibility, or UI rendering.
+
+**Symptoms:**
+```bash
+Prompts not displaying correctly
+Garbled characters in terminal
+Interactive mode freezes
+Arrow keys not working in selection
+```
+
+**Solutions:**
+
+**Terminal Compatibility:**
+```bash
+# Set compatible terminal type
+export TERM=xterm-256color
+
+# For tmux users
+export TERM=screen-256color
+
+# Force color output
+commitweave ai --force-color
+
+# Disable colors if problematic
+commitweave ai --no-color
+```
+
+**Alternative Input Methods:**
+```bash
+# Use non-interactive mode
+commitweave ai --no-interactive
+
+# Pass options directly
+commitweave quick --type feat --scope auth
+
+# Use environment variables
+export COMMITWEAVE_TYPE=feat
+export COMMITWEAVE_SCOPE=auth
+commitweave ai
+```
+
+**Editor Integration Issues:**
+```bash
+# Test default editor
+echo $EDITOR
+
+# Use specific editor
+commitweave commit --editor "code --wait"
+commitweave commit --editor "vim"
+
+# Use built-in prompts only
+commitweave commit --no-editor
+```
+
+**Windows-Specific Issues:**
+```cmd
+REM Use Windows Terminal or PowerShell 7+
+REM Set UTF-8 encoding
+chcp 65001
+
+REM Use Git Bash instead of Command Prompt
+"C:\Program Files\Git\bin\bash.exe" -l
+```
+
+</Accordion>
+
+</Accordions>
+
+## Advanced Diagnostics
+
+### System Health Check
+
+Run comprehensive diagnostics:
+
+```bash
+# Full system check
+commitweave doctor --verbose
+
+# Network connectivity test  
+commitweave doctor --check-network
+
+# Configuration validation
+commitweave doctor --check-config
+
+# Git repository health
+commitweave doctor --check-git
+```
+
+### Debug Logging
+
+Enable detailed logging for troubleshooting:
+
+```bash
+# Enable debug mode
+DEBUG=commitweave* commitweave ai --verbose
+
+# Save debug log to file
+commitweave ai --verbose --log-file debug.log 2>&1
+
+# Monitor logs in real-time
+tail -f ~/.commitweave/logs/commitweave.log
+```
+
+### Environment Information
+
+Gather system information for bug reports:
+
+```bash
+# System information
+commitweave --version
+node --version  
+git --version
+uname -a
+
+# Configuration dump
+commitweave config --show --verbose
+
+# Git environment
+git config --list | grep -E "(user|core|commit)"
+```
+
+## Getting Help
+
+### Self-Help Resources
+
+1. **Configuration Validation**: Run `commitweave doctor` first
+2. **Documentation**: Check our [CLI Reference](/docs/commitweave/cli-reference) and [Examples](/docs/commitweave/examples)  
+3. **Templates**: Use proven [Configuration Templates](/docs/commitweave/config-templates/)
+
+### Community Support
+
+- **GitHub Issues**: [Report bugs](https://github.com/GLINCKER/commitweave/issues)
+- **Discussions**: [Ask questions](https://github.com/GLINCKER/commitweave/discussions)
+- **Discord**: Real-time community help
+
+### Bug Reports
+
+Include this information when reporting bugs:
+
+```bash
+# System environment
+commitweave --version
+node --version
+npm --version
+git --version
+echo $SHELL
+uname -a
+
+# Error reproduction
+commitweave doctor --verbose > system-info.txt
+commitweave ai --verbose --dry-run > error-log.txt 2>&1
+
+# Configuration (redact API keys)
+commitweave config --show | sed 's/sk-[a-zA-Z0-9]\+/[REDACTED]/g'
+```
+
+---
+
+**Still having issues?** Open a [GitHub Issue](https://github.com/GLINCKER/commitweave/issues/new) with your system information and error logs.

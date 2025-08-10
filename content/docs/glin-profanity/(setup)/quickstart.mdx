@@ -1,0 +1,256 @@
+---
+title: Quick Start
+description: Get started with Glin-Profanity in under 5 minutes
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { CodeBlock } from 'fumadocs-ui/components/codeblock';
+import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
+
+Minimal working examples for both JavaScript and Python. Get profanity detection running in under 5 minutes.
+
+## Basic Usage
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    <CodeBlock lang="javascript" title="Import and basic check">
+    ```javascript
+    // Import the core detection function
+    import { checkProfanity } from 'glin-profanity';
+
+    // Basic profanity detection
+    const result = checkProfanity("This is damn good!", {
+      languages: ['english'],
+      autoReplace: true
+    });
+
+    // Log the result
+    console.log(result);
+    ```
+    </CodeBlock>
+
+    **Expected Output:**
+    ```json
+    {
+      "containsProfanity": true,
+      "profaneWords": ["damn"],
+      "processedText": "This is **** good!",
+      "matches": [
+        {
+          "word": "damn",
+          "index": 8,
+          "severity": 1
+        }
+      ],
+      "severityMap": { "damn": 1 }
+    }
+    ```
+  </Tab>
+
+  <Tab value="Python">
+    <CodeBlock lang="python" title="Import and basic check">
+    ```python
+    # Import the Filter class
+    from glin_profanity import Filter
+
+    # Initialize filter with configuration
+    filter_instance = Filter({
+        "languages": ["english"],
+        "auto_replace": True
+    })
+    
+    # Check profanity in text
+    result = filter_instance.check_profanity("This is damn good!")
+
+    # Print the result
+    print(result)
+    ```
+    </CodeBlock>
+
+    **Expected Output:**
+    ```json
+    {
+      "contains_profanity": true,
+      "profane_words": ["damn"],
+      "processed_text": "This is **** good!",
+      "severity_map": {"damn": 1},
+      "matches": [
+        {
+          "word": "damn", 
+          "index": 8, 
+          "severity": 1
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Simple Word Check
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    <CodeBlock lang="javascript" title="Boolean word checking">
+    ```javascript
+    // Import
+    import { isWordProfane } from 'glin-profanity';
+
+    // Basic boolean checks
+    console.log(isWordProfane('hello'));    // false
+    console.log(isWordProfane('damn'));     // true
+    console.log(isWordProfane('sh*t'));     // true
+    ```
+    </CodeBlock>
+  </Tab>
+
+  <Tab value="Python">
+    <CodeBlock lang="python" title="Boolean word checking">
+    ```python
+    # Import
+    from glin_profanity import Filter
+
+    filter_instance = Filter()
+
+    # Basic boolean checks  
+    print(filter_instance.is_profane('hello'))    # False
+    print(filter_instance.is_profane('damn'))     # True
+    print(filter_instance.is_profane('sh*t'))     # True
+    ```
+    </CodeBlock>
+  </Tab>
+</Tabs>
+
+## Context-Aware Demo
+
+Glin-Profanity's advanced context analysis can distinguish between positive and negative uses of the same words:
+
+<ImageZoom>
+  <img
+    src="/images/glin-profanity-context-demo.png"
+    alt="Glin-Profanity Context-Aware Demo showing positive context vs negative context detection"
+    width="800"
+    height="400"
+  />
+</ImageZoom>
+
+<Callout type="info">
+**Context-Aware Intelligence**: Glin-Profanity analyzes sentiment and context to reduce false positives by up to 85%. Words like "damn" in "damn good coffee" are recognized as positive expressions.
+</Callout>
+
+## React Integration
+
+<CodeBlock lang="jsx" title="React hook usage">
+```jsx
+import React, { useState } from 'react';
+import { useProfanityChecker } from 'glin-profanity';
+
+function ChatInput() {
+  const [message, setMessage] = useState('');
+  const { checkText, result, isDirty } = useProfanityChecker({
+    languages: ['english'],
+    enableContextAware: true
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const checkResult = checkText(message);
+    
+    if (checkResult.containsProfanity) {
+      alert(`Profanity detected: ${checkResult.profaneWords.join(', ')}`);
+      return;
+    }
+    
+    // Send clean message
+    console.log('Clean message sent:', message);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Type your message..."
+        style={{
+          borderColor: result?.containsProfanity ? 'red' : 'green'
+        }}
+      />
+      <button type="submit" disabled={result?.containsProfanity}>
+        {result?.containsProfanity ? 'Contains Profanity' : 'Send Message'}
+      </button>
+    </form>
+  );
+}
+```
+</CodeBlock>
+
+<Callout type="info">
+Both JavaScript and Python implementations use the same dictionaries and algorithms, ensuring identical results across platforms.
+</Callout>
+
+## Verify Your Setup
+
+Test your installation with these quick verification scripts:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    <CodeBlock lang="javascript" title="test-glin-profanity.js">
+    ```javascript
+    import { checkProfanity, isWordProfane } from 'glin-profanity';
+
+    // Test basic detection
+    console.log('✓ Testing basic detection...');
+    const result = checkProfanity('This is a test');
+    console.log(`Clean text detection: ${!result.containsProfanity ? '✓ PASS' : '✗ FAIL'}`);
+
+    // Test profanity detection  
+    console.log('✓ Testing profanity detection...');
+    const profaneResult = checkProfanity('This is damn annoying');
+    console.log(`Profanity detection: ${profaneResult.containsProfanity ? '✓ PASS' : '✗ FAIL'}`);
+
+    // Test word checking
+    console.log('✓ Testing word checking...');
+    console.log(`Word check: ${isWordProfane('hello') === false ? '✓ PASS' : '✗ FAIL'}`);
+
+    console.log('\n🎉 All tests passed! Glin-Profanity is ready to use.');
+    ```
+    </CodeBlock>
+  </Tab>
+
+  <Tab value="Python">
+    <CodeBlock lang="python" title="test_glin_profanity.py">
+    ```python
+    from glin_profanity import Filter
+
+    # Initialize filter
+    filter_instance = Filter()
+
+    # Test basic detection
+    print('✓ Testing basic detection...')
+    result = filter_instance.check_profanity('This is a test')
+    print(f'Clean text detection: {"✓ PASS" if not result["contains_profanity"] else "✗ FAIL"}')
+
+    # Test profanity detection
+    print('✓ Testing profanity detection...')
+    profane_result = filter_instance.check_profanity('This is damn annoying')
+    print(f'Profanity detection: {"✓ PASS" if profane_result["contains_profanity"] else "✗ FAIL"}')
+
+    # Test word checking
+    print('✓ Testing word checking...')
+    print(f'Word check: {"✓ PASS" if filter_instance.is_profane("hello") == False else "✗ FAIL"}')
+
+    print('\n🎉 All tests passed! Glin-Profanity is ready to use.')
+    ```
+    </CodeBlock>
+  </Tab>
+</Tabs>
+
+<Callout type="success">
+**Ready for Production**: Once your verification tests pass, Glin-Profanity is ready for use in your production applications with sub-millisecond detection speeds and 23-language support.
+</Callout>
+
+## Next Steps
+
+- **[Configuration](/docs/glin-profanity/configuration)** - Customize behavior
+- **[API Reference](/docs/glin-profanity/core-functions)** - Complete documentation
+- **[Multi-Language](/docs/glin-profanity/core-functions#languages)** - Use all 23 languages

@@ -1,0 +1,416 @@
+---
+title: Interactive Playground
+description: Try Glin-Profanity live with real-time configuration and multi-language testing
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Experience Glin-Profanity's powerful features in an interactive environment. Test different configurations, compare JavaScript and Python outputs, and explore all 23 supported languages with real-time feedback.
+
+<Callout type="info" title="🎮 Try it Live">
+[Open Glin-Profanity Playground](https://www.glincker.com/tools/glin-profanity) - Test profanity detection with live configuration changes and instant results.
+</Callout>
+
+## Interactive Demo Features
+
+The playground provides a comprehensive testing environment with:
+
+### Real-Time Configuration
+- **Language Selection**: Test any of the 23 supported languages
+- **Context-Aware Filtering**: Toggle sentiment analysis on/off
+- **Severity Levels**: Adjust MILD/MODERATE/SEVERE thresholds
+- **Obfuscation Detection**: Enable fuzzy matching for disguised text
+- **Custom Settings**: Modify fuzzy tolerance, confidence thresholds, and more
+
+### Cross-Platform Comparison
+- **Side-by-Side Results**: Compare JavaScript and Python outputs
+- **API Parity Verification**: Confirm identical behavior across platforms
+- **Performance Metrics**: Response times and processing statistics
+- **Configuration Sync**: Same settings applied to both implementations
+
+### Advanced Testing
+- **Batch Processing**: Test multiple text samples simultaneously
+- **Context Analysis**: See detailed sentiment scores and reasoning
+- **Dictionary Exploration**: Browse words from different language dictionaries
+- **Export Results**: Download test results as JSON or CSV
+
+## Getting Started
+
+<Steps>
+
+<Step>
+### Access the Playground
+
+Visit the interactive playground to start testing:
+
+**Primary Link**: [www.glincker.com/tools/glin-profanity](https://www.glincker.com/tools/glin-profanity)
+
+**Features Available:**
+- ✅ No registration required
+- ✅ Works on desktop and mobile
+- ✅ Real-time results
+- ✅ Shareable configuration URLs
+- ✅ Export functionality
+
+**Browser Requirements:**
+- Modern browser with JavaScript enabled
+- Internet connection for API calls
+- Recommended: Chrome, Firefox, Safari, Edge
+
+</Step>
+
+<Step>
+### Change Configuration Live
+
+The playground allows real-time configuration changes:
+
+**Language Settings:**
+1. **Single Language**: Select English, Spanish, French, etc.
+2. **Multiple Languages**: Enable multi-language detection
+3. **All Languages**: Test against all 23 supported languages
+
+**Detection Settings:**
+1. **Context-Aware**: Toggle sentiment analysis
+2. **Severity Filter**: Choose MILD, MODERATE, or SEVERE
+3. **Obfuscation**: Enable detection of disguised profanity (sh1t, f*ck)
+4. **Fuzzy Tolerance**: Adjust character similarity threshold
+
+**Advanced Options:**
+1. **Confidence Threshold**: Set context analysis sensitivity
+2. **Auto-Replace**: Enable automatic profanity replacement
+3. **Word Boundaries**: Toggle exact word matching
+4. **Custom Words**: Add domain-specific profanity terms
+
+**Configuration Examples:**
+```json
+// Chat Moderation Preset
+{
+  "languages": ["english", "spanish"],
+  "enableContextAware": true,
+  "severityFilter": "MODERATE",
+  "autoReplace": true,
+  "obfuscationDetection": true
+}
+
+// Content Publishing Preset  
+{
+  "languages": ["english"],
+  "enableContextAware": true,
+  "severityFilter": "EXACT",
+  "confidenceThreshold": 0.8,
+  "wordBoundaries": true
+}
+
+// Gaming Chat Preset
+{
+  "languages": ["english"],
+  "severityFilter": "MILD", 
+  "fuzzyTolerance": 0.6,
+  "customWhitelist": ["boss", "kill", "enemy"]
+}
+```
+
+</Step>
+
+<Step>
+### Test Multiple Languages
+
+Explore Glin-Profanity's comprehensive language support:
+
+**European Languages:**
+- **English**: "This is damn good stuff"
+- **Spanish**: "Esto es una mierda terrible"
+- **French**: "C'est de la merde"
+- **German**: "Das ist verdammt gut"
+- **Italian**: "Questo è davvero fottuto"
+
+**Asian Languages:**
+- **Japanese**: "これはクソだ"
+- **Korean**: "이건 개같은 거야"
+- **Chinese**: "这是狗屎"
+- **Hindi**: "यह बकवास है"
+
+**Middle Eastern:**
+- **Arabic**: "هذا هراء"
+- **Persian**: "این مزخرف است"
+- **Turkish**: "Bu saçmalık"
+
+**Test Scenarios:**
+1. **Single Language**: Test profanity in one language
+2. **Multi-Language Mix**: "This shit is mierda and vraiment nul"
+3. **Code-Switching**: Natural language mixing in conversation
+4. **False Positives**: Words that look profane but aren't ("Scunthorpe problem")
+
+**Language-Specific Features:**
+- **Character Sets**: Unicode support for all scripts
+- **Cultural Context**: Region-specific profanity patterns
+- **Transliteration**: Support for romanized text
+- **Dialect Variations**: Regional profanity differences
+
+</Step>
+
+<Step>
+### Compare JavaScript vs Python Outputs
+
+Verify cross-platform consistency with side-by-side comparison:
+
+**Identical Configuration:**
+```javascript
+// JavaScript Configuration
+const config = {
+  languages: ['english'],
+  enableContextAware: true,
+  severityFilter: 'MODERATE',
+  fuzzyTolerance: 0.8
+};
+```
+
+```python
+# Python Configuration (identical functionality)
+config = {
+    "languages": ["english"],
+    "enable_context_aware": True,
+    "severity_filter": "MODERATE", 
+    "fuzzy_tolerance": 0.8
+}
+```
+
+**Comparison Features:**
+1. **Response Validation**: Verify identical profanity detection results
+2. **Performance Metrics**: Compare processing times
+3. **API Parity**: Confirm field names and structure match
+4. **Edge Cases**: Test boundary conditions and error handling
+
+**Expected Results:**
+```json
+// JavaScript Result
+{
+  "containsProfanity": true,
+  "profaneWords": ["damn"],
+  "contextScore": 0.75,
+  "severityMap": {"damn": 1}
+}
+
+// Python Result (identical)
+{
+  "contains_profanity": true,
+  "profane_words": ["damn"],
+  "context_score": 0.75,
+  "severity_map": {"damn": 1}
+}
+```
+
+**Validation Checklist:**
+- ✅ Same profanity detection decisions
+- ✅ Identical word lists and severity ratings
+- ✅ Matching context scores and confidence levels
+- ✅ Consistent error handling and edge cases
+
+</Step>
+
+</Steps>
+
+## Advanced Testing Scenarios
+
+### Context-Aware Testing
+
+```javascript title="Positive Context Examples"
+// These should NOT be flagged with context-aware enabled
+const positiveExamples = [
+  "This movie is fucking amazing!",           // Entertainment praise
+  "That boss fight was badass!",             // Gaming context
+  "This game is the bomb!",                  // Positive slang
+  "Holy shit, that's incredible!",           // Excitement expression
+  "Damn good coffee here!"                   // Quality appreciation
+];
+
+// Test with different confidence thresholds
+// Higher threshold = more permissive
+// Lower threshold = more strict
+```
+
+```javascript title="Negative Context Examples"
+// These SHOULD be flagged regardless of context
+const negativeExamples = [
+  "You fucking idiot!",                      // Personal attack
+  "Go to hell, you bastard!",               // Hostile language
+  "That's such bullshit from you!",         // Direct profanity
+  "You're a damn moron!",                   // Insult
+  "Shut the fuck up!"                       // Aggressive command
+];
+```
+
+### Obfuscation Testing
+
+```javascript title="Character Substitution Patterns"
+const obfuscatedExamples = [
+  // Symbol substitution
+  "What the h3ll is this?",                 // 3 → e
+  "This is bull$hit!",                      // $ → s
+  "D@mn that was bad!",                     // @ → a
+  "You're so f*cking annoying!",            // * removal
+  "Stop being a b!tch!",                    // ! → i
+  
+  // Repeated characters  
+  "Daaaamn that's good!",                   // Extra letters
+  "This is shiiiit!",                       // Letter repetition
+  "Holy helllll!",                          // Multiple repetition
+  
+  // Mixed obfuscation
+  "What the f***ing h3ll?",                 // Multiple patterns
+  "This d@mn $h1t is annoying!"             // Complex substitution
+];
+```
+
+### Multi-Language Testing
+
+```javascript title="Cross-Language Profanity"
+const multiLanguageExamples = [
+  // English + Spanish
+  "This is shit and also mierda",
+  
+  // English + French  
+  "That's bullshit, vraiment putain",
+  
+  // Code-switching (natural mixing)
+  "Je suis fucking tired aujourd'hui",
+  
+  // Gaming context (English + terms)
+  "Kill that cabrón boss now!",
+  
+  // False positives across languages
+  "I live in Scunthorpe, England",          // Should NOT be flagged
+  "The assassin was very skilled"           // Should NOT be flagged
+];
+```
+
+## Playground Features in Detail
+
+### Real-Time Results Panel
+
+The playground provides instant feedback with:
+
+**Detection Results:**
+- ✅/❌ Profanity status indicator
+- 📝 List of flagged words with severity
+- 🎯 Context analysis score and reasoning
+- 📊 Confidence levels and match details
+
+**Performance Metrics:**
+- ⏱️ Processing time (JavaScript vs Python)
+- 📈 API response times
+- 💾 Memory usage estimates
+- 🔄 Request/response size
+
+**Configuration State:**
+- 🔧 Current settings display
+- 📋 Shareable configuration URLs
+- 💾 Save/load preset configurations
+- 📤 Export results as JSON/CSV
+
+### Interactive Controls
+
+**Text Input:**
+- 📝 Large text area for content testing
+- 📁 File upload for batch processing
+- 🎲 Random sample generator
+- 📋 Preset test cases
+
+**Configuration Panel:**
+- 🌍 Language selector with search
+- ⚙️ Toggle switches for main features
+- 🎚️ Sliders for numerical settings
+- 📋 Preset configuration templates
+
+**Results Display:**
+- 📊 Tabbed results (JS/Python comparison)
+- 🎨 Syntax highlighting for JSON
+- 📈 Visual confidence indicators
+- 🔗 Deep-link to specific configurations
+
+## Offline Fallback
+
+If the online playground is unavailable, you can run a local version:
+
+<Callout type="warning">
+**Offline Alternative**: If the playground link is not accessible, you can create a local testing environment using the examples from our documentation.
+</Callout>
+
+### Local Playground Setup
+
+```bash title="Quick Local Setup"
+# Clone the example repository
+git clone https://github.com/GLINR/glin-profanity-playground.git
+cd glin-profanity-playground
+
+# Install dependencies
+npm install
+
+# Start local development server
+npm run dev
+
+# Open browser to http://localhost:3000
+```
+
+### Minimal Testing Script
+
+```javascript title="browser-test.html"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Glin-Profanity Local Test</title>
+    <script src="https://unpkg.com/glin-profanity@latest/dist/glin-profanity.js"></script>
+</head>
+<body>
+    <h1>Glin-Profanity Test</h1>
+    <textarea id="input" placeholder="Enter text to test..."></textarea>
+    <button onclick="checkText()">Check Profanity</button>
+    <div id="result"></div>
+    
+    <script>
+    function checkText() {
+        const text = document.getElementById('input').value;
+        const result = GlinProfanity.checkProfanity(text, {
+            languages: ['english'],
+            enableContextAware: true
+        });
+        document.getElementById('result').innerHTML = 
+            '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+    }
+    </script>
+</body>
+</html>
+```
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="🚀 Quick Start"
+    description="Get started with Glin-Profanity in your project"
+    href="/docs/glin-profanity/quickstart"
+  />
+  <Card
+    title="⚙️ Configuration"
+    description="Learn about all configuration options from the playground"
+    href="/docs/glin-profanity/configuration"
+  />
+  <Card
+    title="🧠 Context-Aware Filtering"
+    description="Understand how sentiment analysis works"
+    href="/docs/glin-profanity/context-analysis"
+  />
+  <Card
+    title="🔧 API Reference"
+    description="Complete documentation for all methods and options"
+    href="/docs/glin-profanity/core-functions"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Pro Tip**: Use the playground to validate your configuration before implementing it in production. The shareable URLs make it easy to collaborate with your team on optimal settings.
+</Callout>

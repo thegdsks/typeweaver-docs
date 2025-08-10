@@ -1,0 +1,10 @@
+{
+  "title": "Setup", 
+  "defaultOpen": false,
+  "pages": [
+    "installation",
+    "usage",
+    "configuration",
+    "config-templates"
+  ]
+}

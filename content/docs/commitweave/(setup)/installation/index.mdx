@@ -1,0 +1,170 @@
+---
+title: Installation
+description: Install CommitWeave on your platform - multiple installation methods available
+---
+
+<InlineTOC items={[
+  { title: 'Quick Start', url: '#quick-start', depth: 2 },
+  { title: 'Installation Methods', url: '#installation-methods', depth: 2 },
+  { title: 'Prerequisites', url: '#prerequisites', depth: 2 },
+  { title: 'Verification', url: '#verification', depth: 2 },
+  { title: 'Next Steps', url: '#next-steps', depth: 2 }
+]} />
+
+## Quick Start
+
+Get CommitWeave running in under 5 minutes with the most common installation method:
+
+<Tabs items={['npm', 'yarn', 'pnpm']} groupId="package-managers" persist>
+  <Tab value="npm">
+    ```bash
+    npm install -g @typeweaver/commitweave
+    commitweave init
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn global add @typeweaver/commitweave
+    commitweave init
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add -g @typeweaver/commitweave
+    commitweave init
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="info" title="System Requirements">
+CommitWeave requires **Node.js 18+** and **Git** to be installed on your system.
+</Callout>
+
+## Installation Methods
+
+Choose your preferred installation method based on your platform and requirements:
+
+<Cards>
+  <Card 
+    href="/docs/commitweave/installation/npm-yarn-pnpm" 
+    title="NPM, Yarn & PNPM"
+    description="Install using Node.js package managers - most common method"
+  >
+    Perfect for developers with Node.js already installed. Supports global and project-specific installation.
+  </Card>
+
+  <Card 
+    href="/docs/commitweave/installation/macos" 
+    title="macOS Installation"
+    description="macOS-specific installation with Homebrew, shell integration, and Xcode support"
+  >
+    Native macOS experience with Apple Silicon support, Terminal integration, and development tools.
+  </Card>
+
+  <Card 
+    href="/docs/commitweave/installation/windows" 
+    title="Windows Installation" 
+    description="Windows installation with PowerShell, Visual Studio integration, and WSL support"
+  >
+    Complete Windows support including Chocolatey, PowerShell completion, and IDE integration.
+  </Card>
+
+  <Card 
+    href="/docs/commitweave/installation/docker" 
+    title="Docker & Containers"
+    description="Containerized deployment for CI/CD pipelines and team environments"
+  >
+    Production-ready containers with Kubernetes support, perfect for automated workflows.
+  </Card>
+</Cards>
+
+## Prerequisites
+
+Before installing CommitWeave, ensure you have:
+
+<Steps>
+  <Step>
+    ### Node.js 18+
+    CommitWeave requires Node.js 18.0 or higher. Check your version:
+    ```bash
+    node --version
+    ```
+    [Download Node.js →](https://nodejs.org)
+  </Step>
+  
+  <Step>
+    ### Git
+    Git must be installed and configured:
+    ```bash
+    git --version
+    git config --global user.name "Your Name"
+    git config --global user.email "your.email@example.com"
+    ```
+  </Step>
+  
+  <Step>
+    ### AI Provider (Optional)
+    For AI-powered commits, set up an API key:
+    - **OpenAI**: [Get API key](https://platform.openai.com/api-keys)
+    - **Anthropic**: [Get API key](https://console.anthropic.com/)
+  </Step>
+</Steps>
+
+## Verification
+
+After installation, verify CommitWeave is working correctly:
+
+```bash
+# Check version
+commitweave --version
+
+# Test help command  
+commitweave --help
+
+# Test in a Git repository (preview mode)
+cd /path/to/your/git/repo
+commitweave --preview
+```
+
+<Callout type="success" title="Installation Complete">
+If all commands run without errors, CommitWeave is successfully installed!
+</Callout>
+
+## Next Steps
+
+Now that CommitWeave is installed:
+
+1. **Initialize Configuration**: Run `commitweave init` in your Git repository
+2. **Configure AI Provider**: Set up OpenAI or Anthropic API keys
+3. **Create Your First Commit**: Try `commitweave --ai` for AI-powered commit generation
+4. **Explore Advanced Features**: Check out [team workflows](/docs/commitweave/examples) and [VSCode integration](/docs/commitweave/integrations/vscode-extension)
+
+<Cards>
+  <Card 
+    href="/docs/commitweave/usage" 
+    title="Usage Guide"
+    description="Learn how to use CommitWeave effectively"
+  >
+    Basic and advanced usage patterns for individual developers and teams.
+  </Card>
+
+  <Card 
+    href="/docs/commitweave/configuration" 
+    title="Configuration"
+    description="Customize CommitWeave for your workflow"
+  >
+    AI providers, commit types, team settings, and advanced customization options.
+  </Card>
+
+  <Card 
+    href="/docs/commitweave/examples" 
+    title="Examples & Workflows"
+    description="Real-world usage scenarios"
+  >
+    Common patterns, team workflows, and integration examples.
+  </Card>
+</Cards>
+
+---
+
+**Need help?** Check our [troubleshooting guide](/docs/commitweave/troubleshooting) or [CLI reference](/docs/commitweave/cli-reference) for detailed information.

@@ -1,0 +1,330 @@
+---
+title: ML Integration Guide
+description: Best practices for integrating ML-powered toxicity detection into your application
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+This guide covers best practices, architecture patterns, and optimization strategies for ML-powered content moderation.
+
+## When to Use ML Detection
+
+<Callout type="info">
+ML detection excels at catching **contextual toxicity** that word lists miss — insults, threats, and harmful content expressed without explicit profanity.
+</Callout>
+
+### ML Catches What Rules Miss
+
+| Example | Rules | ML |
+|---------|-------|-----|
+| "you fucking idiot" | ✅ | ✅ |
+| "you are worthless" | ❌ | ✅ |
+| "go kys loser" | ❌ | ✅ |
+| "nobody wants you here" | ❌ | ✅ |
+| "I hope bad things happen to you" | ❌ | ✅ |
+
+### When to Enable ML
+
+**Enable ML when:**
+- Moderating user-generated content (comments, chat, forums)
+- Users actively try to evade filters
+- Context matters (gaming, social, professional)
+- You need to catch threats and harassment
+
+**Skip ML when:**
+- Simple word filtering is sufficient
+- Latency is critical (under 10ms requirement)
+- Running on edge/serverless with strict limits
+- Budget constraints (ML uses more compute)
+
+## Architecture Patterns
+
+### Pattern 1: ML as Primary (High Accuracy)
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'ml-override',
+  mlThreshold: 0.85,
+});
+
+// ML result takes precedence
+const result = await filter.checkProfanityAsync(text);
+```
+
+**Pros:** Best accuracy, handles context well
+**Cons:** Slower (~50-100ms), higher resource usage
+
+### Pattern 2: Rules First, ML Fallback (Balanced)
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'rules-first',
+  borderlineThreshold: 0.5,
+  detectLeetspeak: true,
+});
+
+// Fast rules catch obvious cases, ML handles edge cases
+const result = await filter.checkProfanityAsync(text);
+```
+
+**Pros:** Fast for common cases, ML safety net
+**Cons:** Slightly more complex logic
+
+### Pattern 3: Tiered Moderation (High Volume)
+
+```typescript
+import { Filter } from 'glin-profanity';
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+class TieredModerator {
+  private ruleFilter = new Filter({ detectLeetspeak: true });
+  private mlDetector = new ToxicityDetector({ threshold: 0.85 });
+  private mlReady = false;
+
+  async initialize() {
+    await this.mlDetector.loadModel();
+    this.mlReady = true;
+  }
+
+  async moderate(text: string) {
+    // Tier 1: Fast rule-based check
+    const ruleResult = this.ruleFilter.checkProfanity(text);
+    if (ruleResult.containsProfanity) {
+      return { action: 'block', reason: 'profanity', fast: true };
+    }
+
+    // Tier 2: ML check for borderline content
+    if (this.mlReady) {
+      const mlResult = await this.mlDetector.analyze(text);
+      if (mlResult.isToxic) {
+        return { action: 'flag', reason: mlResult.matchedCategories, fast: false };
+      }
+    }
+
+    return { action: 'allow', fast: true };
+  }
+}
+```
+
+**Pros:** Maximum throughput, graceful degradation
+**Cons:** More code to maintain
+
+## Optimization Strategies
+
+### 1. Preload Model on Startup
+
+```typescript
+// app.ts or server.ts
+import { HybridFilter } from 'glin-profanity/ml';
+
+let moderator: HybridFilter;
+
+async function initializeApp() {
+  moderator = new HybridFilter({ enableML: true });
+
+  console.log('Loading ML model...');
+  await moderator.initialize();
+  console.log('ML model ready');
+
+  // Start server after model is ready
+  app.listen(3000);
+}
+
+initializeApp();
+```
+
+### 2. Use Batch Processing
+
+```typescript
+// Process multiple texts in one ML call
+const comments = ['comment1', 'comment2', 'comment3'];
+
+// Bad: N separate ML calls
+for (const comment of comments) {
+  await filter.checkProfanityAsync(comment); // Slow!
+}
+
+// Good: Single batched ML call
+const results = await filter.checkProfanityBatchAsync(comments); // Fast!
+```
+
+### 3. Cache Results
+
+```typescript
+import { LRUCache } from 'lru-cache';
+
+const cache = new LRUCache<string, boolean>({ max: 1000 });
+
+async function checkWithCache(text: string) {
+  const cached = cache.get(text);
+  if (cached !== undefined) return cached;
+
+  const result = await filter.isToxicAsync(text);
+  cache.set(text, result);
+  return result;
+}
+```
+
+### 4. Use Rules for Quick Reject
+
+```typescript
+async function smartModerate(text: string) {
+  // Quick sync check first
+  if (filter.isProfane(text)) {
+    return { blocked: true, source: 'rules' };
+  }
+
+  // ML only for content that passed rules
+  const mlResult = await filter.analyzeWithML(text);
+  if (mlResult?.isToxic) {
+    return { blocked: true, source: 'ml' };
+  }
+
+  return { blocked: false };
+}
+```
+
+## Memory Management
+
+### Serverless Considerations
+
+```typescript
+// Lambda / Vercel Functions
+let filter: HybridFilter | null = null;
+
+export async function handler(event) {
+  // Reuse filter across warm invocations
+  if (!filter) {
+    filter = new HybridFilter({ enableML: true });
+    await filter.initialize();
+  }
+
+  const result = await filter.checkProfanityAsync(event.body.text);
+  return { statusCode: 200, body: JSON.stringify(result) };
+}
+```
+
+### Long-Running Services
+
+```typescript
+class ModerationService {
+  private filter: HybridFilter;
+
+  constructor() {
+    this.filter = new HybridFilter({ enableML: true });
+  }
+
+  async start() {
+    await this.filter.initialize();
+  }
+
+  async stop() {
+    // Free memory on shutdown
+    this.filter.dispose();
+  }
+}
+```
+
+## Error Handling
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+async function safeModeerate(text: string) {
+  try {
+    const result = await filter.checkProfanityAsync(text);
+    return result;
+  } catch (error) {
+    console.error('ML moderation failed:', error);
+
+    // Fallback to rule-based only
+    const ruleResult = filter.checkProfanity(text);
+    return {
+      isToxic: ruleResult.containsProfanity,
+      reason: 'Rule-based fallback (ML unavailable)',
+      confidence: 0.7,
+    };
+  }
+}
+```
+
+## Testing ML Integration
+
+```typescript
+// test/moderation.test.ts
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+describe('ML Moderation', () => {
+  let detector: ToxicityDetector;
+
+  beforeAll(async () => {
+    detector = new ToxicityDetector({ threshold: 0.85 });
+    await detector.loadModel();
+  });
+
+  afterAll(() => {
+    detector.dispose();
+  });
+
+  test('detects insults', async () => {
+    const result = await detector.analyze('you are an idiot');
+    expect(result.isToxic).toBe(true);
+    expect(result.matchedCategories).toContain('insult');
+  });
+
+  test('allows clean content', async () => {
+    const result = await detector.analyze('great work on this project');
+    expect(result.isToxic).toBe(false);
+  });
+
+  test('handles batch processing', async () => {
+    const results = await detector.analyzeBatch([
+      'hello friend',
+      'you are terrible',
+    ]);
+    expect(results[0].isToxic).toBe(false);
+    expect(results[1].isToxic).toBe(true);
+  });
+});
+```
+
+## Monitoring & Logging
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+async function moderateWithMetrics(text: string) {
+  const startTime = Date.now();
+
+  const result = await filter.checkProfanityAsync(text);
+
+  // Log metrics
+  const metrics = {
+    latency: Date.now() - startTime,
+    isToxic: result.isToxic,
+    confidence: result.confidence,
+    mlUsed: result.mlResult !== null,
+    categories: result.mlResult?.matchedCategories ?? [],
+  };
+
+  // Send to monitoring (Datadog, etc.)
+  logger.info('moderation_check', metrics);
+
+  return result;
+}
+```
+
+## Cross-References
+
+- **[ToxicityDetector API](/docs/glin-profanity/ml-toxicity-detector)** — Standalone ML detection
+- **[HybridFilter API](/docs/glin-profanity/hybrid-filter)** — Combined detection
+- **[Combination Strategies](/docs/glin-profanity/hybrid-strategies)** — Choosing the right mode
+- **[TensorFlow Installation](/docs/glin-profanity/installation/tensorflow)** — Setup guide

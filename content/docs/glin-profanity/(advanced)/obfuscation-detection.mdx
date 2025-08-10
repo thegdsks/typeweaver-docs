@@ -1,0 +1,594 @@
+---
+title: Obfuscation Detection
+description: Detect disguised profanity with character substitution, repeated letters, and symbol replacement
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+Advanced detection system for disguised profanity using character substitution, symbol replacement, and repeated letters. Catches common obfuscation patterns like `sh1t`, `f*ck`, `a$$hole`, and `daaaamn`.
+
+<Callout type="info">
+Obfuscation detection automatically disables word boundaries to catch partial matches within words and handles complex character substitution patterns.
+</Callout>
+
+## Character Substitution Mapping
+
+The obfuscation system uses a sophisticated character replacement algorithm that normalizes disguised text before profanity detection.
+
+### Substitution Rules
+
+<TypeTable
+  type={{
+    "@": {
+      description: "At symbol → 'a'",
+      type: "Character replacement",
+      default: "d@mn → damn"
+    },
+    "$": {
+      description: "Dollar sign → 's'", 
+      type: "Character replacement",
+      default: "a$$hole → asshole"
+    },
+    "!": {
+      description: "Exclamation → 'i'",
+      type: "Character replacement", 
+      default: "sh!t → shit"
+    },
+    "1": {
+      description: "Number one → 'i'",
+      type: "Character replacement",
+      default: "sh1t → shit"
+    },
+    "*": {
+      description: "Asterisk → removed",
+      type: "Character removal",
+      default: "f*ck → fck (then fuzzy matched)"
+    }
+  }}
+/>
+
+### Repeated Character Normalization
+
+The system also handles excessive character repetition by normalizing repeated letters:
+
+```javascript title="Repeated Character Examples"
+// Repeated character patterns
+"daaaamn" → "damn"     // Multiple 'a' reduced to double
+"shiiiit" → "shiit"    // Multiple 'i' reduced to double  
+"fuuuuck" → "fuuck"    // Multiple 'u' reduced to double
+"helllll" → "helll"    // Multiple 'l' reduced to double
+
+// Algorithm: ([a-zA-Z])\\1{1,} → $1$1
+// Replaces 3+ repeated characters with exactly 2 characters
+```
+
+## Configuration Options
+
+<TypeTable
+  type={{
+    allowObfuscatedMatch: {
+      description: "Enable obfuscation detection",
+      type: "boolean",
+      default: "false"
+    },
+    wordBoundaries: {
+      description: "Enforce word boundaries (auto-disabled with obfuscation)",
+      type: "boolean", 
+      default: "!allowObfuscatedMatch"
+    },
+    fuzzyToleranceLevel: {
+      description: "Character similarity threshold for missing characters",
+      type: "number",
+      default: "0.8"
+    }
+  }}
+/>
+
+<Callout type="warning">
+When `allowObfuscatedMatch` is enabled, `wordBoundaries` is automatically set to `false` to allow partial word matching within longer strings.
+</Callout>
+
+## Implementation Examples
+
+### JavaScript Implementation
+
+<Tabs items={['Basic Usage', 'Advanced Configuration']}>
+  <Tab value="Basic Usage">
+    ```javascript title="JavaScript Obfuscation Detection"
+    import { Filter } from 'glin-profanity';
+
+    // Enable obfuscation detection
+    const filter = new Filter({
+      allowObfuscatedMatch: true,
+      languages: ['english']
+      // wordBoundaries automatically set to false
+    });
+
+    // Test various obfuscation patterns
+    console.log(filter.isProfane('sh1t'));        // true - number substitution
+    console.log(filter.isProfane('f*ck'));        // true - asterisk removal
+    console.log(filter.isProfane('d@mn'));        // true - symbol substitution  
+    console.log(filter.isProfane('a$$hole'));     // true - dollar sign substitution
+    console.log(filter.isProfane('sh!t'));        // true - exclamation substitution
+    console.log(filter.isProfane('daaaamn'));     // true - repeated characters
+
+    // Detailed analysis
+    const result = filter.checkProfanity('This sh1t is f*cking annoying!');
+    console.log(result.containsProfanity);        // true
+    console.log(result.profaneWords);             // ['sh1t', 'f*cking']
+    console.log(result.processedText);            // 'This **** is ****ing annoying!'
+    ```
+  </Tab>
+  
+  <Tab value="Advanced Configuration">
+    ```javascript title="Advanced Obfuscation Configuration"
+    import { Filter } from 'glin-profanity';
+
+    // Advanced obfuscation with fuzzy matching
+    const advancedFilter = new Filter({
+      allowObfuscatedMatch: true,
+      fuzzyToleranceLevel: 0.6,    // Lower threshold for more aggressive matching
+      severityLevels: true,        // Track EXACT vs FUZZY matches
+      replaceWith: '[CENSORED]',   // Custom replacement text
+      languages: ['english', 'spanish']
+    });
+
+    // Test complex obfuscation patterns
+    const testCases = [
+      'This is bull$h1t!',         // Mixed substitution
+      'F*cking @$$holes!',         // Multiple patterns
+      'Daaaamn th@t $ucks!',       // Repeated + substitution
+      'Such a b1tch move',         // Number + partial match
+      'Holy $h!t that was bad'     // Multiple symbol substitution
+    ];
+
+    testCases.forEach(text => {
+      const result = advancedFilter.checkProfanity(text);
+      console.log(`Text: "${text}"`);
+      console.log(`- Contains profanity: ${result.containsProfanity}`);
+      console.log(`- Detected words: ${result.profaneWords.join(', ')}`);
+      console.log(`- Severity map:`, result.severityMap);
+      console.log('---');
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Python Implementation
+
+<Tabs items={['Basic Usage', 'Cross-Language Verification']}>
+  <Tab value="Basic Usage">
+    ```python title="Python Obfuscation Detection"
+    from glin_profanity import Filter
+
+    # Enable obfuscation detection (note snake_case)
+    filter_instance = Filter({
+        "allow_obfuscated_match": True,
+        "languages": ["english"]
+        # word_boundaries automatically set to False
+    })
+
+    # Test identical patterns to JavaScript
+    print(filter_instance.is_profane('sh1t'))        # True - number substitution
+    print(filter_instance.is_profane('f*ck'))        # True - asterisk removal
+    print(filter_instance.is_profane('d@mn'))        # True - symbol substitution
+    print(filter_instance.is_profane('a$$hole'))     # True - dollar substitution
+    print(filter_instance.is_profane('sh!t'))        # True - exclamation substitution
+    print(filter_instance.is_profane('daaaamn'))     # True - repeated characters
+
+    # Detailed analysis with snake_case results
+    result = filter_instance.check_profanity('This sh1t is f*cking annoying!')
+    print(result["contains_profanity"])              # True
+    print(result["profane_words"])                   # ['sh1t', 'f*cking']
+    print(result["processed_text"])                  # 'This **** is ****ing annoying!'
+    ```
+  </Tab>
+  
+  <Tab value="Cross-Language Verification">
+    ```python title="Cross-Language Parity Verification"
+    from glin_profanity import Filter
+
+    # Verify identical behavior between JS and Python
+    def test_obfuscation_parity():
+        # Same configuration as JavaScript examples
+        py_filter = Filter({
+            "allow_obfuscated_match": True,
+            "fuzzy_tolerance_level": 0.6,
+            "severity_levels": True,
+            "languages": ["english"]
+        })
+        
+        # Test cases from cross-language parity tests
+        test_cases = [
+            "This is d*mn annoying",      # Asterisk substitution
+            "This is d4mn bad",           # Number substitution (not in standard mapping)
+            "This is d@mn terrible",      # Symbol substitution
+            "This is daaaammmn bad",      # Repeated characters
+            "What the f*ck is this?"      # Real-world usage
+        ]
+        
+        for text in test_cases:
+            result = py_filter.check_profanity(text)
+            print(f'Text: "{text}"')
+            print(f'- Detected: {result["contains_profanity"]}')
+            print(f'- Words: {result["profane_words"]}')
+            if "severity_map" in result:
+                print(f'- Severity: {result["severity_map"]}')
+            print('---')
+
+    test_obfuscation_parity()
+    ```
+  </Tab>
+</Tabs>
+
+## Detection Algorithm
+
+The obfuscation detection follows a two-step normalization process:
+
+<Accordions>
+
+<Accordion title="Step 1: Repeated Character Reduction" id="character-reduction">
+
+Reduces excessive character repetition to exactly two occurrences:
+
+```javascript title="Character Repetition Algorithm"
+// JavaScript implementation
+private normalizeObfuscated(text: string): string {
+  // Step 1: Reduce repeated characters
+  let normalized = text.replace(/([a-zA-Z])\\1{1,}/g, '$1$1');
+  
+  // Examples:
+  // "shiiiiit" → "shiit"
+  // "fuuuuuck" → "fuuck" 
+  // "daaaamn" → "damn"
+  // "helllllo" → "helllo"
+  
+  return normalized;
+}
+```
+
+```python title="Python Implementation"
+def _normalize_obfuscated(self, text: str) -> str:
+    """Normalize obfuscated text by replacing common character substitutions."""
+    # Step 1: Remove repeated characters (e.g., "hiiiii" -> "hii")
+    normalized = re.sub(r"([a-zA-Z])\\1{1,}", r"\\1\\1", text)
+    
+    # Examples:
+    # "shiiiiit" → "shiit"
+    # "fuuuuuck" → "fuuck"
+    # "daaaamn" → "damn" 
+    # "helllllo" → "helllo"
+    
+    return normalized
+```
+
+</Accordion>
+
+<Accordion title="Step 2: Character Substitution" id="character-substitution">
+
+Applies character mapping to common symbol replacements:
+
+```javascript title="Character Substitution Implementation"
+// JavaScript character mapping
+const charMap: { [key: string]: string } = {
+  '@': 'a',    // d@mn → damn
+  '$': 's',    // a$$hole → asshole, $hit → shit
+  '!': 'i',    // sh!t → shit
+  '1': 'i',    // sh1t → shit
+  '*': '',     // f*ck → fck (then fuzzy matched to fuck)
+};
+
+// Apply substitutions
+normalized = normalized.replace(/[@$!1*]/g, (m) => charMap[m] || m);
+```
+
+```python title="Python Character Mapping"
+# Python character mapping
+char_map = {
+    "@": "a",    # d@mn → damn
+    "$": "s",    # a$$hole → asshole, $hit → shit  
+    "!": "i",    # sh!t → shit
+    "1": "i",    # sh1t → shit
+    "*": "",     # f*ck → fck (then fuzzy matched to fuck)
+}
+
+# Apply substitutions
+for char, replacement in char_map.items():
+    normalized = normalized.replace(char, replacement)
+```
+
+</Accordion>
+
+<Accordion title="Step 3: Fuzzy Matching Integration" id="fuzzy-matching">
+
+After normalization, the text is processed through fuzzy matching for partial character removal:
+
+```javascript title="Fuzzy Matching After Normalization"
+// Example flow:
+// Original: "f*cking amazing"
+// Step 1 (repetition): "f*cking amazing" (no repeated chars)
+// Step 2 (substitution): "fcking amazing" (* removed)
+// Step 3 (fuzzy match): "fcking" matches "fucking" with tolerance 0.8
+//   - Edit distance: 1 character missing
+//   - Similarity: 5/6 = 0.83 > 0.8 threshold
+//   - Result: MATCH (FUZZY severity)
+
+const result = filter.checkProfanity("This is f*cking great!");
+console.log(result.containsProfanity);  // true
+console.log(result.severityMap);        // { "f*cking": SeverityLevel.FUZZY }
+```
+
+</Accordion>
+
+</Accordions>
+
+## Word Boundary Behavior
+
+<Callout type="info">
+Obfuscation detection automatically disables word boundaries to catch disguised profanity within larger words.
+</Callout>
+
+### Automatic Configuration
+
+When `allowObfuscatedMatch` is enabled, the system automatically adjusts related settings:
+
+```javascript title="Automatic Configuration Adjustment"
+// JavaScript automatic configuration
+const filter = new Filter({
+  allowObfuscatedMatch: true,
+  // wordBoundaries: automatically set to false
+  // fuzzyToleranceLevel: default 0.8 works well with obfuscation
+});
+
+// Python automatic configuration
+filter_instance = Filter({
+    "allow_obfuscated_match": True,
+    # "word_boundaries": automatically set to False
+    # "fuzzy_tolerance_level": default 0.8 works well
+})
+```
+
+### Impact on Detection
+
+<Tabs items={['With Boundaries', 'Without Boundaries (Obfuscation)']}>
+  <Tab value="With Boundaries">
+    ```javascript title="Word Boundaries Enabled (Default)"
+    const filter = new Filter({
+      allowObfuscatedMatch: false,  // Default
+      wordBoundaries: true          // Default
+    });
+
+    // Only detects whole words
+    console.log(filter.isProfane('damn'));       // true - whole word
+    console.log(filter.isProfane('damnit'));     // false - part of larger word
+    console.log(filter.isProfane('goddamn'));    // false - part of compound word
+    ```
+  </Tab>
+  
+  <Tab value="Without Boundaries (Obfuscation)">
+    ```javascript title="Word Boundaries Disabled (Obfuscation Mode)"
+    const filter = new Filter({
+      allowObfuscatedMatch: true,   // Enables obfuscation
+      // wordBoundaries: false      // Automatically disabled
+    });
+
+    // Detects partial matches and obfuscated patterns
+    console.log(filter.isProfane('damn'));       // true - whole word
+    console.log(filter.isProfane('d@mn'));       // true - obfuscated
+    console.log(filter.isProfane('damnit'));     // true - partial match
+    console.log(filter.isProfane('goddamn'));    // true - partial match
+    console.log(filter.isProfane('godd@mn'));    // true - partial + obfuscated
+    ```
+  </Tab>
+</Tabs>
+
+## Common Obfuscation Patterns
+
+### Symbol Substitution
+
+```javascript title="Symbol-Based Obfuscation Examples"
+// Common patterns caught by the system
+const patterns = [
+  // @ substitution
+  'd@mn', 'b@stard', 'f@ck', '@ss', '@sshole',
+  
+  // $ substitution  
+  '$hit', 'bull$hit', 'a$$', 'a$$hole', 'ba$tard',
+  
+  // ! substitution
+  'sh!t', 'b!tch', 'p!ss', 'damn!t',
+  
+  // Number substitution
+  'sh1t', 'b1tch', 'h3ll', '4ss', 'f4ck',
+  
+  // Mixed patterns
+  'bull$h1t', 'b@$t@rd', '$h1t', 'a$$h0le'
+];
+
+const filter = new Filter({ allowObfuscatedMatch: true });
+patterns.forEach(pattern => {
+  console.log(`${pattern}: ${filter.isProfane(pattern)}`); // All return true
+});
+```
+
+### Repeated Characters
+
+```javascript title="Repeated Character Examples"
+// Excessive repetition patterns
+const repeatedPatterns = [
+  'daaaamn',      // damn with extra a's
+  'shiiiit',      // shit with extra i's  
+  'fuuuuck',      // fuck with extra u's
+  'helllll',      // hell with extra l's
+  'bitttch',      // bitch with extra t's
+  'asssss'        // ass with extra s's
+];
+
+const filter = new Filter({ allowObfuscatedMatch: true });
+repeatedPatterns.forEach(pattern => {
+  const result = filter.checkProfanity(pattern);
+  console.log(`"${pattern}" → normalized and detected: ${result.containsProfanity}`);
+});
+```
+
+### Asterisk Removal
+
+```javascript title="Asterisk Pattern Handling"
+// Asterisk patterns (removed then fuzzy matched)
+const asteriskPatterns = [
+  'f*ck',         // fuck with middle asterisk
+  'f**k',         // fuck with multiple asterisks
+  'sh*t',         // shit with asterisk
+  'b*tch',        // bitch with asterisk  
+  'd*mn',         // damn with asterisk
+  'a**hole'       // asshole with asterisks
+];
+
+const filter = new Filter({ 
+  allowObfuscatedMatch: true,
+  severityLevels: true  // Track FUZZY vs EXACT matches
+});
+
+asteriskPatterns.forEach(pattern => {
+  const result = filter.checkProfanity(pattern);
+  console.log(`"${pattern}" → ${result.containsProfanity} (severity: FUZZY)`);
+});
+```
+
+## Performance Considerations
+
+### Processing Overhead
+
+<Callout type="warning">
+Obfuscation detection adds processing overhead due to text normalization and fuzzy matching. Enable only when disguised profanity is a concern.
+</Callout>
+
+```javascript title="Performance Comparison"
+// Performance impact (approximate)
+const basicFilter = new Filter();              // ~0.1ms per check
+const obfuscatedFilter = new Filter({          // ~0.3-0.8ms per check
+  allowObfuscatedMatch: true
+});
+
+// Optimization strategies
+const optimizedFilter = new Filter({
+  allowObfuscatedMatch: true,
+  fuzzyToleranceLevel: 0.8,     // Higher = less aggressive fuzzy matching
+  languages: ['english']        // Limit to specific languages
+});
+```
+
+### Memory Usage
+
+- **Character Map**: ~0.1KB for substitution rules
+- **Normalization Buffer**: ~2x input text size during processing
+- **Regex Compilation**: Additional patterns for fuzzy matching
+
+**Total Overhead**: Minimal static memory, temporary allocation during processing
+
+## Best Practices
+
+### When to Enable Obfuscation Detection
+
+<Accordions>
+
+<Accordion title="High-Risk Environments" id="high-risk">
+
+Enable obfuscation detection in environments where users actively try to bypass filters:
+
+```javascript title="High-Risk Configuration"
+// Gaming chat, forums, comment systems
+const strictFilter = new Filter({
+  allowObfuscatedMatch: true,
+  fuzzyToleranceLevel: 0.7,      // More aggressive matching
+  severityLevels: true,          // Track obfuscation attempts
+  languages: ['english', 'spanish'],
+  customWords: ['pwned', 'noob'] // Add gaming-specific terms
+});
+```
+
+**Use Cases:**
+- Gaming chat systems
+- Public comment sections
+- Social media platforms
+- User-generated content platforms
+
+</Accordion>
+
+<Accordion title="Balanced Filtering" id="balanced-filtering">
+
+Moderate obfuscation detection for general content filtering:
+
+```javascript title="Balanced Configuration"
+// Business applications, educational platforms
+const balancedFilter = new Filter({
+  allowObfuscatedMatch: true,
+  fuzzyToleranceLevel: 0.8,      // Standard matching
+  contextAnalysis: true,         // Reduce false positives
+  confidenceThreshold: 0.7
+});
+```
+
+**Use Cases:**
+- Business chat applications
+- Educational platforms  
+- Customer service systems
+- Professional forums
+
+</Accordion>
+
+<Accordion title="Performance-Critical Systems" id="performance-critical">
+
+Disable obfuscation detection when performance is critical:
+
+```javascript title="Performance-Optimized Configuration"
+// High-volume, performance-critical systems
+const fastFilter = new Filter({
+  allowObfuscatedMatch: false,   // Disable for speed
+  wordBoundaries: true,          // Enable for exact matching
+  languages: ['english'],       // Single language for speed
+  caseSensitive: false
+});
+```
+
+**Use Cases:**
+- Real-time chat systems
+- High-volume APIs
+- Mobile applications
+- Low-latency services
+
+</Accordion>
+
+</Accordions>
+
+## Cross-Language Implementation
+
+Both JavaScript and Python implementations use identical normalization algorithms and character mappings, ensuring consistent behavior across platforms.
+
+### Implementation Parity
+
+```javascript title="Parity Verification"
+// JavaScript
+const jsFilter = new Filter({ allowObfuscatedMatch: true });
+
+// Python  
+filter_instance = Filter({"allow_obfuscated_match": True})
+
+// Both implementations return identical results for:
+const testCases = [
+  'sh1t', 'f*ck', 'd@mn', 'a$$hole', 'daaaamn',
+  'bull$h1t', 'f**king', 'sh!thead', 'b1tch'
+];
+
+// Cross-language testing ensures 100% parity
+```
+
+## Cross-References
+
+- **[Context Analysis](/docs/glin-profanity/context-analysis)** - Combine with context awareness for better accuracy
+- **[Filter Class](/docs/glin-profanity/filter-class)** - Object-oriented API with obfuscation support
+- **[Configuration](/docs/glin-profanity/configuration)** - Complete configuration options
+- **[Python API](/docs/glin-profanity/python-api)** - Cross-language implementation details

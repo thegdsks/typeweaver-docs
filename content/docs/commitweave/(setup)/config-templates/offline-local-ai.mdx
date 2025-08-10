@@ -1,0 +1,303 @@
+---
+title: Offline Local AI Configuration
+description: Self-hosted AI setup for teams requiring complete offline functionality and data privacy
+---
+
+## When to Use
+
+Perfect for organizations that need:
+
+- **Complete data privacy** with no external API calls
+- **Offline AI capabilities** using local models
+- **Self-hosted infrastructure** for sensitive projects
+- **Predictable costs** without per-request pricing
+- **Air-gapped environments** with no internet access
+
+This configuration provides full AI assistance while keeping all data and processing on your local infrastructure.
+
+## Configuration Template
+
+```json copy
+{
+  "$schema": "https://commitweave.dev/schema.json",
+  "ai": {
+    "enabled": true,
+    "provider": "local",
+    "baseURL": "http://localhost:11434/v1",
+    "model": "codellama:7b-instruct",
+    "apiKey": "not-required",
+    "temperature": 0.4,
+    "maxTokens": 100,
+    "timeout": 15000,
+    "retries": 2,
+    "streaming": false,
+    "aiSummary": true,
+    "contextWindow": 4096
+  },
+  "localAI": {
+    "provider": "ollama",
+    "endpoint": "http://localhost:11434",
+    "models": {
+      "primary": "codellama:7b-instruct",
+      "fallback": "llama2:7b-chat", 
+      "summary": "codellama:7b-instruct"
+    },
+    "modelPath": "/opt/ollama/models",
+    "gpuAcceleration": true,
+    "maxMemory": "8GB",
+    "threads": 4
+  },
+  "commit": {
+    "type": {
+      "required": true,
+      "enum": [
+        "feat", "fix", "docs", "style", "refactor",
+        "perf", "test", "build", "ci", "chore", "revert"
+      ]
+    },
+    "scope": {
+      "required": false,
+      "enum": [
+        "core", "api", "ui", "cli", "config", "tests",
+        "models", "training", "inference", "deployment"
+      ]
+    },
+    "emoji": {
+      "enabled": true,
+      "style": "conventional"
+    },
+    "format": {
+      "maxLength": 72,
+      "minLength": 10,
+      "case": "lowercase",
+      "wrapBody": 72
+    }
+  },
+  "git": {
+    "signoff": false,
+    "gpgSign": false,
+    "hooks": {
+      "skipVerify": false
+    }
+  },
+  "ui": {
+    "interactive": true,
+    "fancyUI": true,
+    "asciiArt": false,
+    "animations": true,
+    "colors": true,
+    "emoji": true,
+    "editor": "${EDITOR:-vim}",
+    "prompts": {
+      "confirmCommit": true,
+      "showPreview": true,
+      "allowEdit": true,
+      "aiProgress": true
+    }
+  },
+  "performance": {
+    "caching": true,
+    "cacheDir": "~/.commitweave/cache",
+    "cacheTTL": 3600,
+    "preloadModel": false,
+    "batchRequests": false,
+    "offlineMode": true
+  },
+  "privacy": {
+    "noTelemetry": true,
+    "localOnly": true,
+    "encryptCache": true,
+    "clearOnExit": false
+  }
+}
+```
+
+## Local AI Setup
+
+### Install Ollama (Recommended)
+
+```bash
+# macOS
+brew install ollama
+
+# Linux  
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Windows
+# Download from https://ollama.ai/download
+```
+
+### Pull Required Models
+
+```bash
+# Primary coding model
+ollama pull codellama:7b-instruct
+
+# Fallback general model  
+ollama pull llama2:7b-chat
+
+# Lightweight option for lower-end hardware
+ollama pull tinyllama:1.1b-chat
+```
+
+### Start Ollama Service
+
+```bash
+# Start Ollama server
+ollama serve
+
+# Verify it's running
+curl http://localhost:11434/api/tags
+```
+
+<Callout type="info">
+**Model Recommendations**: `codellama:7b-instruct` provides excellent commit message generation with ~4GB RAM usage. For resource-constrained environments, use `tinyllama:1.1b-chat` (~600MB RAM).
+</Callout>
+
+## Hardware Requirements
+
+### Minimum System Requirements
+- **RAM**: 4GB available (for 7B models)
+- **Storage**: 10GB for models and cache
+- **CPU**: 4 cores recommended
+- **GPU**: Optional but significantly faster with NVIDIA/AMD GPU
+
+### Recommended System Requirements
+- **RAM**: 8GB+ available
+- **Storage**: 20GB+ SSD storage
+- **CPU**: 8+ cores with AVX2 support
+- **GPU**: NVIDIA RTX series or AMD RX series
+
+### Performance Tuning
+
+```json
+// For high-end systems
+"localAI": {
+  "maxMemory": "16GB",
+  "threads": 8,
+  "gpuAcceleration": true,
+  "model": "codellama:13b-instruct"
+}
+
+// For low-end systems  
+"localAI": {
+  "maxMemory": "2GB", 
+  "threads": 2,
+  "gpuAcceleration": false,
+  "model": "tinyllama:1.1b-chat"
+}
+```
+
+## Offline Workflow
+
+### Daily Development
+```bash
+# AI-powered commits with local processing
+commitweave ai --local
+
+# Check model status and performance
+commitweave doctor --ai --local
+
+# Generate commit with custom context
+commitweave ai --context "Optimizing database queries" --model codellama:7b-instruct
+```
+
+### Model Management
+```bash
+# Switch between models
+commitweave config --set ai.model llama2:7b-chat
+
+# Check model performance
+ollama ps
+
+# Update models
+ollama pull codellama:7b-instruct
+```
+
+## Alternative Local AI Providers
+
+### LM Studio Setup
+```json
+{
+  "ai": {
+    "provider": "local",
+    "baseURL": "http://localhost:1234/v1",
+    "model": "codellama-7b-instruct.Q4_K_M.gguf"
+  }
+}
+```
+
+### LocalAI Setup  
+```json
+{
+  "ai": {
+    "provider": "local", 
+    "baseURL": "http://localhost:8080/v1",
+    "model": "codellama-7b-instruct"
+  }
+}
+```
+
+### Custom OpenAI-Compatible API
+```json
+{
+  "ai": {
+    "provider": "custom",
+    "baseURL": "http://your-internal-api:8000/v1",
+    "model": "your-fine-tuned-model",
+    "apiKey": "your-internal-key"
+  }
+}
+```
+
+## Troubleshooting
+
+### Model Loading Issues
+```bash
+# Check available models
+ollama list
+
+# Test model directly
+ollama run codellama:7b-instruct "Generate a commit message for adding user authentication"
+
+# Check system resources
+ollama ps
+```
+
+### Performance Optimization
+```bash
+# Monitor CommitWeave performance
+commitweave doctor --ai --performance
+
+# Check cache status
+commitweave cache --status
+
+# Clear cache if needed
+commitweave cache --clear
+```
+
+### Memory Management
+- **Reduce model size**: Switch to smaller models like `tinyllama`
+- **Limit threads**: Reduce `threads` in config to free up CPU
+- **Enable GPU**: Use `gpuAcceleration: true` if available
+- **Adjust memory**: Set `maxMemory` based on available RAM
+
+## Benefits vs Tradeoffs
+
+### Benefits
+- ✅ Complete data privacy and security
+- ✅ No API costs or rate limits  
+- ✅ Works in air-gapped environments
+- ✅ Predictable performance
+- ✅ Customizable models
+
+### Tradeoffs  
+- ❌ Requires significant local resources
+- ❌ Initial setup complexity
+- ❌ Model quality may vary vs cloud AI
+- ❌ Slower than optimized cloud APIs
+- ❌ Requires ongoing model management
+
+---
+
+**Related Templates**: [Team Standard](/docs/commitweave/config-templates/team-standard) • [Enterprise Secure](/docs/commitweave/config-templates/enterprise-secure)

@@ -1,0 +1,460 @@
+---
+title: Examples
+description: Practical examples of using CommitWeave in real-world scenarios
+---
+
+## Basic Examples
+
+### Simple Feature Addition
+
+```bash
+# Add a new user registration form
+git add src/components/RegistrationForm.tsx
+commitweave quick --type feat --scope auth
+
+# Generated commit:
+# feat(auth): ✨ add user registration form component
+```
+
+### Bug Fix with Context
+
+```bash
+# Fix validation error in login
+git add src/utils/validation.ts
+commitweave ai --context "Fix email validation regex that was rejecting valid domains"
+
+# Generated commit:
+# fix(auth): 🐛 resolve email validation for international domains
+```
+
+### Documentation Update
+
+```bash
+# Update API documentation
+git add docs/api.md README.md
+commitweave quick --type docs --message "update API documentation and README"
+
+# Generated commit:
+# docs: 📚 update API documentation and README
+```
+
+## AI-Powered Workflows
+
+### Staged-Only Commit Analysis
+
+Let AI analyze only your staged changes without considering working directory files.
+
+See [commitweave ai](/docs/commitweave/cli-reference#commitweave-ai) for all available options.
+
+```bash tab="Basic AI Analysis"
+# Stage specific files
+git add src/auth/login.ts src/auth/session.ts
+
+# AI analyzes only staged changes
+commitweave ai
+
+# AI generates based on staged diff:
+# feat(auth): ✨ implement secure session management
+```
+
+```bash tab="With Context"
+# Stage authentication changes
+git add src/auth/ tests/auth/
+
+# Provide business context
+commitweave ai --context "Implementing OAuth2 for third-party integrations"
+
+# AI generates with context:
+# feat(auth): ✨ add OAuth2 provider integration
+#
+# Implement secure third-party authentication with
+# automatic token refresh and scope validation
+```
+
+### AI Fallback Strategy
+
+Configure fallback providers when primary AI service is unavailable.
+
+Reference: [commitweave ai options](/docs/commitweave/cli-reference#commitweave-ai) and [troubleshooting AI issues](/docs/commitweave/troubleshooting#rate-limits).
+
+```bash tab="OpenAI Primary"
+# Primary: OpenAI, Fallback: Anthropic
+export OPENAI_API_KEY="sk-..."
+export CLAUDE_API_KEY="sk-ant-..."
+
+commitweave ai --fallback --provider openai
+
+# If OpenAI fails, automatically falls back to Claude
+```
+
+```bash tab="Mock Provider"
+# Use mock provider for testing/development
+commitweave ai --provider mock --dry-run
+
+# Generates placeholder commit:
+# feat: add new feature based on staged changes
+```
+
+## Advanced Team Workflows
+
+### Cross-Platform Development
+
+```bash tab="macOS/Linux"
+# Unix-style development workflow
+git add src/platform/unix/
+commitweave quick --type feat --scope platform
+export COMMITWEAVE_EDITOR="vim"
+commitweave commit --editor vim
+```
+
+```bash tab="Windows"
+# Windows development workflow
+git add src\platform\windows\
+commitweave quick --type feat --scope platform
+set COMMITWEAVE_EDITOR=notepad.exe
+commitweave commit --editor "notepad.exe"
+```
+
+```bash tab="Docker"
+# Containerized development
+docker run -v $(pwd):/repo commitweave/cli:latest \
+  commitweave ai --config /repo/.commitweave.json
+```
+
+### Monorepo with Scoped Commits
+
+Handle multiple packages in a single repository:
+
+```bash tab="Frontend Package"
+# Frontend changes
+git add packages/web/ packages/mobile/
+commitweave quick --type feat --scope "web,mobile"
+
+# Generated:
+# feat(web,mobile): ✨ add shared component library
+```
+
+```bash tab="Backend Package"
+# API service changes
+git add packages/api/ packages/shared/types/
+commitweave ai --context "Adding GraphQL subscription support"
+
+# Generated:
+# feat(api): ✨ implement GraphQL real-time subscriptions
+```
+
+```bash tab="Infrastructure"
+# Infrastructure updates
+git add packages/infrastructure/ docker-compose.yml
+commitweave quick --type build --scope infra
+
+# Generated:
+# build(infra): 🔧 update container orchestration
+```
+
+## Performance Optimization
+
+### Performance Flags
+
+Optimize CommitWeave for large repositories.
+
+See [performance troubleshooting](/docs/commitweave/troubleshooting#performance-issues) for more optimization tips.
+
+```bash tab="Fast Mode"
+# Skip expensive git operations
+commitweave ai --fast --no-hooks
+
+# Minimal analysis for speed
+commitweave quick --type feat --fast
+```
+
+```bash tab="Cached Mode"
+# Use AI response caching
+commitweave ai --cache --temperature 0.3
+
+# Cache hit shows:
+# ✓ Using cached AI response (95% similarity)
+```
+
+```bash tab="Batch Processing"
+# Process multiple staged areas
+commitweave ai --batch --format json > commits.json
+
+# Apply batch commits
+while read commit; do
+  git commit -m "$commit"
+done < commits.json
+```
+
+## Git Hook Integration
+
+### Advanced Hook Setup
+
+```bash tab="Pre-commit Validation"
+#!/bin/sh
+# .git/hooks/pre-commit
+
+# Validate staged changes before commit
+commitweave validate --staged --strict
+
+if [ $? -ne 0 ]; then
+  echo "❌ Staged changes don't meet commit standards"
+  echo "💡 Run: commitweave doctor --fix"
+  exit 1
+fi
+```
+
+```bash tab="Commit Message Generation"
+#!/bin/sh
+# .git/hooks/prepare-commit-msg
+
+# Skip for merges, rebases, and amends
+if [ "$2" = "merge" ] || [ "$2" = "squash" ] || [ "$2" = "commit" ]; then
+  exit 0
+fi
+
+# Generate commit message
+commitweave ai --hook --output "$1" --quiet
+```
+
+```bash tab="Post-commit Validation"
+#!/bin/sh
+# .git/hooks/post-commit
+
+# Validate the commit that was just made
+commitweave validate --range HEAD~1..HEAD --strict
+
+if [ $? -ne 0 ]; then
+  echo "⚠️  Warning: Last commit doesn't follow conventions"
+  echo "💡 Run: git commit --amend && commitweave ai --amend"
+fi
+```
+
+## Continuous Integration
+
+### GitHub Actions Integration
+
+```yaml tab="Commit Validation"
+# .github/workflows/commit-validation.yml
+name: Validate Commits
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install CommitWeave
+        run: npm install -g commitweave
+        
+      - name: Validate commit messages
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            # Validate PR commits
+            commitweave validate --range origin/main..HEAD --strict
+          else
+            # Validate pushed commits
+            commitweave validate --range HEAD~${{ github.event.push.commits.length }}..HEAD
+          fi
+```
+
+```yaml tab="Auto-generated Commits"
+# .github/workflows/auto-commit.yml
+name: Auto-generate Commits
+on:
+  workflow_dispatch:
+    inputs:
+      changes_context:
+        description: 'Context for AI commit generation'
+        required: false
+        
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup CommitWeave
+        run: npm install -g commitweave
+        
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Generate and commit
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          # Generate commit with context
+          if [ -n "${{ github.event.inputs.changes_context }}" ]; then
+            commitweave ai --context "${{ github.event.inputs.changes_context }}"
+          else
+            commitweave ai
+          fi
+```
+
+## Error Recovery and Debugging
+
+### Commit Message Amending
+
+Fix commits after they've been made:
+
+```bash tab="AI Amendment"
+# Let AI rewrite the last commit message
+git add additional-changes.ts
+commitweave ai --amend
+
+# Combines staged changes with last commit
+# and generates new message
+```
+
+```bash tab="Interactive Amendment"
+# Interactively fix last commit
+commitweave commit --amend --interactive
+
+# Opens interactive mode to refine:
+# - Commit type and scope
+# - Message body and footer
+# - Breaking change flag
+```
+
+```bash tab="Template Amendment"
+# Use template to fix commit
+commitweave commit --amend --template ./fix-template.txt
+
+# Applies template format to existing commit
+```
+
+### Debugging and Diagnostics
+
+See [commitweave doctor reference](/docs/commitweave/cli-reference#commitweave-doctor) for comprehensive diagnostic options.
+
+```bash tab="Verbose Output"
+# Debug AI response issues
+commitweave ai --verbose --dry-run
+
+# Shows:
+# 🔍 Analyzing 5 staged files...
+# 🤖 Calling OpenAI GPT-4 (tokens: 1200/4000)
+# ✨ Generated message: feat(auth): implement OAuth2...
+```
+
+```bash tab="Configuration Check"
+# Diagnose configuration issues
+commitweave doctor --verbose
+
+# Shows:
+# ✓ Git repository: valid
+# ✓ Configuration: .commitweave.json found
+# ✗ OpenAI API: invalid key
+# ✓ Conventional commits: enabled
+# 💡 Fix: export OPENAI_API_KEY="sk-..."
+```
+
+```bash tab="Network Diagnostics"
+# Test AI service connectivity
+commitweave doctor --check-network --provider all
+
+# Tests:
+# ✓ OpenAI API: 200ms response time
+# ✗ Anthropic API: connection timeout
+# ✓ Fallback strategy: configured
+```
+
+## Advanced Configuration Examples
+
+### Dynamic Configuration
+
+```bash tab="Project-specific Config"
+# Different config per project type
+if [ -f "package.json" ]; then
+  # Node.js project
+  commitweave ai --config .commitweave.node.json
+elif [ -f "Cargo.toml" ]; then
+  # Rust project
+  commitweave ai --config .commitweave.rust.json
+else
+  # Default config
+  commitweave ai
+fi
+```
+
+```bash tab="Branch-based Config"
+# Different rules per branch
+BRANCH=$(git branch --show-current)
+
+case $BRANCH in
+  main|master)
+    # Strict validation for main branches
+    commitweave validate --strict --no-fix
+    ;;
+  feature/*)
+    # Relaxed validation for features
+    commitweave ai --temperature 0.7
+    ;;
+  hotfix/*)
+    # Fast commits for hotfixes
+    commitweave quick --type fix --breaking
+    ;;
+esac
+```
+
+## Integration Examples
+
+### IDE Integration
+
+```bash tab="VS Code"
+# VS Code task configuration
+# .vscode/tasks.json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CommitWeave: AI Commit",
+      "type": "shell",
+      "command": "commitweave",
+      "args": ["ai"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}
+```
+
+```bash tab="JetBrains IDEs"
+# External Tool configuration for IntelliJ/WebStorm
+# Settings > Tools > External Tools
+
+# Name: CommitWeave AI
+# Program: commitweave
+# Arguments: ai --dry-run
+# Working directory: $ProjectFileDir$
+```
+
+---
+
+**Next Steps**: 
+- See the complete [CLI Reference](/docs/commitweave/cli-reference) for all command options
+- Check [Troubleshooting](/docs/commitweave/troubleshooting) when issues arise
+- Review [Configuration Templates](/docs/commitweave/config-templates/) for team setups

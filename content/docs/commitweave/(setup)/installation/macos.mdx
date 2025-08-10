@@ -1,0 +1,204 @@
+---
+title: macOS Installation
+description: Install CommitWeave on macOS using various methods
+---
+
+Multiple installation options are available for macOS users, from package managers to direct installation.
+
+## Package Managers
+
+### Homebrew (Recommended)
+
+<Callout type="info" title="Coming Soon">
+Homebrew formula is in development. For now, use npm installation.
+</Callout>
+
+```bash
+# Coming soon
+brew install commitweave
+```
+
+### MacPorts
+
+<Callout type="info" title="Coming Soon">
+MacPorts package is in development.
+</Callout>
+
+```bash
+# Coming soon
+sudo port install commitweave
+```
+
+## Node.js Package Managers
+
+The most reliable method is using Node.js package managers:
+
+<Tabs items={['npm', 'yarn', 'pnpm']} groupId="package-managers" persist>
+  <Tab value="npm">
+    ```bash
+    npm install -g @typeweaver/commitweave
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn global add @typeweaver/commitweave
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add -g @typeweaver/commitweave
+    ```
+  </Tab>
+</Tabs>
+
+## Prerequisites
+
+Ensure you have the required dependencies:
+
+<Steps>
+  <Step>
+    ### Install Node.js
+    Download from [nodejs.org](https://nodejs.org) or use a version manager:
+    
+    ```bash
+    # Using Homebrew
+    brew install node
+    
+    # Using nvm (recommended)
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+    nvm install --lts
+    ```
+  </Step>
+  
+  <Step>
+    ### Install Git
+    Git comes pre-installed on macOS, but you can update it:
+    
+    ```bash
+    # Check current version
+    git --version
+    
+    # Update via Homebrew
+    brew install git
+    ```
+  </Step>
+  
+  <Step>
+    ### Install CommitWeave
+    Choose your preferred package manager and install globally:
+    
+    ```bash
+    npm install -g @typeweaver/commitweave
+    ```
+  </Step>
+</Steps>
+
+## macOS-Specific Features
+
+### Terminal Integration
+
+Add shell completion for enhanced experience:
+
+<Tabs items={['bash', 'zsh', 'fish']} groupId="shell">
+  <Tab value="bash">
+    ```bash
+    # Add to ~/.bash_profile or ~/.bashrc
+    eval "$(commitweave completion bash)"
+    ```
+  </Tab>
+  <Tab value="zsh">
+    ```bash
+    # Add to ~/.zshrc
+    eval "$(commitweave completion zsh)"
+    ```
+  </Tab>
+  <Tab value="fish">
+    ```bash
+    # Add to ~/.config/fish/config.fish
+    commitweave completion fish | source
+    ```
+  </Tab>
+</Tabs>
+
+### Xcode Integration
+
+For Xcode users, you can integrate CommitWeave with Xcode's source control:
+
+1. **Build Phase Script**: Add a custom build phase that runs CommitWeave validation
+2. **Pre-commit Hook**: Set up Git hooks in your Xcode project
+
+```bash
+# In your Xcode project root
+echo "#!/bin/sh\ncommitweave check" > .git/hooks/commit-msg
+chmod +x .git/hooks/commit-msg
+```
+
+### Apple Silicon (M1/M2) Notes
+
+<Callout type="info">
+CommitWeave works natively on Apple Silicon Macs without any special configuration.
+</Callout>
+
+If you encounter issues with Node.js on Apple Silicon:
+
+```bash
+# Check architecture
+uname -m
+
+# If needed, install Rosetta 2
+sudo softwareupdate --install-rosetta
+```
+
+## Troubleshooting
+
+### Permission Issues
+
+macOS may require additional permissions for global npm installs:
+
+```bash
+# Fix npm permissions
+sudo chown -R $(whoami) $(npm config get prefix)/{lib/node_modules,bin,share}
+
+# Or use npm prefix
+mkdir ~/.npm-global
+npm config set prefix '~/.npm-global'
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
+source ~/.profile
+```
+
+### Gatekeeper Warnings
+
+macOS Gatekeeper might warn about unsigned binaries:
+
+1. Go to **System Preferences** > **Security & Privacy**
+2. Click **"Allow Anyway"** if prompted
+3. Or disable Gatekeeper temporarily:
+
+```bash
+sudo spctl --master-disable
+# Remember to re-enable: sudo spctl --master-enable
+```
+
+### Command Not Found
+
+If `commitweave` command is not found after installation:
+
+```bash
+# Check if it's installed
+which commitweave
+npm list -g @typeweaver/commitweave
+
+# Add npm global bin to PATH
+echo 'export PATH="$(npm bin -g):$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+## Next Steps
+
+After installation, set up CommitWeave for your workflow:
+
+1. **Initialize configuration**: `commitweave init`
+2. **Set up AI providers**: Configure OpenAI or Anthropic API keys
+3. **Install VSCode extension**: Available in the marketplace
+
+See the [getting started guide](/docs/commitweave/installation) for detailed setup instructions.

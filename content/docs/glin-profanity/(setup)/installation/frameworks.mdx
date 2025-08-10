@@ -1,0 +1,1061 @@
+---
+title: Framework Integration
+description: Framework-specific installation and setup for React, Vue, Next.js, Express, Django, Flask, and more
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Framework-specific installation guides with tailored setup instructions, best practices, and common integration patterns.
+
+<Cards>
+  <Card
+    title="⚛️ React"
+    description="Hooks, components, and state management"
+    href="#react"
+  />
+  <Card
+    title="💚 Vue.js"
+    description="Composables and reactive integration"
+    href="#vue-js"
+  />
+  <Card
+    title="▲ Next.js"
+    description="App Router, API routes, and SSR"
+    href="#next-js"
+  />
+  <Card
+    title="⚡ Express"
+    description="Middleware and route protection"
+    href="#express-js"
+  />
+  <Card
+    title="🐍 Django"
+    description="Models, forms, and view integration"
+    href="#django"
+  />
+  <Card
+    title="🌶️ Flask"
+    description="Blueprints and request handling"
+    href="#flask"
+  />
+</Cards>
+
+<div id="react" />
+
+## React
+
+React integration with the built-in `useProfanityChecker` hook for seamless state management.
+
+### Installation
+
+<Steps>
+  <Step>
+    Install Glin-Profanity:
+    
+    ```bash copy
+    npm install glin-profanity
+    ```
+  </Step>
+  
+  <Step>
+    Basic hook usage:
+    
+    ```jsx copy title="ChatInput.jsx"
+    import { useProfanityChecker } from 'glin-profanity';
+    
+    function ChatInput() {
+      const { checkText, result, isDirty, reset } = useProfanityChecker({
+        languages: ['english', 'spanish'],
+        enableContextAware: true,
+        autoReplace: true
+      });
+    
+      const handleSubmit = (message) => {
+        const checkResult = checkText(message);
+        if (!checkResult.containsProfanity) {
+          sendMessage(message);
+          reset(); // Clear previous results
+        }
+      };
+    
+      return (
+        <div>
+          <input 
+            onChange={(e) => checkText(e.target.value)}
+            placeholder={result?.containsProfanity ? "Contains profanity" : "Type message..."}
+            style={{
+              borderColor: result?.containsProfanity ? 'red' : 'green'
+            }}
+          />
+          {result?.containsProfanity && (
+            <span className="error">
+              Inappropriate language detected: {result.profaneWords.join(', ')}
+            </span>
+          )}
+        </div>
+      );
+    }
+    ```
+  </Step>
+</Steps>
+
+### Advanced React Patterns
+
+<Tabs items={['Form Integration', 'Context Provider', 'Error Boundaries']}>
+  <Tab value="Form Integration">
+    ```jsx copy title="ProfanityForm.jsx"
+    import { useState } from 'react';
+    import { useProfanityChecker } from 'glin-profanity';
+    
+    function CommentForm({ onSubmit }) {
+      const [formData, setFormData] = useState({ title: '', content: '' });
+      const { checkText, result } = useProfanityChecker({
+        enableContextAware: true,
+        autoReplace: true
+      });
+    
+      const handleFieldChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        checkText(value); // Real-time validation
+      };
+    
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        // Check all fields
+        const titleResult = checkText(formData.title);
+        const contentResult = checkText(formData.content);
+        
+        const hasViolations = titleResult.containsProfanity || 
+                             contentResult.containsProfanity;
+        
+        if (!hasViolations) {
+          onSubmit({
+            title: titleResult.processedText || formData.title,
+            content: contentResult.processedText || formData.content
+          });
+        }
+      };
+    
+      return (
+        <form onSubmit={handleSubmit}>
+          <input
+            placeholder="Title"
+            value={formData.title}
+            onChange={(e) => handleFieldChange('title', e.target.value)}
+          />
+          <textarea
+            placeholder="Content"
+            value={formData.content}
+            onChange={(e) => handleFieldChange('content', e.target.value)}
+          />
+          <button 
+            type="submit"
+            disabled={result?.containsProfanity}
+          >
+            Submit
+          </button>
+        </form>
+      );
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Context Provider">
+    ```jsx copy title="ProfanityProvider.jsx"
+    import { createContext, useContext } from 'react';
+    import { useProfanityChecker } from 'glin-profanity';
+    
+    const ProfanityContext = createContext();
+    
+    export function ProfanityProvider({ children, config }) {
+      const profanityChecker = useProfanityChecker({
+        allLanguages: true,
+        enableContextAware: true,
+        ...config
+      });
+    
+      return (
+        <ProfanityContext.Provider value={profanityChecker}>
+          {children}
+        </ProfanityContext.Provider>
+      );
+    }
+    
+    export function useProfanity() {
+      const context = useContext(ProfanityContext);
+      if (!context) {
+        throw new Error('useProfanity must be used within ProfanityProvider');
+      }
+      return context;
+    }
+    
+    // Usage in App
+    function App() {
+      return (
+        <ProfanityProvider config={{ severityLevels: true }}>
+          <ChatApp />
+        </ProfanityProvider>
+      );
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Error Boundaries">
+    ```jsx copy title="ProfanityErrorBoundary.jsx"
+    import { Component } from 'react';
+    
+    class ProfanityErrorBoundary extends Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+      }
+    
+      static getDerivedStateFromError(error) {
+        // Check if it's a profanity-related error
+        if (error.message.includes('profanity') || error.name === 'ProfanityError') {
+          return { hasError: true, error };
+        }
+        return null;
+      }
+    
+      componentDidCatch(error, errorInfo) {
+        console.error('Profanity check error:', error, errorInfo);
+      }
+    
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="profanity-error">
+              <h3>Content Moderation Error</h3>
+              <p>Unable to process content. Please try again.</p>
+              <button onClick={() => this.setState({ hasError: false })}>
+                Retry
+              </button>
+            </div>
+          );
+        }
+    
+        return this.props.children;
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<div id="vue-js" />
+
+## Vue.js
+
+Vue 3 Composition API integration with reactive profanity checking.
+
+### Installation & Setup
+
+<Steps>
+  <Step>
+    Install Glin-Profanity:
+    
+    ```bash copy
+    npm install glin-profanity
+    ```
+  </Step>
+  
+  <Step>
+    Create a Vue composable:
+    
+    ```javascript copy title="composables/useProfanityFilter.js"
+    import { ref, computed, watch } from 'vue';
+    import { checkProfanity } from 'glin-profanity';
+    
+    export function useProfanityFilter(initialConfig = {}) {
+      const config = ref({
+        languages: ['english'],
+        enableContextAware: true,
+        autoReplace: true,
+        ...initialConfig
+      });
+      
+      const lastResult = ref(null);
+      const isChecking = ref(false);
+      
+      const filterText = async (text) => {
+        if (!text) {
+          lastResult.value = null;
+          return null;
+        }
+        
+        isChecking.value = true;
+        try {
+          const result = checkProfanity(text, config.value);
+          lastResult.value = result;
+          return result;
+        } catch (error) {
+          console.error('Profanity check failed:', error);
+          lastResult.value = null;
+          return null;
+        } finally {
+          isChecking.value = false;
+        }
+      };
+      
+      const isClean = computed(() => 
+        !lastResult.value || !lastResult.value.containsProfanity
+      );
+      
+      const cleanText = computed(() => 
+        lastResult.value?.processedText || null
+      );
+      
+      const violations = computed(() => 
+        lastResult.value?.profaneWords || []
+      );
+      
+      return {
+        filterText,
+        isClean,
+        cleanText,
+        violations,
+        isChecking,
+        lastResult,
+        config
+      };
+    }
+    ```
+  </Step>
+  
+  <Step>
+    Use in Vue components:
+    
+    ```vue copy title="CommentBox.vue"
+    <template>
+      <div class="comment-box">
+        <textarea
+          v-model="message"
+          @input="handleInput"
+          :class="{
+            'error': !isClean,
+            'loading': isChecking
+          }"
+          placeholder="Write your comment..."
+        />
+        
+        <div v-if="!isClean" class="violations">
+          <p>Inappropriate language detected:</p>
+          <ul>
+            <li v-for="word in violations" :key="word">{{ word }}</li>
+          </ul>
+        </div>
+        
+        <button 
+          @click="submit"
+          :disabled="!isClean || isChecking"
+        >
+          {{ isChecking ? 'Checking...' : 'Submit' }}
+        </button>
+      </div>
+    </template>
+    
+    <script setup>
+    import { ref } from 'vue';
+    import { useProfanityFilter } from '@/composables/useProfanityFilter';
+    
+    const message = ref('');
+    const { filterText, isClean, violations, isChecking } = useProfanityFilter({
+      languages: ['english', 'spanish'],
+      enableContextAware: true
+    });
+    
+    const handleInput = async () => {
+      if (message.value) {
+        await filterText(message.value);
+      }
+    };
+    
+    const submit = () => {
+      if (isClean.value) {
+        // Submit clean message
+        console.log('Submitting:', message.value);
+      }
+    };
+    </script>
+    ```
+  </Step>
+</Steps>
+
+<div id="next-js" />
+
+## Next.js
+
+Integration with both App Router and Pages Router, including API routes and SSR.
+
+### App Router Setup
+
+<Tabs items={['API Routes', 'Server Components', 'Client Components']}>
+  <Tab value="API Routes">
+    ```javascript copy title="app/api/moderate/route.js"
+    import { checkProfanity } from 'glin-profanity';
+    import { NextResponse } from 'next/server';
+    
+    export async function POST(request) {
+      try {
+        const { text, config = {} } = await request.json();
+        
+        if (!text) {
+          return NextResponse.json(
+            { error: 'Text is required' }, 
+            { status: 400 }
+          );
+        }
+        
+        const result = checkProfanity(text, {
+          allLanguages: true,
+          enableContextAware: true,
+          severityLevels: true,
+          ...config
+        });
+        
+        return NextResponse.json({
+          isAllowed: !result.containsProfanity,
+          result,
+          cleanText: result.processedText || text
+        });
+        
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Moderation failed', details: error.message },
+          { status: 500 }
+        );
+      }
+    }
+    
+    export async function GET() {
+      return NextResponse.json({
+        service: 'Glin-Profanity Moderation API',
+        version: '2.3.2',
+        supportedLanguages: 23
+      });
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Server Components">
+    ```jsx copy title="app/comments/CommentModerator.jsx"
+    import { checkProfanity } from 'glin-profanity';
+    
+    // Server Component - runs on server
+    export default async function CommentModerator({ comments }) {
+      // Pre-moderate comments on server
+      const moderatedComments = comments.map(comment => {
+        const result = checkProfanity(comment.content, {
+          enableContextAware: true,
+          autoReplace: true
+        });
+        
+        return {
+          ...comment,
+          content: result.processedText || comment.content,
+          isModerated: result.containsProfanity,
+          violations: result.profaneWords
+        };
+      });
+      
+      return (
+        <div className="comments">
+          {moderatedComments.map(comment => (
+            <div key={comment.id} className="comment">
+              <p>{comment.content}</p>
+              {comment.isModerated && (
+                <small className="moderated">
+                  Content was automatically moderated
+                </small>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Client Components">
+    ```jsx copy title="app/components/LiveCommentBox.jsx"
+    'use client';
+    
+    import { useState } from 'react';
+    import { useProfanityChecker } from 'glin-profanity';
+    
+    export default function LiveCommentBox({ onSubmit }) {
+      const [content, setContent] = useState('');
+      const { checkText, result, reset } = useProfanityChecker({
+        enableContextAware: true,
+        autoReplace: true
+      });
+      
+      const handleSubmit = async () => {
+        const checkResult = checkText(content);
+        
+        if (!checkResult.containsProfanity) {
+          // Submit to API
+          const response = await fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              content: checkResult.processedText || content 
+            })
+          });
+          
+          if (response.ok) {
+            onSubmit(content);
+            setContent('');
+            reset();
+          }
+        }
+      };
+      
+      return (
+        <div className="comment-box">
+          <textarea
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              checkText(e.target.value);
+            }}
+            placeholder="Write your comment..."
+          />
+          
+          {result?.containsProfanity && (
+            <div className="violations">
+              Inappropriate content detected: {result.profaneWords.join(', ')}
+            </div>
+          )}
+          
+          <button 
+            onClick={handleSubmit}
+            disabled={result?.containsProfanity}
+          >
+            Submit Comment
+          </button>
+        </div>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<div id="express-js" />
+
+## Express.js
+
+Middleware integration for automatic request filtering and route protection.
+
+### Basic Middleware
+
+```javascript copy title="middleware/profanityFilter.js"
+import { checkProfanity } from 'glin-profanity';
+
+export const profanityMiddleware = (options = {}) => {
+  const config = {
+    languages: ['english'],
+    enableContextAware: true,
+    autoReplace: false,
+    fields: ['message', 'content', 'title', 'comment'],
+    action: 'reject', // 'reject', 'clean', 'warn'
+    ...options
+  };
+
+  return (req, res, next) => {
+    try {
+      const violations = [];
+      const cleanedFields = {};
+
+      // Check specified fields for profanity
+      config.fields.forEach(field => {
+        if (req.body[field]) {
+          const result = checkProfanity(req.body[field], config);
+          
+          if (result.containsProfanity) {
+            violations.push({
+              field,
+              violations: result.profaneWords,
+              originalText: req.body[field]
+            });
+            
+            if (config.action === 'clean' && result.processedText) {
+              cleanedFields[field] = result.processedText;
+            }
+          }
+        }
+      });
+
+      // Handle violations based on action
+      if (violations.length > 0) {
+        switch (config.action) {
+          case 'reject':
+            return res.status(400).json({
+              error: 'Content contains inappropriate language',
+              violations: violations.map(v => ({
+                field: v.field,
+                words: v.violations
+              }))
+            });
+            
+          case 'clean':
+            // Replace original content with cleaned versions
+            Object.entries(cleanedFields).forEach(([field, cleanText]) => {
+              req.body[field] = cleanText;
+            });
+            req.profanityDetected = violations;
+            break;
+            
+          case 'warn':
+            req.profanityWarnings = violations;
+            break;
+        }
+      }
+
+      next();
+    } catch (error) {
+      console.error('Profanity filtering error:', error);
+      next(); // Continue on error
+    }
+  };
+};
+```
+
+### Route-Specific Usage
+
+```javascript copy title="routes/comments.js"
+import express from 'express';
+import { profanityMiddleware } from '../middleware/profanityFilter.js';
+
+const router = express.Router();
+
+// Strict filtering for public comments
+router.post('/public', 
+  profanityMiddleware({
+    action: 'reject',
+    fields: ['content', 'title'],
+    enableContextAware: true
+  }),
+  (req, res) => {
+    // Only reached if content is clean
+    res.json({ message: 'Comment posted successfully' });
+  }
+);
+
+// Auto-cleaning for user posts
+router.post('/posts',
+  profanityMiddleware({
+    action: 'clean',
+    fields: ['content'],
+    autoReplace: true
+  }),
+  (req, res) => {
+    // req.body.content may be automatically cleaned
+    if (req.profanityDetected) {
+      console.log('Auto-cleaned content:', req.profanityDetected);
+    }
+    res.json({ message: 'Post created', cleaned: !!req.profanityDetected });
+  }
+);
+
+export default router;
+```
+
+<div id="django" />
+
+## Django
+
+Model validation, form integration, and view-level filtering.
+
+### Model Integration
+
+```python copy title="models.py"
+from django.db import models
+from django.core.exceptions import ValidationError
+from glin_profanity import Filter
+
+# Global filter instance for better performance
+profanity_filter = Filter({
+    "languages": ["english", "spanish", "french"],
+    "enable_context_aware": True,
+    "severity_levels": True
+})
+
+class Comment(models.Model):
+    content = models.TextField()
+    author = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    is_moderated = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def clean(self):
+        # Validate content during model cleaning
+        if self.content:
+            result = profanity_filter.check_profanity(self.content)
+            
+            if result["contains_profanity"]:
+                raise ValidationError({
+                    'content': f'Content contains inappropriate language: {", ".join(result["profane_words"])}'
+                })
+    
+    def save(self, *args, **kwargs):
+        # Auto-moderate content on save
+        if self.content:
+            result = profanity_filter.check_profanity(self.content)
+            
+            if result["contains_profanity"]:
+                self.is_moderated = True
+                # Optional: auto-replace profanity
+                if result.get("processed_text"):
+                    self.content = result["processed_text"]
+        
+        super().save(*args, **kwargs)
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    author = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude)
+        
+        # Check both title and content
+        for field_name in ['title', 'content']:
+            if exclude and field_name in exclude:
+                continue
+                
+            value = getattr(self, field_name, None)
+            if value:
+                result = profanity_filter.check_profanity(value)
+                if result["contains_profanity"]:
+                    raise ValidationError({
+                        field_name: f'Contains inappropriate language: {", ".join(result["profane_words"])}'
+                    })
+```
+
+### Form Integration
+
+```python copy title="forms.py"
+from django import forms
+from glin_profanity import Filter
+from .models import Comment, Post
+
+class ProfanityValidationMixin:
+    profanity_fields = ['content']  # Override in subclasses
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.profanity_filter = Filter({
+            "languages": ["english"],
+            "enable_context_aware": True
+        })
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        for field_name in self.profanity_fields:
+            value = cleaned_data.get(field_name)
+            if value:
+                result = self.profanity_filter.check_profanity(value)
+                
+                if result["contains_profanity"]:
+                    self.add_error(field_name, 
+                        f'Content contains inappropriate language: {", ".join(result["profane_words"])}'
+                    )
+                else:
+                    # Optionally store cleaned text
+                    if result.get("processed_text"):
+                        cleaned_data[field_name] = result["processed_text"]
+        
+        return cleaned_data
+
+class CommentForm(ProfanityValidationMixin, forms.ModelForm):
+    profanity_fields = ['content']
+    
+    class Meta:
+        model = Comment
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'placeholder': 'Write your comment...',
+                'rows': 4
+            })
+        }
+
+class PostForm(ProfanityValidationMixin, forms.ModelForm):
+    profanity_fields = ['title', 'content']
+    
+    class Meta:
+        model = Post
+        fields = ['title', 'content']
+```
+
+### View Integration
+
+```python copy title="views.py"
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views.generic import CreateView
+from glin_profanity import Filter
+import json
+
+# API endpoint for real-time checking
+@csrf_exempt
+def check_content(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            text = data.get('text', '')
+            
+            filter_instance = Filter({
+                "enable_context_aware": True,
+                "auto_replace": True
+            })
+            
+            result = filter_instance.check_profanity(text)
+            
+            return JsonResponse({
+                'is_clean': not result['contains_profanity'],
+                'violations': result['profane_words'],
+                'cleaned_text': result.get('processed_text'),
+                'confidence': result.get('context_score', 1.0)
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+# Class-based view with profanity checking
+class CommentCreateView(CreateView):
+    model = Comment
+    form_class = CommentForm
+    template_name = 'comments/create.html'
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        
+        # Log moderation if content was cleaned
+        if hasattr(form, 'cleaned_data') and form.cleaned_data.get('content'):
+            filter_instance = Filter()
+            result = filter_instance.check_profanity(form.cleaned_data['content'])
+            
+            if result['contains_profanity']:
+                # Log moderation event
+                print(f"Moderated comment from {self.request.user}: {result['profane_words']}")
+        
+        return response
+```
+
+<div id="flask" />
+
+## Flask
+
+Blueprint organization and request decorators for modular profanity filtering.
+
+### Blueprint Setup
+
+```python copy title="blueprints/moderation.py"
+from flask import Blueprint, request, jsonify, current_app
+from functools import wraps
+from glin_profanity import Filter
+import logging
+
+moderation_bp = Blueprint('moderation', __name__)
+
+# Global filter instance
+profanity_filter = Filter({
+    "all_languages": True,
+    "enable_context_aware": True,
+    "severity_levels": True
+})
+
+def profanity_check(fields=None, action='reject', severity='MODERATE'):
+    """
+    Decorator for profanity checking in Flask routes
+    
+    Args:
+        fields: List of request fields to check (default: ['content', 'message'])
+        action: 'reject', 'clean', or 'warn'
+        severity: Minimum severity level to flag
+    """
+    if fields is None:
+        fields = ['content', 'message', 'title', 'comment']
+    
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if request.method in ['POST', 'PUT', 'PATCH']:
+                try:
+                    data = request.get_json() or request.form.to_dict()
+                    violations = []
+                    cleaned_data = {}
+                    
+                    for field in fields:
+                        if field in data and data[field]:
+                            result = profanity_filter.check_profanity_with_min_severity(
+                                data[field], 
+                                severity
+                            )
+                            
+                            if result['contains_profanity']:
+                                violations.append({
+                                    'field': field,
+                                    'violations': result['profane_words'],
+                                    'severity': result.get('severity_map', {})
+                                })
+                                
+                                if action == 'clean' and result.get('processed_text'):
+                                    cleaned_data[field] = result['processed_text']
+                    
+                    # Handle violations
+                    if violations:
+                        if action == 'reject':
+                            return jsonify({
+                                'error': 'Content contains inappropriate language',
+                                'violations': violations,
+                                'code': 'CONTENT_VIOLATION'
+                            }), 400
+                        
+                        elif action == 'clean':
+                            # Update request data with cleaned content
+                            for field, clean_text in cleaned_data.items():
+                                if hasattr(request, 'json') and request.json:
+                                    request.json[field] = clean_text
+                                else:
+                                    request.form = request.form.copy()
+                                    request.form[field] = clean_text
+                            
+                            # Store violations for logging
+                            request.profanity_violations = violations
+                        
+                        elif action == 'warn':
+                            request.profanity_warnings = violations
+                            logging.warning(f"Profanity detected in {request.endpoint}: {violations}")
+                    
+                except Exception as e:
+                    current_app.logger.error(f"Profanity check failed: {e}")
+                    # Continue on error
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# API endpoints
+@moderation_bp.route('/check', methods=['POST'])
+def check_text():
+    data = request.get_json()
+    
+    if not data or 'text' not in data:
+        return jsonify({'error': 'Text is required'}), 400
+    
+    try:
+        result = profanity_filter.check_profanity(data['text'])
+        
+        return jsonify({
+            'is_clean': not result['contains_profanity'],
+            'violations': result['profane_words'],
+            'processed_text': result.get('processed_text'),
+            'severity_map': result.get('severity_map', {}),
+            'context_score': result.get('context_score')
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@moderation_bp.route('/batch-check', methods=['POST'])
+def batch_check():
+    data = request.get_json()
+    
+    if not data or 'texts' not in data:
+        return jsonify({'error': 'Texts array is required'}), 400
+    
+    try:
+        results = []
+        for i, text in enumerate(data['texts']):
+            result = profanity_filter.check_profanity(text)
+            results.append({
+                'index': i,
+                'is_clean': not result['contains_profanity'],
+                'violations': result['profane_words']
+            })
+        
+        return jsonify({'results': results})
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+```
+
+### Usage in Routes
+
+```python copy title="app.py"
+from flask import Flask, request, jsonify
+from blueprints.moderation import moderation_bp, profanity_check
+
+app = Flask(__name__)
+app.register_blueprint(moderation_bp, url_prefix='/api/moderation')
+
+# Strict filtering for comments
+@app.route('/api/comments', methods=['POST'])
+@profanity_check(fields=['content'], action='reject')
+def create_comment():
+    data = request.get_json()
+    
+    # Only reached if content is clean
+    return jsonify({
+        'message': 'Comment created successfully',
+        'content': data['content']
+    })
+
+# Auto-cleaning for posts
+@app.route('/api/posts', methods=['POST'])
+@profanity_check(fields=['title', 'content'], action='clean')
+def create_post():
+    data = request.get_json()
+    
+    # Check if content was auto-cleaned
+    violations = getattr(request, 'profanity_violations', None)
+    
+    return jsonify({
+        'message': 'Post created',
+        'auto_moderated': violations is not None,
+        'violations': violations or []
+    })
+
+# Warning mode for user profiles
+@app.route('/api/profile', methods=['PUT'])
+@profanity_check(fields=['bio', 'display_name'], action='warn', severity='MILD')
+def update_profile():
+    data = request.get_json()
+    
+    warnings = getattr(request, 'profanity_warnings', None)
+    if warnings:
+        # Log for review but allow update
+        app.logger.warning(f"Profile update with profanity: {warnings}")
+    
+    return jsonify({
+        'message': 'Profile updated',
+        'warnings': warnings or []
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+## Next Steps
+
+After framework integration:
+
+1. **Configuration**: Customize behavior with [Configuration Options](/docs/glin-profanity/configuration)
+2. **Advanced Features**: Explore [Context-Aware Filtering](/docs/glin-profanity/context-analysis) and [Severity Levels](/docs/glin-profanity/severity-levels)
+3. **Production**: Set up [Docker deployments](/docs/glin-profanity/installation/docker) and [Server Integration](/docs/glin-profanity/server-integration)
+4. **API Reference**: Complete method documentation in [API Reference](/docs/glin-profanity/core-functions)
+
+<Callout type="info">
+**Framework not listed?** Check our [GitHub repository](https://github.com/GLINR/glin-profanity) for community examples, or open an issue to request specific framework documentation.
+</Callout>

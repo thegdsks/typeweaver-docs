@@ -1,0 +1,16 @@
+{
+  "title": "Advanced",
+  "defaultOpen": false,
+  "pages": [
+    "ml-integration",
+    "toxicity-labels",
+    "hybrid-strategies",
+    "context-analysis",
+    "obfuscation-detection",
+    "severity-levels",
+    "dictionary-management",
+    "troubleshooting",
+    "security",
+    "contributing"
+  ]
+}

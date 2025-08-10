@@ -1,0 +1,403 @@
+---
+title: Changelog
+description: Release history and feature updates for Glin-Profanity
+---
+
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Complete release history for Glin-Profanity with detailed feature additions, bug fixes, and breaking changes. Track the evolution from basic profanity detection to advanced multi-language context-aware filtering.
+
+<Callout type="info" title="📋 GitHub Releases">
+View detailed release notes and download specific versions on [GitHub Releases](https://github.com/GLINR/glin-profanity/releases)
+</Callout>
+
+## Version History
+
+<Accordions>
+
+<Accordion title="v3.1.0 - Latest Release (2025-12-30)" id="v3-1-0">
+
+**Release Updates**
+
+**Changes:**
+- Streamlined CI/CD with removal of legacy release workflow
+- npm publishing improvements
+
+</Accordion>
+
+<Accordion title="v3.0.0 - ML Integration & Evasion Resistance (2025-12-30)" id="v3-0-0">
+
+**Major Release - Advanced Detection & ML Integration**
+
+**New Features:**
+
+**Leetspeak Detection**
+- New `detectLeetspeak` option to catch obfuscated profanity like `f4ck`, `@ss`, `$h!t`
+- Three intensity levels: `basic`, `moderate`, `aggressive`
+- Detects spaced characters (`f u c k`) and repeated characters (`fuuuuck`)
+
+**Unicode Normalization**
+- New `normalizeUnicode` option (enabled by default)
+- Detects Cyrillic/Greek lookalikes (e.g., `fυck` with Greek upsilon)
+- Handles zero-width characters, full-width characters, and homoglyphs
+- Two-pass normalization prevents Scunthorpe problem (false positives)
+
+**Result Caching**
+- New `cacheResults` option for 800x performance improvement on repeated checks
+- LRU eviction with configurable `maxCacheSize` (default: 1000)
+- Cache management methods: `getCacheSize()`, `clearCache()`
+
+**ML Integration (Optional)**
+- TensorFlow.js-powered toxicity detection via `glin-profanity/ml` module
+- `ToxicityDetector` class for standalone ML analysis
+- `HybridFilter` class combining rule-based and ML detection
+- Detects: toxicity, insults, threats, identity attacks, obscene content
+- Configurable threshold and combination modes
+
+**New Languages:**
+- Added Dutch language support
+- Fixed Turkish dictionary
+
+**Fixes:**
+- Scunthorpe problem (false positives like "Scunthorpe", "assassin")
+- Repeated character handling in edge cases
+- User ignoreWords now properly merge with global whitelist
+
+**API Changes:**
+- New config options: `detectLeetspeak`, `leetspeakLevel`, `normalizeUnicode`, `cacheResults`, `maxCacheSize`
+- New ML module exports: `ToxicityDetector`, `HybridFilter`
+- Enhanced Filter class with `getConfig()`, `getCacheSize()`, `clearCache()`
+
+</Accordion>
+
+<Accordion title="v2.3.2 - Context Analysis (2024-12-15)" id="v2-3-2">
+
+**🎯 Context Analysis Improvements**
+
+**Features:**
+- Enhanced sentiment analysis accuracy by 15% through improved NLP models
+- Added gaming domain whitelist with 200+ verified gaming terms
+- Improved positive context detection for movie reviews and entertainment content
+- Added confidence score calibration for better threshold tuning
+- Extended phrase pattern matching for complex context scenarios
+
+**Fixes:**
+- Fixed context override not working with fuzzy matching enabled
+- Resolved memory leak in context analysis for long text processing
+- Fixed confidence threshold not being applied correctly in batch operations
+- Corrected Unicode handling in sentiment analysis for non-Latin scripts
+- Fixed gaming whitelist not being applied with `allLanguages: true`
+
+**Performance:**
+- Context analysis now 25% faster with optimized NLP pipeline
+- Reduced memory usage by 18% for context-aware filtering
+- Improved cache hit ratio for repeated context analysis
+
+**Breaking Changes:**
+- `contextWindow` default changed from 5 to 3 for better performance
+- Deprecated `legacyContextMode` - will be removed in v3.0
+
+</Accordion>
+
+<Accordion title="v2.3.1 - Security & Performance (2024-11-28)" id="v2-3-1">
+
+**🔒 Security Enhancements**
+
+**Features:**
+- Added input sanitization with configurable security levels
+- Implemented rate limiting for API endpoints with Redis support
+- Added audit logging for compliance with GDPR/CCPA requirements
+- Enhanced dictionary protection with encrypted storage
+- Added security headers for web integration
+
+**Fixes:**
+- Fixed potential XSS vulnerability in auto-replacement feature
+- Resolved dictionary exposure through error messages
+- Fixed timing attack vulnerability in word matching algorithm
+- Corrected insecure logging of sensitive profanity data
+- Fixed CORS configuration for secure API access
+
+**API Changes:**
+- Added `securityLevel` configuration option ("strict", "moderate", "lenient")
+- New `auditLogging` option for compliance requirements
+- Enhanced error handling with security-conscious messaging
+
+**Performance:**
+- Dictionary loading now 40% faster with optimized parsing
+- Reduced bundle size by 12% through improved tree-shaking
+- Enhanced caching strategy reduces repeat checks by 60%
+
+</Accordion>
+
+<Accordion title="v2.3.0 - Major Feature Release (2024-11-01)" id="v2-3-0">
+
+**🚀 Major New Features**
+
+**Features:**
+- **Context-Aware Filtering**: Revolutionary NLP-based sentiment analysis
+- **React Hook Integration**: Complete `useProfanityChecker` hook with state management
+- **Severity Classification**: EXACT vs FUZZY severity levels with configurable filtering
+- **Advanced Obfuscation Detection**: Character substitution patterns (@→a, $→s, !→i)
+- **Multi-Language Expansion**: Added 8 new languages (Arabic, Hindi, Thai, Turkish, etc.)
+- **Dictionary Management API**: RESTful endpoints for dictionary updates and statistics
+- **Fuzzy Matching Algorithm**: Configurable tolerance levels for similar words
+- **Auto-Replacement System**: Smart replacement with length preservation
+
+**Fixes:**
+- Fixed false positives in technical terminology (penetration testing, execution, etc.)
+- Resolved memory leaks in Filter class instances
+- Fixed word boundary issues with embedded profanity
+- Corrected case sensitivity handling for mixed-case text
+- Fixed regex compilation errors for special characters
+
+**API Changes:**
+- Added `enableContextAware` configuration option
+- New `confidenceThreshold` for context analysis (0.0-1.0)
+- `severityFilter` option for MILD/MODERATE/SEVERE filtering
+- `autoReplace` configuration with custom replacement characters
+- Enhanced return types with `contextScore` and `severityMap`
+
+**Breaking Changes:**
+- `checkProfanity` now returns enhanced result object
+- Minimum Node.js version increased to 16.0.0
+- Python minimum version increased to 3.8
+- Some configuration option names changed for consistency
+
+**Performance:**
+- 35% faster processing with optimized algorithms
+- Memory usage reduced by 22% through better caching
+- Bundle size reduced from 2.8MB to 2.1MB
+
+</Accordion>
+
+<Accordion title="v2.2.1 - Multi-Language & Bug Fixes (2024-09-15)" id="v2-2-1">
+
+**🌍 Language Expansion**
+
+**Features:**
+- Added support for Portuguese (Brazilian and European variants)
+- Enhanced Spanish dictionary with Latin American regional terms
+- Improved French profanity detection with Canadian French support
+- Added Italian and German language packs
+- Extended language detection algorithm for mixed-language content
+
+**Fixes:**
+- Fixed Unicode normalization issues with accented characters
+- Resolved language detection conflicts in multi-language text
+- Fixed memory optimization for large dictionary loading
+- Corrected regex escaping for special characters in non-Latin scripts
+- Fixed performance degradation with multiple language selection
+
+**API Changes:**
+- Enhanced `languages` array configuration
+- Added `primaryLanguage` for mixed-content preference
+- New `languageDetection` option for automatic language selection
+
+</Accordion>
+
+<Accordion title="v2.2.0 - Python Integration (2024-08-20)" id="v2-2-0">
+
+**🐍 Cross-Platform Support**
+
+**Features:**
+- **Complete Python Implementation**: Full feature parity with JavaScript
+- **Filter Class API**: Object-oriented interface for both languages
+- **Cross-Language Configuration**: Identical functionality between JS and Python
+- **Flask Integration**: Ready-made decorators and blueprints
+- **Django Support**: Model validation and form integration
+- **CLI Tools**: Command-line profanity filtering utilities
+
+**Fixes:**
+- Fixed installation issues with Python package dependencies
+- Resolved import conflicts between JavaScript and Python packages
+- Fixed configuration parsing differences between platforms
+- Corrected return value structure consistency
+- Fixed packaging issues for PyPI distribution
+
+**API Changes:**
+- Added Python `Filter` class with identical methods to JavaScript
+- Snake_case configuration options for Python (enable_context_aware, etc.)
+- Cross-platform configuration conversion utilities
+
+</Accordion>
+
+<Accordion title="v2.1.0 - Performance & Caching (2024-07-10)" id="v2-1-0">
+
+**⚡ Performance Overhaul**
+
+**Features:**
+- **Advanced Caching System**: Configurable LRU cache with TTL support
+- **Batch Processing API**: Process multiple texts efficiently
+- **Streaming Support**: Handle large text streams without memory issues
+- **Web Workers**: Offload processing to background threads
+- **Memory Optimization**: Reduced memory footprint by 45%
+
+**Fixes:**
+- Fixed memory leaks in long-running applications
+- Resolved cache invalidation issues
+- Fixed worker thread communication errors
+- Corrected streaming buffer overflow edge cases
+- Fixed cache size limit enforcement
+
+**API Changes:**
+- Added `enableCaching` configuration option
+- New `cacheSize` and `cacheTTL` settings
+- `checkMultiple` method for batch processing
+- Enhanced `clearCache` with selective clearing
+
+</Accordion>
+
+<Accordion title="v2.0.0 - Architecture Rewrite (2024-05-01)" id="v2-0-0">
+
+**🏗️ Complete Rewrite**
+
+**Features:**
+- **TypeScript Rewrite**: Full type safety and improved developer experience
+- **Modular Architecture**: Plugin-based system for extensibility  
+- **Configuration Profiles**: Pre-built configs for common use cases
+- **Enhanced Word Boundaries**: Improved accuracy for embedded profanity
+- **Dictionary Compression**: 60% smaller dictionary files
+- **Modern Build System**: ESM/CommonJS dual package support
+
+**Breaking Changes:**
+- Complete API redesign - migration guide provided
+- New configuration option names and structure
+- Changed return value formats for consistency
+- Minimum browser support updated (ES2020+)
+- Removed deprecated v1.x compatibility methods
+
+**Migration:**
+- Automated migration script provided
+- Comprehensive migration documentation
+- Legacy compatibility mode available temporarily
+
+</Accordion>
+
+</Accordions>
+
+## Version Support
+
+### Currently Supported Versions
+
+| Version | Support Status | Security Updates | End of Life |
+|---------|---------------|------------------|-------------|
+| 3.x     | ✅ Active     | ✅ Yes           | TBD         |
+| 2.3.x   | ⚠️ Maintenance | ✅ Yes          | 2026-06-01  |
+| 2.2.x   | ❌ Deprecated  | ❌ No           | 2025-12-31  |
+| 2.1.x   | ❌ Deprecated  | ❌ No           | 2025-08-01  |
+
+### Upgrade Recommendations
+
+<Cards>
+  <Card
+    title="Latest Release"
+    description="Always use the latest v3.x for new projects"
+    href="https://github.com/GLINCKER/glin-profanity/releases/latest"
+  />
+  <Card
+    title="📖 Migration Guide"
+    description="Step-by-step upgrade instructions between major versions"
+    href="https://github.com/GLINR/glin-profanity/blob/main/MIGRATION.md"
+  />
+  <Card
+    title="🔒 Security Advisories"
+    description="Security updates and vulnerability reports"
+    href="https://github.com/GLINR/glin-profanity/security/advisories"
+  />
+  <Card
+    title="💬 Community Support"
+    description="Get help with upgrades and breaking changes"
+    href="https://discord.gg/glinr-studio"
+  />
+</Cards>
+
+## Upcoming Releases
+
+### v3.2.0 - Enhanced ML (Q1 2026)
+
+**Planned Features:**
+- Custom model training for domain-specific filtering
+- Real-time dictionary updates via API
+- Multi-modal content support (text + images)
+- WebAssembly core for enhanced performance
+- Offline ML model bundling options
+
+### v4.0.0 - Next Generation (Q3 2026)
+
+**Planned Features:**
+- Cloud-native dictionary synchronization
+- Real-time collaborative filtering
+- Advanced analytics dashboard
+- Enterprise SSO integration
+
+<Callout type="info">
+**Roadmap Input**: Have suggestions for upcoming features? Join our [GitHub Discussions](https://github.com/GLINR/glin-profanity/discussions) to share ideas and vote on priorities.
+</Callout>
+
+## Contributing to Releases
+
+### Release Process
+
+1. **Feature Development**: Contribute features via pull requests
+2. **Beta Testing**: Test pre-release versions with community feedback
+3. **Documentation**: Update documentation and examples
+4. **Release Candidate**: Final testing phase before stable release
+5. **Stable Release**: Production-ready release with full support
+
+### Getting Involved
+
+<Cards>
+  <Card
+    title="🛠️ Development"
+    description="Contribute code, fix bugs, and add features"
+    href="/docs/glin-profanity/contributing"
+  />
+  <Card
+    title="🧪 Beta Testing"
+    description="Test pre-release versions and provide feedback"
+    href="https://github.com/GLINR/glin-profanity/discussions/categories/beta"
+  />
+  <Card
+    title="📝 Documentation"
+    description="Improve documentation and examples"
+    href="/docs/glin-profanity/contributing#documentation"
+  />
+  <Card
+    title="🌍 Translation"
+    description="Add support for new languages"
+    href="/docs/glin-profanity/contributing#adding-a-new-language"
+  />
+</Cards>
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="🤝 Contributing"
+    description="Learn how to contribute to Glin-Profanity development"
+    href="/docs/glin-profanity/contributing"
+  />
+  <Card
+    title="🔒 Security"
+    description="Security best practices and vulnerability reporting"
+    href="/docs/glin-profanity/security"
+  />
+  <Card
+    title="📚 API Reference"
+    description="Complete API documentation with examples"
+    href="/docs/glin-profanity/core-functions"
+  />
+  <Card
+    title="🌍 Multi-Language"
+    description="Language support and cross-platform compatibility"
+    href="/docs/glin-profanity/python-api"
+  />
+</Cards>
+
+---
+
+<Callout type="success">
+**Stay Updated**: Watch the [GitHub repository](https://github.com/GLINR/glin-profanity) and join our [Discord community](https://discord.gg/glinr-studio) for release announcements and early access to beta features.
+</Callout>

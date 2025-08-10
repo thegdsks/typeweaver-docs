@@ -1,0 +1,521 @@
+---
+title: HybridFilter
+description: Combine rule-based and ML-based detection for comprehensive content moderation
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+The `HybridFilter` class combines fast rule-based detection with ML-powered toxicity analysis. This gives you the best of both worlds: speed for common profanity and contextual understanding for subtle toxic content.
+
+<Callout type="info">
+HybridFilter includes all rule-based Filter functionality plus optional ML integration. Use it as a drop-in replacement when you need ML capabilities.
+</Callout>
+
+## Import
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+```
+
+## Constructor
+
+```typescript
+constructor(config?: HybridFilterConfig)
+```
+
+Creates a new HybridFilter with combined rule-based and ML configuration.
+
+### Configuration Options
+
+The `HybridFilterConfig` extends all options from [FilterConfig](/docs/glin-profanity/filter-class) plus:
+
+<TypeTable
+  type={{
+    enableML: {
+      description: "Enable ML-based detection (requires TensorFlow.js)",
+      type: "boolean",
+      default: "false"
+    },
+    mlThreshold: {
+      description: "ML confidence threshold for toxicity detection",
+      type: "number",
+      default: "0.85"
+    },
+    mlLabels: {
+      description: "Specific ML toxicity categories to check",
+      type: "ToxicityLabel[]",
+      default: "All 7 labels"
+    },
+    preloadML: {
+      description: "Load ML model on instantiation",
+      type: "boolean",
+      default: "false"
+    },
+    combinationMode: {
+      description: "How to combine rule-based and ML results",
+      type: "'or' | 'and' | 'ml-override' | 'rules-first'",
+      default: "'or'"
+    },
+    borderlineThreshold: {
+      description: "Score threshold for borderline cases in rules-first mode",
+      type: "number",
+      default: "0.5"
+    }
+  }}
+/>
+
+### Combination Modes Explained
+
+| Mode | Behavior | Best For |
+|------|----------|----------|
+| `'or'` | Flag if **either** method detects | Maximum sensitivity |
+| `'and'` | Flag only if **both** methods agree | Maximum precision |
+| `'ml-override'` | Use ML result when available | ML-first approach |
+| `'rules-first'` | Use rules for speed, ML for borderline | Balanced performance |
+
+### Basic Usage
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+// Enable ML with default settings
+const filter = new HybridFilter({
+  enableML: true,
+  languages: ['english'],
+  detectLeetspeak: true,
+});
+
+await filter.initialize();
+
+// Async check with both methods
+const result = await filter.checkProfanityAsync('some text');
+console.log(result.isToxic);
+console.log(result.reason);
+```
+
+## Public Methods
+
+<Accordions>
+
+<Accordion title="initialize(): Promise<void>">
+
+Initializes the hybrid filter, loading the ML model if enabled. Call this before using async methods for best performance.
+
+```typescript
+async initialize(): Promise<void>
+```
+
+**Example:**
+```typescript
+const filter = new HybridFilter({ enableML: true });
+
+// Initialize on app startup
+await filter.initialize();
+console.log('Filter ready, ML model loaded');
+
+// Now async checks are fast
+const result = await filter.checkProfanityAsync(text);
+```
+
+<Callout type="tip">
+Call `initialize()` during app startup to avoid cold-start latency on the first request.
+</Callout>
+
+</Accordion>
+
+<Accordion title="checkProfanityAsync(text: string): Promise<HybridAnalysisResult>">
+
+Async profanity check using both rule-based and ML detection.
+
+```typescript
+async checkProfanityAsync(text: string): Promise<HybridAnalysisResult>
+```
+
+**Parameters:**
+- `text: string` — Text to analyze
+
+**Returns:** `HybridAnalysisResult` — Combined analysis from both methods
+
+**Example:**
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'or',
+});
+await filter.initialize();
+
+const result = await filter.checkProfanityAsync('you are terrible at this');
+
+if (result.isToxic) {
+  console.log('Reason:', result.reason);
+  console.log('Confidence:', result.confidence);
+  console.log('Rule-based detected:', result.ruleBasedResult.containsProfanity);
+  console.log('ML detected:', result.mlResult?.isToxic);
+}
+```
+
+**Result Object:**
+```typescript
+interface HybridAnalysisResult {
+  ruleBasedResult: {
+    containsProfanity: boolean;
+    profaneWords: string[];
+  };
+  mlResult: MLAnalysisResult | null;
+  isToxic: boolean;        // Combined result based on combinationMode
+  confidence: number;      // Confidence score (0-1)
+  reason: string;          // Human-readable explanation
+}
+```
+
+</Accordion>
+
+<Accordion title="isToxicAsync(text: string): Promise<boolean>">
+
+Simple async boolean check for toxicity using combined detection.
+
+```typescript
+async isToxicAsync(text: string): Promise<boolean>
+```
+
+**Parameters:**
+- `text: string` — Text to check
+
+**Returns:** `true` if toxic according to combined analysis
+
+**Example:**
+```typescript
+const filter = new HybridFilter({ enableML: true });
+await filter.initialize();
+
+if (await filter.isToxicAsync(userMessage)) {
+  rejectMessage();
+}
+```
+
+</Accordion>
+
+<Accordion title="checkProfanityBatchAsync(texts: string[]): Promise<HybridAnalysisResult[]>">
+
+Batch analysis for multiple texts using both detection methods.
+
+```typescript
+async checkProfanityBatchAsync(texts: string[]): Promise<HybridAnalysisResult[]>
+```
+
+**Parameters:**
+- `texts: string[]` — Array of texts to analyze
+
+**Returns:** Array of `HybridAnalysisResult` objects
+
+**Example:**
+```typescript
+const filter = new HybridFilter({ enableML: true });
+await filter.initialize();
+
+const comments = [
+  'Great article!',
+  'You are an idiot',
+  'I disagree with this point',
+];
+
+const results = await filter.checkProfanityBatchAsync(comments);
+
+results.forEach((result, i) => {
+  if (result.isToxic) {
+    console.log(`Comment ${i} rejected: ${result.reason}`);
+  }
+});
+```
+
+</Accordion>
+
+<Accordion title="isProfane(text: string): boolean">
+
+Synchronous profanity check using **only** rule-based detection. Use for fast checks when ML isn't needed.
+
+```typescript
+isProfane(text: string): boolean
+```
+
+**Parameters:**
+- `text: string` — Text to check
+
+**Returns:** `true` if rule-based detection finds profanity
+
+**Example:**
+```typescript
+const filter = new HybridFilter({ enableML: true });
+
+// Sync check - rules only, no ML
+if (filter.isProfane('damn')) {
+  console.log('Profanity detected (rule-based)');
+}
+```
+
+</Accordion>
+
+<Accordion title="checkProfanity(text: string): CheckProfanityResult">
+
+Synchronous detailed check using **only** rule-based detection.
+
+```typescript
+checkProfanity(text: string): CheckProfanityResult
+```
+
+**Parameters:**
+- `text: string` — Text to check
+
+**Returns:** Standard `CheckProfanityResult` from rule-based analysis
+
+</Accordion>
+
+<Accordion title="analyzeWithML(text: string): Promise<MLAnalysisResult | null>">
+
+Analyzes text with ML **only** (if available).
+
+```typescript
+async analyzeWithML(text: string): Promise<MLAnalysisResult | null>
+```
+
+**Parameters:**
+- `text: string` — Text to analyze
+
+**Returns:** ML analysis result or `null` if ML not enabled/available
+
+**Example:**
+```typescript
+const filter = new HybridFilter({ enableML: true });
+await filter.initialize();
+
+// Get ML-only analysis
+const mlResult = await filter.analyzeWithML('some text');
+if (mlResult) {
+  console.log('ML categories:', mlResult.matchedCategories);
+}
+```
+
+</Accordion>
+
+<Accordion title="isMLReady(): boolean">
+
+Checks if ML is available and initialized.
+
+```typescript
+isMLReady(): boolean
+```
+
+**Returns:** `true` if ML model is loaded and ready
+
+</Accordion>
+
+<Accordion title="getRuleFilter(): Filter">
+
+Gets the underlying rule-based filter for direct access.
+
+```typescript
+getRuleFilter(): Filter
+```
+
+**Returns:** The internal `Filter` instance
+
+</Accordion>
+
+<Accordion title="getMLDetector(): ToxicityDetector | null">
+
+Gets the underlying ML detector (if enabled).
+
+```typescript
+getMLDetector(): ToxicityDetector | null
+```
+
+**Returns:** The internal `ToxicityDetector` instance or `null`
+
+</Accordion>
+
+<Accordion title="dispose(): void">
+
+Disposes of resources (ML model) to free memory.
+
+```typescript
+dispose(): void
+```
+
+</Accordion>
+
+</Accordions>
+
+## Combination Mode Examples
+
+<Tabs items={["'or' Mode", "'and' Mode", "'ml-override' Mode", "'rules-first' Mode"]}>
+  <Tab value="'or' Mode">
+    ```typescript
+    // Maximum sensitivity - flag if either method detects
+    const filter = new HybridFilter({
+      enableML: true,
+      combinationMode: 'or',  // Default
+    });
+    await filter.initialize();
+
+    // Catches explicit profanity via rules
+    await filter.isToxicAsync('what the fuck');
+    // true - rules detected
+
+    // Catches subtle toxicity via ML
+    await filter.isToxicAsync('you are worthless and nobody likes you');
+    // true - ML detected (no explicit words)
+
+    // Use when: You want maximum coverage and can tolerate some false positives
+    ```
+  </Tab>
+
+  <Tab value="'and' Mode">
+    ```typescript
+    // Maximum precision - both must agree
+    const filter = new HybridFilter({
+      enableML: true,
+      combinationMode: 'and',
+    });
+    await filter.initialize();
+
+    // Both agree - flagged
+    await filter.isToxicAsync('you fucking idiot');
+    // true - both rules AND ML detected
+
+    // Only rules detect - NOT flagged
+    await filter.isToxicAsync('damn this is good');
+    // false - ML doesn't see this as toxic
+
+    // Use when: You need high confidence and want to avoid false positives
+    ```
+  </Tab>
+
+  <Tab value="'ml-override' Mode">
+    ```typescript
+    // ML takes precedence when available
+    const filter = new HybridFilter({
+      enableML: true,
+      combinationMode: 'ml-override',
+    });
+    await filter.initialize();
+
+    // ML says toxic - flagged regardless of rules
+    await filter.isToxicAsync('you should just disappear');
+    // true - ML detected threat/toxicity
+
+    // ML says clean - NOT flagged even if rules would match
+    await filter.isToxicAsync('damn good job!');
+    // false - ML understands positive context
+
+    // Use when: You trust ML judgment over word lists
+    ```
+  </Tab>
+
+  <Tab value="'rules-first' Mode">
+    ```typescript
+    // Fast rules, ML for edge cases
+    const filter = new HybridFilter({
+      enableML: true,
+      combinationMode: 'rules-first',
+      borderlineThreshold: 0.5,
+    });
+    await filter.initialize();
+
+    // Rules detect - flagged immediately (fast)
+    await filter.isToxicAsync('what the fuck');
+    // true - rules detected, no ML needed
+
+    // Rules miss, but ML catches
+    await filter.isToxicAsync('go kys loser');
+    // true - rules missed, ML detected
+
+    // Use when: You want speed but need ML as a safety net
+    ```
+  </Tab>
+</Tabs>
+
+## Complete Example
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+class ContentModerator {
+  private filter: HybridFilter;
+
+  constructor() {
+    this.filter = new HybridFilter({
+      // Rule-based config
+      languages: ['english', 'spanish'],
+      detectLeetspeak: true,
+      allowObfuscatedMatch: true,
+
+      // ML config
+      enableML: true,
+      mlThreshold: 0.85,
+      mlLabels: ['insult', 'threat', 'toxicity', 'identity_attack'],
+
+      // Combination strategy
+      combinationMode: 'rules-first',
+      borderlineThreshold: 0.5,
+    });
+  }
+
+  async initialize() {
+    await this.filter.initialize();
+    console.log('Content moderator ready');
+  }
+
+  async moderate(text: string) {
+    const result = await this.filter.checkProfanityAsync(text);
+
+    return {
+      allowed: !result.isToxic,
+      confidence: result.confidence,
+      reason: result.reason,
+      ruleMatches: result.ruleBasedResult.profaneWords,
+      mlCategories: result.mlResult?.matchedCategories ?? [],
+    };
+  }
+
+  // Fast sync check for simple cases
+  quickCheck(text: string) {
+    return !this.filter.isProfane(text);
+  }
+}
+
+// Usage
+const moderator = new ContentModerator();
+await moderator.initialize();
+
+const result = await moderator.moderate('you are such a loser');
+// {
+//   allowed: false,
+//   confidence: 0.89,
+//   reason: 'ML detected (rules missed): insult, toxicity',
+//   ruleMatches: [],
+//   mlCategories: ['insult', 'toxicity']
+// }
+```
+
+## Performance Comparison
+
+| Method | Latency | Use Case |
+|--------|---------|----------|
+| `isProfane()` (sync) | ~0.1ms | Quick rule-based checks |
+| `checkProfanity()` (sync) | ~0.2ms | Detailed rule-based analysis |
+| `checkProfanityAsync()` | ~30-100ms | Full hybrid analysis |
+| `checkProfanityBatchAsync()` | ~10-30ms/item | Bulk moderation |
+
+<Callout type="tip">
+For high-throughput systems, use sync methods as a first pass and only call async ML methods for borderline cases or when sync checks pass.
+</Callout>
+
+## Cross-References
+
+- **[ToxicityDetector](/docs/glin-profanity/ml-toxicity-detector)** — Standalone ML detection
+- **[Filter Class](/docs/glin-profanity/filter-class)** — Rule-based detection API
+- **[Combination Strategies](/docs/glin-profanity/hybrid-strategies)** — Detailed guide on choosing modes
+- **[ML Integration Guide](/docs/glin-profanity/ml-integration)** — Setup and best practices

@@ -1,0 +1,512 @@
+---
+title: CLI Reference
+description: Complete command-line interface reference for CommitWeave
+---
+
+## commitweave ai
+
+Generate commit messages using AI analysis of your staged changes.
+
+### Synopsis
+
+```bash
+commitweave ai [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--model <model>` | `-m` | AI model to use | `gpt-4-turbo` |
+| `--context <text>` | `-c` | Additional context for AI | |
+| `--temperature <num>` | `-t` | AI creativity (0.0-1.0) | `0.6` |
+| `--max-tokens <num>` |  | Max tokens for AI response | `120` |
+| `--provider <name>` | `-p` | AI provider (openai, anthropic) | `openai` |
+| `--fallback` | `-f` | Enable fallback provider | `false` |
+| `--dry-run` | `-n` | Show message without committing | `false` |
+
+### Examples
+
+```bash
+# Basic AI commit generation
+commitweave ai
+
+# Use specific model with context
+commitweave ai --model gpt-4 --context "Refactoring authentication flow"
+
+# High creativity with fallback
+commitweave ai --temperature 0.8 --fallback
+
+# Preview without committing
+commitweave ai --dry-run
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success - commit generated and applied |
+| `1` | General error |
+| `4` | No staged changes found |
+| `5` | AI service error or rate limit |
+| `6` | Invalid API key or configuration |
+
+<Callout type="warning">
+**Rate Limiting**: Exit code 5 often indicates you've hit API rate limits. Wait 60 seconds and retry, or switch to a different AI provider with `--fallback` flag.
+</Callout>
+
+## commitweave quick
+
+Fast commit generation with minimal prompts.
+
+### Synopsis
+
+```bash
+commitweave quick [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--type <type>` | `-t` | Commit type | Required |
+| `--scope <scope>` | `-s` | Commit scope | Optional |
+| `--message <text>` | `-m` | Custom message override | |
+| `--breaking` | `-b` | Mark as breaking change | `false` |
+| `--no-emoji` |  | Disable emoji prefix | `false` |
+
+### Examples
+
+```bash
+# Quick feature commit
+commitweave quick --type feat --scope auth
+
+# Bug fix with custom message
+commitweave quick --type fix --message "resolve login timeout issue"
+
+# Breaking change
+commitweave quick --type feat --scope api --breaking
+
+# Simple docs update
+commitweave quick --type docs --no-emoji
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success - commit created |
+| `1` | General error |
+| `2` | Missing required arguments |
+| `4` | No staged changes found |
+
+## commitweave commit
+
+Interactive commit creation with guided prompts.
+
+### Synopsis
+
+```bash
+commitweave commit [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--interactive` | `-i` | Force interactive mode | `true` |
+| `--skip-scope` |  | Skip scope selection | `false` |
+| `--skip-body` |  | Skip body input | `false` |
+| `--skip-breaking` |  | Skip breaking change prompt | `false` |
+| `--template <path>` |  | Use custom template | |
+| `--editor <cmd>` | `-e` | Override default editor | `$EDITOR` |
+
+### Examples
+
+```bash
+# Interactive commit creation
+commitweave commit
+
+# Skip certain prompts
+commitweave commit --skip-scope --skip-body
+
+# Use custom template
+commitweave commit --template ./custom-commit.txt
+
+# Force specific editor
+commitweave commit --editor "code --wait"
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success - interactive commit completed |
+| `1` | General error |
+| `3` | Git repository not found |
+| `4` | No staged changes found |
+| `7` | User cancelled operation |
+
+## commitweave validate
+
+Validate commit messages against conventional commit standards.
+
+### Synopsis
+
+```bash
+commitweave validate [options] [range]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--range <range>` | `-r` | Git commit range to validate | `HEAD~10..HEAD` |
+| `--config <path>` | `-c` | Custom validation config | `.commitweave.json` |
+| `--strict` | `-s` | Enable strict validation mode | `false` |
+| `--fix` |  | Auto-fix simple issues | `false` |
+| `--format <fmt>` | `-f` | Output format (text, json) | `text` |
+
+### Examples
+
+```bash
+# Validate last 10 commits
+commitweave validate
+
+# Validate specific range
+commitweave validate --range main..feature-branch
+
+# Strict validation with JSON output
+commitweave validate --strict --format json
+
+# Validate and auto-fix
+commitweave validate --fix --range HEAD~5..HEAD
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All commits are valid |
+| `1` | Validation failures found |
+| `2` | Invalid range or arguments |
+| `3` | Git repository not found |
+| `8` | Configuration validation error |
+
+## commitweave doctor
+
+Diagnose and fix common CommitWeave configuration issues.
+
+### Synopsis
+
+```bash
+commitweave doctor [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--fix` | `-f` | Auto-fix detected issues | `false` |
+| `--check-all` | `-a` | Run comprehensive checks | `false` |
+| `--skip-network` |  | Skip network connectivity tests | `false` |
+| `--output <file>` | `-o` | Save report to file | |
+
+### Examples
+
+```bash
+# Basic health check
+commitweave doctor
+
+# Comprehensive check with auto-fix
+commitweave doctor --check-all --fix
+
+# Check without network tests
+commitweave doctor --skip-network
+
+# Save diagnostic report
+commitweave doctor --output health-report.json
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All checks passed |
+| `1` | Issues found (fixable) |
+| `2` | Critical issues found |
+| `5` | Network connectivity issues |
+| `6` | Configuration problems |
+
+## commitweave export
+
+Export CommitWeave configuration or commit history.
+
+### Synopsis
+
+```bash
+commitweave export <type> [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--format <fmt>` | `-f` | Export format (json, yaml, csv) | `json` |
+| `--output <file>` | `-o` | Output file path | `stdout` |
+| `--range <range>` | `-r` | Git commit range for history | `HEAD~100..HEAD` |
+| `--template` | `-t` | Export as template | `false` |
+
+### Examples
+
+```bash
+# Export configuration
+commitweave export config --format yaml --output config.yaml
+
+# Export commit history
+commitweave export history --range main..develop --format csv
+
+# Export as template
+commitweave export config --template --output team-template.json
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Export completed successfully |
+| `1` | General export error |
+| `2` | Invalid export type or format |
+| `9` | File write permissions error |
+
+## commitweave import
+
+Import CommitWeave configuration from various sources.
+
+### Synopsis
+
+```bash
+commitweave import <source> [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--file <path>` | `-f` | Import from file | |
+| `--url <url>` | `-u` | Import from URL | |
+| `--merge` | `-m` | Merge with existing config | `false` |
+| `--backup` | `-b` | Backup existing config | `true` |
+| `--validate` | `-v` | Validate before import | `true` |
+
+### Examples
+
+```bash
+# Import from file
+commitweave import --file ./team-config.json
+
+# Import from URL with merge
+commitweave import --url https://example.com/config.json --merge
+
+# Import without validation
+commitweave import --file config.yaml --validate false
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Import completed successfully |
+| `1` | Import failed |
+| `2` | Invalid source or format |
+| `6` | Validation failed |
+| `9` | Backup creation failed |
+
+## commitweave list
+
+List and manage CommitWeave configurations and templates.
+
+### Synopsis
+
+```bash
+commitweave list [type] [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--format <fmt>` | `-f` | Output format (table, json, yaml) | `table` |
+| `--filter <pattern>` |  | Filter by name pattern | |
+| `--show-paths` | `-p` | Show full file paths | `false` |
+| `--active-only` | `-a` | Show only active configuration | `false` |
+
+### Examples
+
+```bash
+# List all configurations
+commitweave list
+
+# List configurations in JSON format
+commitweave list --format json
+
+# List with full paths
+commitweave list configs --show-paths
+
+# Filter by pattern
+commitweave list --filter "team-*"
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Listing completed successfully |
+| `1` | General error |
+| `2` | Invalid list type or format |
+| `6` | Configuration access error |
+
+## commitweave reset
+
+Reset CommitWeave configuration to defaults or previous state.
+
+### Synopsis
+
+```bash
+commitweave reset [target] [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--hard` |  | Complete reset (delete custom configs) | `false` |
+| `--backup <path>` | `-b` | Create backup before reset | Auto-generated |
+| `--confirm` | `-y` | Skip confirmation prompts | `false` |
+| `--dry-run` | `-n` | Show what would be reset | `false` |
+
+### Examples
+
+```bash
+# Soft reset to defaults
+commitweave reset
+
+# Hard reset with confirmation
+commitweave reset --hard --confirm
+
+# Preview reset changes
+commitweave reset --dry-run
+
+# Reset with custom backup location
+commitweave reset --backup ./backups/config-backup.json
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Reset completed successfully |
+| `1` | Reset failed |
+| `6` | Configuration error |
+| `7` | User cancelled operation |
+| `9` | Backup creation failed |
+
+## commitweave help
+
+Display help information for CommitWeave commands.
+
+### Synopsis
+
+```bash
+commitweave help [command] [options]
+```
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--format <fmt>` | `-f` | Help format (text, markdown) | `text` |
+| `--examples` | `-e` | Include examples in output | `false` |
+| `--all` | `-a` | Show help for all commands | `false` |
+
+### Examples
+
+```bash
+# General help
+commitweave help
+
+# Help for specific command
+commitweave help ai
+
+# Help with examples
+commitweave help commit --examples
+
+# All commands help
+commitweave help --all
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Help displayed successfully |
+| `2` | Invalid command name |
+
+## Global Options
+
+These options are available for all commands:
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--version` | `-V` | Show version number | |
+| `--help` | `-h` | Show help for command | |
+| `--config <path>` | `-c` | Custom config file path | `.commitweave.json` |
+| `--verbose` | `-v` | Enable verbose output | `false` |
+| `--quiet` | `-q` | Suppress output except errors | `false` |
+| `--no-color` |  | Disable colored output | `false` |
+
+## Environment Variables
+
+CommitWeave respects these environment variables:
+
+```bash
+# AI Configuration
+OPENAI_API_KEY="your-openai-key"
+CLAUDE_API_KEY="your-anthropic-key"
+COMMITWEAVE_AI_MODEL="gpt-4-turbo"
+
+# Default Settings  
+COMMITWEAVE_CONFIG="/path/to/config.json"
+COMMITWEAVE_EDITOR="code --wait"
+COMMITWEAVE_TEMPLATE="/path/to/template.txt"
+
+# Git Integration
+COMMITWEAVE_GPG_SIGN="true"
+COMMITWEAVE_SIGNOFF="true"
+COMMITWEAVE_NO_VERIFY="false"
+```
+
+## Related Reading
+
+Master CommitWeave with these essential resources:
+
+<Cards>
+  <Card 
+    title="Examples & Workflows" 
+    description="Real-world examples with advanced flows, performance tips, and integration patterns"
+    href="/docs/commitweave/cli-reference/examples"
+    icon="BookOpen"
+  />
+  <Card 
+    title="Troubleshooting Guide" 
+    description="Solutions for common issues including API keys, rate limits, and Git repository problems"
+    href="/docs/commitweave/cli-reference/troubleshooting"
+    icon="AlertCircle"
+  />
+  <Card 
+    title="Configuration Templates" 
+    description="Ready-to-use configurations for teams, open source projects, and enterprise environments"
+    href="/docs/commitweave/config-templates"
+    icon="FileText"
+  />
+</Cards>

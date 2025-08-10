@@ -1,0 +1,420 @@
+---
+title: Python CLI Script
+description: Command-line profanity filtering with the Python Filter class
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Quick command-line interface for filtering text files or stdin using the Glin-Profanity Python Filter class. Perfect for batch processing, CI/CD pipelines, and one-off text cleaning tasks.
+
+<Callout type="info">
+This CLI script demonstrates the Python Filter class in action and can be easily customized for specific use cases like content moderation workflows or automated text processing.
+</Callout>
+
+## Complete CLI Script
+
+```python title="filter_text.py"
+#!/usr/bin/env python3
+"""
+Glin-Profanity CLI Tool
+Command-line profanity filtering using the Python Filter class
+"""
+
+import sys
+import argparse
+import json
+from pathlib import Path
+from glin_profanity import Filter
+
+def create_filter(config_args):
+    """Create a Filter instance with command-line configuration"""
+    config = {
+        "languages": config_args.languages,
+        "enable_context_aware": config_args.context_aware,
+        "severity_filter": config_args.severity,
+        "auto_replace": config_args.auto_replace,
+        "replacement_char": config_args.replacement_char,
+        "fuzzy_matching": config_args.fuzzy_matching,
+        "fuzzy_tolerance": config_args.fuzzy_tolerance
+    }
+    
+    return Filter(config)
+
+def process_text(filter_instance, text, output_format):
+    """Process text and return formatted result"""
+    result = filter_instance.check_profanity(text.strip())
+    
+    if output_format == "json":
+        return json.dumps(result, indent=2)
+    elif output_format == "summary":
+        if result["contains_profanity"]:
+            return f"❌ FLAGGED: {len(result['profane_words'])} profane words found: {', '.join(result['profane_words'])}"
+        else:
+            return "✅ CLEAN: No profanity detected"
+    elif output_format == "clean":
+        return result.get("processed_text", text) if result["contains_profanity"] else text
+    else:  # simple
+        return "FLAGGED" if result["contains_profanity"] else "CLEAN"
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Filter text for profanity using Glin-Profanity",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python filter_text.py --file comments.txt
+  echo "This is some text" | python filter_text.py
+  python filter_text.py --file posts.txt --context-aware --output summary
+  cat user_content.txt | python filter_text.py --severity MILD --output clean
+        """
+    )
+    
+    # Input options
+    parser.add_argument('--file', '-f', type=str,
+                        help='Input file to process (default: stdin)')
+    
+    # Filter configuration
+    parser.add_argument('--languages', '-l', nargs='+', default=['english'],
+                        help='Languages to check (default: english)')
+    parser.add_argument('--context-aware', '-c', action='store_true',
+                        help='Enable context-aware filtering')
+    parser.add_argument('--severity', '-s', choices=['MILD', 'MODERATE', 'SEVERE'],
+                        default='MODERATE', help='Minimum severity level (default: MODERATE)')
+    parser.add_argument('--auto-replace', '-r', action='store_true',
+                        help='Enable auto-replacement of profanity')
+    parser.add_argument('--replacement-char', default='*',
+                        help='Character for replacement (default: *)')
+    parser.add_argument('--fuzzy-matching', action='store_true',
+                        help='Enable fuzzy matching for obfuscated text')
+    parser.add_argument('--fuzzy-tolerance', type=float, default=0.8,
+                        help='Fuzzy matching tolerance (default: 0.8)')
+    
+    # Output options
+    parser.add_argument('--output', '-o', choices=['simple', 'summary', 'json', 'clean'],
+                        default='summary', help='Output format (default: summary)')
+    parser.add_argument('--quiet', '-q', action='store_true',
+                        help='Only output the result, no status messages')
+    
+    args = parser.parse_args()
+    
+    try:
+        # Create filter instance
+        if not args.quiet:
+            print(f"Initializing filter with languages: {', '.join(args.languages)}", file=sys.stderr)
+        
+        filter_instance = create_filter(args)
+        
+        # Get input text
+        if args.file:
+            file_path = Path(args.file)
+            if not file_path.exists():
+                print(f"Error: File '{args.file}' not found", file=sys.stderr)
+                sys.exit(1)
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                input_text = f.read()
+            
+            if not args.quiet:
+                print(f"Processing file: {args.file}", file=sys.stderr)
+        else:
+            if not args.quiet:
+                print("Reading from stdin...", file=sys.stderr)
+            input_text = sys.stdin.read()
+        
+        if not input_text.strip():
+            if not args.quiet:
+                print("Warning: No input text provided", file=sys.stderr)
+            sys.exit(0)
+        
+        # Process text
+        result = process_text(filter_instance, input_text, args.output)
+        print(result)
+        
+        # Exit with appropriate code
+        if args.output in ['simple', 'summary'] and 'FLAGGED' in result:
+            sys.exit(1)  # Non-zero exit for flagged content
+        
+    except KeyboardInterrupt:
+        print("\nOperation cancelled", file=sys.stderr)
+        sys.exit(130)
+    except Exception as e:
+        print(f"Error: {str(e)}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+```
+
+## Usage Instructions
+
+<Steps>
+
+<Step>
+### Install Glin-Profanity
+
+First, install the Python package:
+
+```bash
+pip install glin-profanity
+```
+
+Save the script above as `filter_text.py` and make it executable:
+
+```bash
+chmod +x filter_text.py
+```
+
+</Step>
+
+<Step>
+### Run with a File
+
+Create a test file and filter it:
+
+```bash
+# Create a test file
+echo "This is some damn good content with shit in it" > test.txt
+
+# Filter the file with summary output
+python filter_text.py --file test.txt
+
+# Filter with context-aware analysis
+python filter_text.py --file test.txt --context-aware --output summary
+
+# Get clean version with profanity replaced
+python filter_text.py --file test.txt --auto-replace --output clean
+```
+
+**Expected outputs:**
+```bash
+# Summary output
+❌ FLAGGED: 2 profane words found: damn, shit
+
+# Context-aware summary (may differ based on context)
+❌ FLAGGED: 1 profane words found: shit
+
+# Clean output with replacement
+This is some **** good content with **** in it
+```
+
+</Step>
+
+<Step>
+### Pipe Text from Another Process
+
+Use the script with Unix pipes for processing streams:
+
+```bash
+# Process output from another command
+echo "What the hell is this crap?" | python filter_text.py
+
+# Process multiple lines
+cat << EOF | python filter_text.py --output json
+This is a clean line
+This damn line has profanity
+Another clean line
+EOF
+
+# Process log files with filtering
+tail -f app.log | python filter_text.py --severity MILD --output simple
+
+# Filter user comments from a database export
+mysql -e "SELECT comment FROM posts;" | python filter_text.py --context-aware
+```
+
+**Example pipe outputs:**
+```bash
+# Simple echo
+❌ FLAGGED: 2 profane words found: hell, crap
+
+# JSON output for multiple lines
+{
+  "contains_profanity": true,
+  "profane_words": ["damn"],
+  "processed_text": "This is a clean line\nThis **** line has profanity\nAnother clean line"
+}
+```
+
+</Step>
+
+<Step>
+### Verify Script Works with Sample Text
+
+Test the script with various sample texts to verify functionality:
+
+```bash
+# Test 1: Clean text
+echo "This is perfectly clean content" | python filter_text.py
+# Expected: ✅ CLEAN: No profanity detected
+
+# Test 2: Basic profanity
+echo "This is damn good stuff" | python filter_text.py
+# Expected: ❌ FLAGGED: 1 profane words found: damn
+
+# Test 3: Context-aware filtering
+echo "This movie is fucking amazing!" | python filter_text.py --context-aware
+# Expected: ✅ CLEAN: No profanity detected (positive context)
+
+# Test 4: Obfuscated profanity
+echo "What the h3ll is this sh1t?" | python filter_text.py --fuzzy-matching
+# Expected: ❌ FLAGGED: 2 profane words found: h3ll, sh1t
+
+# Test 5: Multi-language
+echo "This is merde and also shit" | python filter_text.py --languages english french
+# Expected: ❌ FLAGGED: 2 profane words found: merde, shit
+
+# Test 6: JSON output for integration
+echo "Damn this is bad" | python filter_text.py --output json | jq '.profane_words'
+# Expected: ["damn"]
+```
+
+**Verification Results:**
+All tests should produce the expected outputs, demonstrating:
+- ✅ Basic profanity detection
+- ✅ Context-aware filtering reduces false positives
+- ✅ Fuzzy matching catches obfuscated text
+- ✅ Multi-language support works
+- ✅ JSON output suitable for automation
+
+</Step>
+
+</Steps>
+
+## Advanced Usage Examples
+
+### Batch Processing Files
+
+```bash
+# Process all text files in a directory
+find ./content -name "*.txt" -exec python filter_text.py --file {} \;
+
+# Generate clean versions of all files
+for file in *.txt; do
+    python filter_text.py --file "$file" --auto-replace --output clean > "clean_$file"
+done
+
+# Check exit codes for automation
+if python filter_text.py --file user_content.txt --quiet; then
+    echo "Content approved"
+else
+    echo "Content requires review"
+fi
+```
+
+### Integration with CI/CD
+
+```bash
+# Git pre-commit hook
+git diff --cached --name-only | grep -E '\.(md|txt)$' | while read file; do
+    if ! python filter_text.py --file "$file" --quiet; then
+        echo "Commit blocked: Profanity detected in $file"
+        exit 1
+    fi
+done
+
+# Jenkins pipeline step
+python filter_text.py --file release_notes.txt --severity MILD --output summary || exit 1
+```
+
+### Configuration File Support
+
+Create a config file for consistent settings:
+
+```json title="filter_config.json"
+{
+    "languages": ["english", "spanish"],
+    "enable_context_aware": true,
+    "severity_filter": "MODERATE",
+    "auto_replace": true,
+    "replacement_char": "●",
+    "fuzzy_matching": true,
+    "fuzzy_tolerance": 0.8
+}
+```
+
+Modify the script to load configuration:
+
+```python title="Enhanced filter_text.py"
+def load_config(config_file):
+    """Load configuration from JSON file"""
+    with open(config_file, 'r') as f:
+        return json.load(f)
+
+# Add to argument parser
+parser.add_argument('--config', type=str, help='Configuration file (JSON)')
+
+# In main function
+if args.config:
+    config = load_config(args.config)
+    filter_instance = Filter(config)
+```
+
+## Output Formats
+
+The script supports multiple output formats for different use cases:
+
+### Simple Format
+```bash
+python filter_text.py --output simple
+# Output: CLEAN or FLAGGED
+```
+
+### Summary Format (Default)
+```bash
+python filter_text.py --output summary
+# Output: ✅ CLEAN: No profanity detected
+# Output: ❌ FLAGGED: 2 profane words found: damn, shit
+```
+
+### JSON Format
+```bash
+python filter_text.py --output json
+```
+```json
+{
+  "contains_profanity": true,
+  "profane_words": ["damn", "shit"],
+  "processed_text": "**** this **** content",
+  "severity_map": {"damn": 1, "shit": 1},
+  "context_score": 0.3
+}
+```
+
+### Clean Format
+```bash
+python filter_text.py --output clean --auto-replace
+# Output: Clean text with profanity replaced by * characters
+```
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="🐍 Python API"
+    description="Complete Python Filter class documentation"
+    href="/docs/glin-profanity/python-api"
+  />
+  <Card
+    title="⚙️ Configuration"
+    description="Detailed configuration options for the Filter class"
+    href="/docs/glin-profanity/configuration"
+  />
+  <Card
+    title="🔧 Core Functions"
+    description="JavaScript API equivalents and cross-language usage"
+    href="/docs/glin-profanity/core-functions"
+  />
+  <Card
+    title="🖥️ Server Integration"
+    description="Using the CLI script in server environments"
+    href="/docs/glin-profanity/server-integration"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Pro Tip**: Use the `--quiet` flag and check exit codes for automation. The script returns exit code 1 when profanity is detected, making it perfect for CI/CD pipelines and validation workflows.
+</Callout>

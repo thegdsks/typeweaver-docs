@@ -1,0 +1,500 @@
+---
+title: Configuration
+order: 5
+status: published
+description: Customize CommitWeave behavior with configuration files and settings
+---
+
+## Quick Start with Templates
+
+Looking for pre-built configurations? Check out our **[Config Templates](/docs/commitweave/config-templates)** for common setups like team collaboration, open source projects, enterprise security, and offline AI.
+
+## Configuration File
+
+CommitWeave uses a JSON configuration file to store your preferences:
+
+```bash
+# Generate default configuration
+commitweave init
+
+# Edit configuration
+commitweave config --edit
+```
+
+The default configuration file is `.commitweave.json` in your project root.
+
+<div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 my-6">
+  <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+    <span>⚡</span>
+    <span>Configuration Priority</span>
+  </div>
+  <p className="text-yellow-700 dark:text-yellow-300 m-0">
+    CLI flags override config file settings, which override environment variables.
+  </p>
+</div>
+
+## Default Configuration
+
+Here's a complete example configuration file showing all available options:
+
+```json
+{
+  "ai": {
+    "enabled": true,
+    "provider": "openai",
+    "model": "gpt-4-turbo",
+    "apiKey": "${OPENAI_API_KEY}",
+    "temperature": 0.7,
+    "maxTokens": 150,
+    "timeout": 10000,
+    "fallback": {
+      "provider": "anthropic",
+      "model": "claude-3-5-haiku-20241022",
+      "apiKey": "${CLAUDE_API_KEY}"
+    }
+  },
+  "claude": {
+    "enabled": true,
+    "model": "claude-3-5-sonnet-20241022",
+    "apiKey": "${CLAUDE_API_KEY}",
+    "maxTokens": 200,
+    "temperature": 0.5,
+    "systemPrompt": "Generate concise, conventional commit messages."
+  },
+  "commit": {
+    "type": {
+      "required": true,
+      "default": null,
+      "enum": [
+        "feat", "fix", "docs", "style", "refactor", 
+        "perf", "test", "build", "ci", "chore", "revert"
+      ]
+    },
+    "scope": {
+      "required": false,
+      "enum": ["auth", "ui", "api", "core", "config", "deps"]
+    },
+    "emoji": {
+      "enabled": true,
+      "style": "conventional"
+    },
+    "format": {
+      "maxLength": 72,
+      "minLength": 10,
+      "case": "lowercase"
+    }
+  },
+  "git": {
+    "signoff": false,
+    "gpgSign": false,
+    "hooks": {
+      "skipVerify": false
+    }
+  },
+  "ui": {
+    "interactive": true,
+    "fancyUI": true,
+    "asciiArt": false,
+    "animations": true,
+    "colors": true,
+    "emoji": true,
+    "editor": "code --wait"
+  },
+  "templates": {
+    "custom": null,
+    "variables": {}
+  }
+}
+```
+
+## AI Configuration
+
+Configure AI-powered commit generation:
+
+### Basic AI Settings
+
+```json
+{
+  "ai": {
+    "enabled": true,
+    "model": "gpt-4",
+    "apiKey": "${OPENAI_API_KEY}",
+    "baseURL": "https://api.openai.com/v1",
+    "temperature": 0.7,
+    "maxTokens": 150,
+    "timeout": 10000,
+    "retries": 3
+  }
+}
+```
+
+### Supported AI Providers
+
+**OpenAI:**
+```json
+{
+  "ai": {
+    "provider": "openai",
+    "model": "gpt-3.5-turbo",
+    "apiKey": "${OPENAI_API_KEY}"
+  }
+}
+```
+
+**Anthropic:**
+```json
+{
+  "ai": {
+    "provider": "anthropic", 
+    "model": "claude-3-haiku-20240307",
+    "apiKey": "${ANTHROPIC_API_KEY}"
+  }
+}
+```
+
+**Local/Custom:**
+```json
+{
+  "ai": {
+    "provider": "custom",
+    "baseURL": "http://localhost:11434/v1",
+    "model": "llama2",
+    "apiKey": "not-needed"
+  }
+}
+```
+
+## Commit Configuration
+
+### Commit Types
+
+Customize available commit types:
+
+```json
+{
+  "commit": {
+    "type": {
+      "required": true,
+      "default": "feat",
+      "enum": [
+        "feat",     // New features
+        "fix",      // Bug fixes  
+        "docs",     // Documentation
+        "style",    // Code style
+        "refactor", // Code refactoring
+        "perf",     // Performance
+        "test",     // Tests
+        "build",    // Build system
+        "ci",       // CI changes
+        "chore",    // Maintenance
+        "revert"    // Reverts
+      ]
+    }
+  }
+}
+```
+
+### Scopes
+
+Define project-specific scopes:
+
+```json
+{
+  "commit": {
+    "scope": {
+      "required": false,
+      "enum": [
+        "auth",      // Authentication
+        "ui",        // User interface  
+        "api",       // API changes
+        "db",        // Database
+        "config",    // Configuration
+        "docs",      // Documentation
+        "tests",     // Testing
+        "deps"       // Dependencies
+      ]
+    }
+  }
+}
+```
+
+### Emoji Configuration
+
+Control emoji usage in commits:
+
+```json
+{
+  "commit": {
+    "emoji": {
+      "enabled": true,
+      "style": "conventional",
+      "custom": {
+        "feat": "✨",
+        "fix": "🐛", 
+        "docs": "📚",
+        "style": "💎",
+        "refactor": "📦",
+        "perf": "🚀",
+        "test": "🚨",
+        "build": "🛠",
+        "ci": "⚙️",
+        "chore": "♻️",
+        "revert": "🗑"
+      }
+    }
+  }
+}
+```
+
+## Message Formatting
+
+### Length Limits
+
+```json
+{
+  "commit": {
+    "format": {
+      "maxLength": 72,
+      "minLength": 10,
+      "wrapBody": 72,
+      "case": "lowercase"
+    }
+  }
+}
+```
+
+### Template Variables
+
+Use variables in custom templates:
+
+```json
+{
+  "templates": {
+    "custom": "{type}({scope}): {emoji} {description}\n\n{body}\n\n{footer}",
+    "variables": {
+      "author": "John Doe",
+      "team": "Frontend Team", 
+      "project": "MyApp"
+    }
+  }
+}
+```
+
+## Git Integration
+
+### Signing and Verification
+
+```json
+{
+  "git": {
+    "signoff": true,
+    "gpgSign": true,
+    "hooks": {
+      "skipVerify": false,
+      "allowedHooks": ["pre-commit", "commit-msg"]
+    }
+  }
+}
+```
+
+### Branch-Specific Settings
+
+```json
+{
+  "git": {
+    "branches": {
+      "main": {
+        "requireScope": true,
+        "allowedTypes": ["feat", "fix", "docs"]
+      },
+      "develop": {
+        "requireScope": false,
+        "allowedTypes": ["feat", "fix", "docs", "chore"]
+      }
+    }
+  }
+}
+```
+
+## UI Customization
+
+CommitWeave provides extensive UI customization options to match your development workflow and preferences.
+
+<TypeTable
+  type={{
+    fancyUI: {
+      type: "boolean",
+      default: "true", 
+      description: "Enable enhanced UI with rich formatting, borders, and visual hierarchy"
+    },
+    asciiArt: {
+      type: "boolean", 
+      default: "false",
+      description: "Display ASCII art banner and decorative elements in CLI output"
+    },
+    animations: {
+      type: "boolean",
+      default: "true",
+      description: "Enable smooth loading animations, transitions, and progress indicators"
+    },
+    colors: {
+      type: "boolean",
+      default: "true", 
+      description: "Use colored output for syntax highlighting, status indicators, and theming"
+    },
+    emoji: {
+      type: "boolean",
+      default: "true",
+      description: "Include contextual emojis in commit messages and CLI feedback"
+    }
+  }}
+/>
+
+### Interactive Prompts
+
+```json
+{
+  "ui": {
+    "interactive": true,
+    "fancyUI": true,
+    "asciiArt": false,
+    "animations": true,
+    "colors": true,
+    "emoji": true,
+    "editor": "code --wait",
+    "theme": "dark",
+    "prompts": {
+      "confirmCommit": true,
+      "showPreview": true,
+      "allowEdit": true
+    }
+  }
+}
+```
+
+## Team Configuration
+
+### Shared Configuration
+
+Create a shared config for your team:
+
+```json
+{
+  "$schema": "https://commitweave.dev/schema.json",
+  "extends": ["@commitweave/config-conventional"],
+  "rules": {
+    "type-required": true,
+    "scope-required": false,
+    "max-length": 72,
+    "emoji-required": false
+  },
+  "team": {
+    "name": "Frontend Team",
+    "scopes": ["ui", "components", "styles", "assets"],
+    "reviewers": ["@john", "@jane"]
+  }
+}
+```
+
+### Per-Project Overrides
+
+```json
+{
+  "projects": {
+    "frontend": {
+      "scopes": ["ui", "components", "styles"],
+      "emoji": { "enabled": true }
+    },
+    "backend": {
+      "scopes": ["api", "db", "auth"],
+      "emoji": { "enabled": false }
+    }
+  }
+}
+```
+
+## Environment Variables
+
+Override configuration with environment variables:
+
+```bash
+# AI Configuration
+export COMMITWEAVE_AI_ENABLED=true
+export COMMITWEAVE_AI_MODEL=gpt-4
+export OPENAI_API_KEY=your-key-here
+
+# Commit Configuration  
+export COMMITWEAVE_EMOJI_ENABLED=false
+export COMMITWEAVE_MAX_LENGTH=100
+export COMMITWEAVE_DEFAULT_TYPE=feat
+
+# UI Configuration
+export COMMITWEAVE_INTERACTIVE=false
+export COMMITWEAVE_COLORS=true
+export COMMITWEAVE_EDITOR="code --wait"
+```
+
+## Configuration Commands
+
+### Initialize Configuration
+
+```bash
+# Create default config
+commitweave init
+
+# Initialize with template
+commitweave init --template conventional
+
+# Initialize for team
+commitweave init --team --shared
+```
+
+### Manage Configuration
+
+```bash
+# View current config
+commitweave config --show
+
+# Edit configuration
+commitweave config --edit
+
+# Validate configuration
+commitweave config --validate
+
+# Reset to defaults
+commitweave config --reset
+```
+
+## Configuration Examples
+
+### Minimal Setup
+
+```json
+{
+  "commit": {
+    "type": { "required": true },
+    "emoji": { "enabled": false }
+  }
+}
+```
+
+### Enterprise Setup
+
+```json
+{
+  "ai": { "enabled": false },
+  "commit": {
+    "type": { "required": true },
+    "scope": { "required": true },
+    "format": { "maxLength": 50 }
+  },
+  "git": {
+    "signoff": true,
+    "gpgSign": true
+  }
+}
+```
+
+---
+
+**Up Next**: See CommitWeave in action with our [Examples Guide](/docs/commitweave/examples).

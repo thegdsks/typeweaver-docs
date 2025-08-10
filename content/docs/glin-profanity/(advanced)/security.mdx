@@ -1,0 +1,779 @@
+---
+title: Security & Best Practices
+description: Safe usage patterns and security considerations for profanity detection
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Essential security practices for implementing profanity detection in production applications. Learn how to sanitize inputs, protect sensitive data, and maintain user privacy while ensuring effective content moderation.
+
+<Callout type="warn" title="🔒 Privacy Compliance">
+Glin-Profanity processes text locally and does not transmit content to external servers. Ensure your implementation follows GDPR, CCPA, and other applicable privacy regulations.
+</Callout>
+
+## Security Implementation Guide
+
+<Steps>
+
+<Step>
+### Sanitizing User Input
+
+Always sanitize and validate user input before profanity checking to prevent injection attacks and ensure data integrity.
+
+**Input Validation and Sanitization:**
+
+```javascript title="Secure Input Handling (JavaScript)"
+import { checkProfanity } from 'glin-profanity';
+import DOMPurify from 'dompurify';
+
+// Comprehensive input sanitization
+function sanitizeUserInput(rawInput) {
+  if (typeof rawInput !== 'string') {
+    throw new Error('Input must be a string');
+  }
+  
+  // 1. Length validation
+  if (rawInput.length > 10000) {
+    throw new Error('Input exceeds maximum length (10,000 characters)');
+  }
+  
+  // 2. Remove null bytes and control characters
+  let sanitized = rawInput.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  
+  // 3. HTML sanitization (if accepting HTML content)
+  sanitized = DOMPurify.sanitize(sanitized, { ALLOWED_TAGS: [] });
+  
+  // 4. Normalize Unicode
+  sanitized = sanitized.normalize('NFC');
+  
+  // 5. Trim whitespace
+  sanitized = sanitized.trim();
+  
+  return sanitized;
+}
+
+// Secure profanity checking
+function secureProfanityCheck(userInput, config = {}) {
+  try {
+    // Sanitize input first
+    const sanitizedInput = sanitizeUserInput(userInput);
+    
+    // Validate configuration
+    const safeConfig = {
+      languages: Array.isArray(config.languages) ? config.languages : ['english'],
+      enableContextAware: Boolean(config.enableContextAware),
+      // Only allow known configuration options
+      ...Object.fromEntries(
+        Object.entries(config).filter(([key]) => 
+          ['languages', 'enableContextAware', 'severityFilter'].includes(key)
+        )
+      )
+    };
+    
+    // Perform profanity check
+    const result = checkProfanity(sanitizedInput, safeConfig);
+    
+    // Sanitize output (remove sensitive information if needed)
+    return {
+      containsProfanity: result.containsProfanity,
+      flaggedWords: result.profaneWords,
+      // Don't expose internal details in public APIs
+      processedText: config.includeProcessedText ? result.processedText : undefined
+    };
+    
+  } catch (error) {
+    // Log security incidents
+    console.error('Security error in profanity check:', {
+      error: error.message,
+      inputLength: userInput?.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return safe default
+    return {
+      containsProfanity: false,
+      flaggedWords: [],
+      error: 'Input validation failed'
+    };
+  }
+}
+
+// Usage example
+const userContent = "User submitted content here";
+const result = secureProfanityCheck(userContent, {
+  languages: ['english'],
+  enableContextAware: true
+});
+```
+
+**Python Implementation:**
+
+```python title="Secure Input Handling (Python)"
+from glin_profanity import Filter
+import html
+import unicodedata
+import re
+
+def sanitize_user_input(raw_input):
+    """Comprehensive input sanitization for security."""
+    if not isinstance(raw_input, str):
+        raise ValueError("Input must be a string")
+    
+    # 1. Length validation
+    if len(raw_input) > 10000:
+        raise ValueError("Input exceeds maximum length (10,000 characters)")
+    
+    # 2. Remove control characters
+    sanitized = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', raw_input)
+    
+    # 3. HTML escape (if content will be displayed)
+    sanitized = html.escape(sanitized)
+    
+    # 4. Unicode normalization
+    sanitized = unicodedata.normalize('NFC', sanitized)
+    
+    # 5. Trim whitespace
+    sanitized = sanitized.strip()
+    
+    return sanitized
+
+def secure_profanity_check(user_input, config=None):
+    """Secure profanity checking with input validation."""
+    try:
+        # Sanitize input first
+        sanitized_input = sanitize_user_input(user_input)
+        
+        # Validate and sanitize configuration
+        safe_config = {}
+        if config:
+            if 'languages' in config and isinstance(config['languages'], list):
+                safe_config['languages'] = config['languages']
+            if 'enable_context_aware' in config:
+                safe_config['enable_context_aware'] = bool(config['enable_context_aware'])
+        
+        # Create filter with safe configuration
+        filter_instance = Filter(safe_config)
+        result = filter_instance.check_profanity(sanitized_input)
+        
+        # Return sanitized output
+        return {
+            'contains_profanity': result['contains_profanity'],
+            'flagged_words': result['profane_words'],
+            'processed_text': result.get('processed_text') if config.get('include_processed_text') else None
+        }
+        
+    except Exception as error:
+        # Log security incidents
+        print(f"Security error in profanity check: {error}")
+        
+        # Return safe default
+        return {
+            'contains_profanity': False,
+            'flagged_words': [],
+            'error': 'Input validation failed'
+        }
+
+# Usage example
+user_content = "User submitted content here"
+result = secure_profanity_check(user_content, {
+    'languages': ['english'],
+    'enable_context_aware': True
+})
+```
+
+**Security Checklist for Input Handling:**
+- ✅ Validate input type and length
+- ✅ Remove control characters and null bytes
+- ✅ HTML sanitization for web content
+- ✅ Unicode normalization
+- ✅ Configuration validation
+- ✅ Error handling with safe defaults
+- ✅ Security incident logging
+
+</Step>
+
+<Step>
+### Server-Side Validation is Safer
+
+Always perform profanity checking on the server side to prevent tampering and ensure consistent enforcement of content policies.
+
+**Why Server-Side is More Secure:**
+
+```javascript title="Client-Side vs Server-Side Security"
+// ❌ INSECURE: Client-side only validation
+// This can be bypassed by users disabling JavaScript or modifying requests
+
+// Client-side (can be bypassed)
+function clientSideCheck() {
+  const userInput = document.getElementById('content').value;
+  const result = checkProfanity(userInput);
+  
+  if (result.containsProfanity) {
+    alert('Content contains profanity!');
+    return false; // ❌ User can bypass this
+  }
+  
+  // Submit to server - profanity may reach backend
+  submitToServer(userInput);
+}
+
+// ✅ SECURE: Server-side validation with client-side UX enhancement
+
+// Client-side (UX enhancement only)
+function clientSidePreCheck() {
+  const userInput = document.getElementById('content').value;
+  const result = checkProfanity(userInput);
+  
+  if (result.containsProfanity) {
+    showWarning('Content may contain inappropriate language');
+    // Still allow submission - server will make final decision
+  }
+}
+
+// Server-side (authoritative validation)
+app.post('/api/content', (req, res) => {
+  const { content } = req.body;
+  
+  // ✅ Server-side validation cannot be bypassed
+  const result = secureProfanityCheck(content);
+  
+  if (result.containsProfanity) {
+    return res.status(400).json({
+      error: 'Content violates community guidelines',
+      flaggedWords: result.flaggedWords
+    });
+  }
+  
+  // Save clean content to database
+  saveContent(content);
+  res.json({ success: true });
+});
+```
+
+**Secure API Design Pattern:**
+
+```javascript title="Defense in Depth API Design"
+// Multi-layer security approach
+app.post('/api/moderate-content', [
+  // Layer 1: Rate limiting
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+  }),
+  
+  // Layer 2: Authentication
+  requireAuth,
+  
+  // Layer 3: Input validation
+  body('content').isLength({ min: 1, max: 10000 }).escape(),
+  
+  // Layer 4: Content moderation
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    try {
+      const { content } = req.body;
+      const userId = req.user.id;
+      
+      // Layer 5: Profanity checking
+      const moderationResult = await secureProfanityCheck(content, {
+        languages: ['english'],
+        enableContextAware: true,
+        userId: userId // For logging/tracking
+      });
+      
+      if (moderationResult.containsProfanity) {
+        // Layer 6: Violation logging
+        await logViolation({
+          userId,
+          content: content.substring(0, 100), // Truncated for privacy
+          flaggedWords: moderationResult.flaggedWords,
+          timestamp: new Date(),
+          ip: req.ip
+        });
+        
+        return res.status(422).json({
+          approved: false,
+          reason: 'Content moderation failed',
+          suggestions: 'Please review your content for inappropriate language'
+        });
+      }
+      
+      // Content approved
+      res.json({
+        approved: true,
+        moderationId: generateModerationId()
+      });
+      
+    } catch (error) {
+      console.error('Moderation error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+]);
+```
+
+**Python Flask Secure Implementation:**
+
+```python title="Secure Flask API"
+from flask import Flask, request, jsonify
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from glin_profanity import Filter
+import logging
+
+app = Flask(__name__)
+limiter = Limiter(app, key_func=get_remote_address)
+
+# Security configuration
+PROFANITY_CONFIG = {
+    'languages': ['english'],
+    'enable_context_aware': True,
+    'severity_filter': 'MODERATE'
+}
+
+@app.route('/api/moderate-content', methods=['POST'])
+@limiter.limit("100 per hour")  # Rate limiting
+def moderate_content():
+    try:
+        # Input validation
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        data = request.get_json()
+        if 'content' not in data:
+            return jsonify({'error': 'Content field is required'}), 400
+        
+        content = data['content']
+        if not isinstance(content, str) or len(content) > 10000:
+            return jsonify({'error': 'Invalid content format or length'}), 400
+        
+        # Secure profanity checking
+        result = secure_profanity_check(content, PROFANITY_CONFIG)
+        
+        if result.get('error'):
+            return jsonify({'error': result['error']}), 400
+        
+        if result['contains_profanity']:
+            # Log violation for monitoring
+            logging.warning(f"Content violation from IP {request.remote_addr}: {result['flagged_words']}")
+            
+            return jsonify({
+                'approved': False,
+                'reason': 'Content contains inappropriate language',
+                'flagged_words': result['flagged_words']
+            }), 422
+        
+        # Content approved
+        return jsonify({
+            'approved': True,
+            'message': 'Content passed moderation'
+        })
+        
+    except Exception as e:
+        logging.error(f"Moderation error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+```
+
+**Server-Side Security Benefits:**
+- ✅ Cannot be bypassed by users
+- ✅ Consistent policy enforcement
+- ✅ Centralized logging and monitoring
+- ✅ Protection of business logic
+- ✅ Audit trail for compliance
+
+</Step>
+
+<Step>
+### Avoid Exposing Dictionaries Client-Side
+
+Never expose profanity dictionaries to client-side code to prevent users from circumventing detection and protect intellectual property.
+
+**Dictionary Protection Strategies:**
+
+```javascript title="Secure Dictionary Handling"
+// ❌ INSECURE: Exposing dictionary data client-side
+// This allows users to see all profane words and find ways around them
+
+const badImplementation = {
+  // DON'T DO THIS - exposes dictionary
+  profanityWords: [
+    'damn', 'shit', 'fuck', 'bitch'  // ❌ Visible to users
+  ],
+  
+  checkWord: function(word) {
+    return this.profanityWords.includes(word.toLowerCase());
+  }
+};
+
+// ✅ SECURE: Server-side dictionary protection
+// Dictionaries remain on server, only results are returned
+
+// Client-side API calls (secure)
+class SecureProfanityClient {
+  constructor(apiUrl) {
+    this.apiUrl = apiUrl;
+  }
+  
+  async checkContent(content) {
+    try {
+      const response = await fetch(`${this.apiUrl}/moderate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getToken()}`
+        },
+        body: JSON.stringify({ content })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      return await response.json();
+      // Only receives: { approved: boolean, flaggedWords?: string[] }
+      // Dictionary contents never exposed
+      
+    } catch (error) {
+      console.error('Moderation check failed:', error);
+      return { approved: false, error: 'Network error' };
+    }
+  }
+  
+  getToken() {
+    // Secure token management
+    return localStorage.getItem('authToken');
+  }
+}
+
+// Server-side dictionary management (Node.js)
+const secureServer = {
+  // ✅ Dictionary stays on server
+  initializeDictionaries() {
+    this.filter = new Filter({
+      languages: ['english', 'spanish'],
+      enableContextAware: true
+    });
+    // Dictionaries loaded server-side only
+  },
+  
+  moderateContent(content, userId) {
+    // Check without exposing dictionary
+    const result = this.filter.checkProfanity(content);
+    
+    // Log for monitoring (without exposing dictionary)
+    if (result.containsProfanity) {
+      this.logViolation({
+        userId,
+        flaggedCount: result.profaneWords.length,
+        // Don't log actual words for privacy
+        timestamp: new Date()
+      });
+    }
+    
+    // Return minimal necessary information
+    return {
+      approved: !result.containsProfanity,
+      flaggedWords: result.profaneWords, // Only flagged words, not full dictionary
+      suggestions: result.containsProfanity ? 
+        'Please review your content for appropriate language' : null
+    };
+  }
+};
+```
+
+**Dictionary Security Configuration:**
+
+```python title="Secure Python Dictionary Management"
+from glin_profanity import Filter
+import os
+import hashlib
+
+class SecureDictionaryManager:
+    def __init__(self):
+        # Initialize filter without exposing dictionaries
+        self.filter = Filter({
+            'languages': ['english'],
+            'enable_context_aware': True
+        })
+        
+        # Generate dictionary fingerprint for integrity checking
+        self.dictionary_hash = self._generate_dictionary_hash()
+    
+    def _generate_dictionary_hash(self):
+        """Generate hash of dictionaries for integrity checking."""
+        # This allows verification without exposing content
+        try:
+            # Get dictionary info without content
+            info = self.filter.get_dictionary_info()
+            content = str(sorted(info.keys()))
+            return hashlib.sha256(content.encode()).hexdigest()[:16]
+        except:
+            return "unknown"
+    
+    def moderate_content(self, content, user_id=None):
+        """Moderate content without exposing dictionary."""
+        try:
+            result = self.filter.check_profanity(content)
+            
+            # Create secure response
+            response = {
+                'approved': not result['contains_profanity'],
+                'flagged_words': result['profane_words'] if result['contains_profanity'] else [],
+                'dictionary_version': self.dictionary_hash  # For cache invalidation
+            }
+            
+            # Optional: Add context score for transparency
+            if 'context_score' in result:
+                response['context_confidence'] = round(result['context_score'], 2)
+            
+            return response
+            
+        except Exception as e:
+            # Log error without exposing internal details
+            print(f"Moderation error for user {user_id}: {type(e).__name__}")
+            return {
+                'approved': False,
+                'error': 'Moderation service unavailable'
+            }
+    
+    def get_public_info(self):
+        """Return public information about the service."""
+        return {
+            'supported_languages': ['english', 'spanish', 'french'],  # Public info
+            'features': ['context_aware', 'multi_language', 'obfuscation_detection'],
+            'version': '2.3.0',
+            'dictionary_version': self.dictionary_hash
+            # No actual dictionary content exposed
+        }
+
+# Usage in Flask app
+moderator = SecureDictionaryManager()
+
+@app.route('/api/moderate', methods=['POST'])
+def moderate():
+    content = request.json.get('content')
+    user_id = get_current_user_id()
+    
+    result = moderator.moderate_content(content, user_id)
+    return jsonify(result)
+
+@app.route('/api/service-info', methods=['GET'])
+def service_info():
+    # Public service information (no sensitive data)
+    return jsonify(moderator.get_public_info())
+```
+
+**What NOT to Expose Client-Side:**
+- ❌ Complete profanity word lists
+- ❌ Dictionary file contents
+- ❌ Internal matching algorithms
+- ❌ Specific detection thresholds
+- ❌ Whitelist contents
+- ❌ Language-specific patterns
+
+**What's Safe to Expose:**
+- ✅ Supported languages list
+- ✅ Available features
+- ✅ API version information
+- ✅ Flagged words from user's content
+- ✅ Configuration options (not values)
+- ✅ Context confidence scores
+
+</Step>
+
+</Steps>
+
+## Data Privacy & Compliance
+
+### Privacy Protection Measures
+
+```javascript title="Privacy-Compliant Implementation"
+// GDPR/CCPA compliant profanity checking
+class PrivacyCompliantModerator {
+  constructor() {
+    this.filter = new Filter({
+      languages: ['english'],
+      enableContextAware: true
+    });
+  }
+  
+  moderateWithPrivacy(content, options = {}) {
+    const {
+      userId,
+      retainLogs = false,
+      anonymize = true,
+      consentGiven = false
+    } = options;
+    
+    // Check consent for logging
+    if (retainLogs && !consentGiven) {
+      throw new Error('User consent required for data retention');
+    }
+    
+    // Perform moderation
+    const result = this.filter.checkProfanity(content);
+    
+    // Privacy-compliant logging
+    if (retainLogs && consentGiven) {
+      this.logWithPrivacy({
+        userId: anonymize ? this.hashUserId(userId) : userId,
+        flaggedCount: result.profaneWords.length,
+        // Don't log actual content for privacy
+        contentLength: content.length,
+        timestamp: new Date(),
+        consentVersion: '1.0'
+      });
+    }
+    
+    // Return minimal necessary data
+    return {
+      approved: !result.containsProfanity,
+      flaggedWords: result.profaneWords,
+      // Include privacy notice
+      privacyNotice: 'Content processed locally, not stored or transmitted'
+    };
+  }
+  
+  hashUserId(userId) {
+    // One-way hash for anonymization
+    return require('crypto')
+      .createHash('sha256')
+      .update(userId + process.env.PRIVACY_SALT)
+      .digest('hex')
+      .substring(0, 16);
+  }
+  
+  logWithPrivacy(data) {
+    // Implement privacy-compliant logging
+    // - Automatic deletion after retention period
+    // - Encryption at rest
+    // - Limited access controls
+    console.log('Privacy-compliant log:', {
+      ...data,
+      notice: 'Auto-deleted after 30 days unless required for safety'
+    });
+  }
+}
+```
+
+### GDPR Compliance Checklist
+
+- ✅ **Data Minimization**: Only process necessary text content
+- ✅ **Purpose Limitation**: Use profanity detection only for stated purposes
+- ✅ **Storage Limitation**: Don't retain content longer than necessary
+- ✅ **Transparency**: Clear privacy notices about processing
+- ✅ **User Control**: Allow users to opt-out of enhanced features
+- ✅ **Data Security**: Encrypt sensitive data and logs
+- ✅ **Right to Deletion**: Implement data deletion mechanisms
+
+## Security Monitoring & Logging
+
+### Secure Logging Practices
+
+```javascript title="Security-Focused Logging"
+// Secure logging without exposing sensitive information
+class SecurityLogger {
+  constructor() {
+    this.sensitiveWords = new Set(['password', 'token', 'key', 'secret']);
+  }
+  
+  logModerationEvent(event) {
+    const secureEvent = {
+      timestamp: new Date().toISOString(),
+      userId: this.hashIdentifier(event.userId),
+      action: event.action,
+      
+      // Safe metrics
+      contentLength: event.content?.length || 0,
+      flaggedWordCount: event.flaggedWords?.length || 0,
+      processingTime: event.processingTime,
+      
+      // Don't log actual content or flagged words
+      // contentHash: this.hashContent(event.content),
+      
+      // Security indicators
+      ipAddress: this.hashIdentifier(event.ipAddress),
+      userAgent: event.userAgent?.substring(0, 50),
+      
+      // Compliance
+      consentGiven: Boolean(event.consentGiven),
+      dataRetention: event.dataRetention || 'minimal'
+    };
+    
+    // Remove any accidentally included sensitive data
+    const cleanEvent = this.sanitizeLogData(secureEvent);
+    
+    // Log to secure system
+    this.writeToSecureLog(cleanEvent);
+  }
+  
+  sanitizeLogData(data) {
+    const cleaned = { ...data };
+    
+    // Remove any field containing sensitive information
+    Object.keys(cleaned).forEach(key => {
+      if (this.sensitiveWords.has(key.toLowerCase()) || 
+          typeof cleaned[key] === 'string' && cleaned[key].length > 1000) {
+        cleaned[key] = '[REDACTED]';
+      }
+    });
+    
+    return cleaned;
+  }
+  
+  hashIdentifier(value) {
+    if (!value) return 'anonymous';
+    return require('crypto')
+      .createHash('sha256')
+      .update(value + process.env.LOG_SALT)
+      .digest('hex')
+      .substring(0, 12);
+  }
+  
+  writeToSecureLog(event) {
+    // Implement secure logging:
+    // - Encrypted storage
+    // - Access controls
+    // - Automatic retention policies
+    // - Audit trails
+    console.log('[SECURE_LOG]', JSON.stringify(event));
+  }
+}
+```
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="📚 Dictionary Management"
+    description="Learn about secure dictionary handling and API protection"
+    href="/docs/glin-profanity/dictionary-management"
+  />
+  <Card
+    title="🖥️ Server Integration"
+    description="Implement secure server-side profanity checking"
+    href="/docs/glin-profanity/server-integration"
+  />
+  <Card
+    title="⚙️ Configuration"
+    description="Secure configuration practices and validation"
+    href="/docs/glin-profanity/configuration"
+  />
+  <Card
+    title="🔧 Troubleshooting"
+    description="Debug security and configuration issues"
+    href="/docs/glin-profanity/troubleshooting"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Security Best Practice**: Always validate inputs, use server-side checking, protect dictionaries, and implement privacy-compliant logging. Regular security audits of your implementation are recommended.
+</Callout>

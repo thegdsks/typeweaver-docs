@@ -1,0 +1,373 @@
+---
+title: Package Managers
+description: Standard installation using npm, yarn, pnpm, pip, poetry, conda for JavaScript and Python projects
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+The most common way to install Glin-Profanity is through standard package managers. Choose your preferred language and package manager below.
+
+## JavaScript / TypeScript
+
+<Tabs items={['npm', 'yarn', 'pnpm']}>
+  <Tab value="npm">
+    ```bash copy title="Install with npm"
+    npm install glin-profanity
+    ```
+    
+    ### TypeScript Support
+    Types are included automatically - no additional `@types/` package needed.
+    
+    ```bash copy title="TypeScript project"
+    npm install glin-profanity
+    # Types included out of the box ✓
+    ```
+  </Tab>
+  
+  <Tab value="yarn">
+    ```bash copy title="Install with Yarn"
+    yarn add glin-profanity
+    ```
+    
+    ### Yarn Workspaces
+    For monorepo setups with Yarn workspaces:
+    
+    ```bash copy title="Yarn workspaces"
+    yarn workspace my-app add glin-profanity
+    ```
+  </Tab>
+  
+  <Tab value="pnpm">
+    ```bash copy title="Install with pnpm"
+    pnpm add glin-profanity
+    ```
+    
+    ### Workspace Setup
+    For pnpm workspaces:
+    
+    ```bash copy title="pnpm workspace"
+    pnpm add glin-profanity --filter my-app
+    ```
+  </Tab>
+</Tabs>
+
+### Quick Verification (JavaScript)
+
+<Steps>
+  <Step>
+    Create a test file to verify installation:
+    
+    ```javascript copy title="test-installation.js"
+    import { checkProfanity } from 'glin-profanity';
+    
+    // Basic profanity check
+    const result = checkProfanity('This is a clean message', {
+      languages: ['english']
+    });
+    
+    console.log('✓ Installation successful:', !result.containsProfanity);
+    console.log('Available methods:', Object.keys(result));
+    ```
+  </Step>
+  
+  <Step>
+    Run the test:
+    
+    ```bash copy
+    node test-installation.js
+    ```
+    
+    Expected output:
+    ```
+    ✓ Installation successful: true
+    Available methods: ['containsProfanity', 'profaneWords', 'processedText', ...]
+    ```
+  </Step>
+</Steps>
+
+### TypeScript Integration
+
+```typescript copy title="profanity-types.ts"
+import { 
+  checkProfanity, 
+  ProfanityCheckerConfig, 
+  ProfanityCheckResult 
+} from 'glin-profanity';
+
+const config: ProfanityCheckerConfig = {
+  languages: ['english', 'spanish'],
+  enableContextAware: true,
+  autoReplace: true
+};
+
+const result: ProfanityCheckResult = checkProfanity('Test message', config);
+
+// Full type safety and IntelliSense support ✓
+console.log(result.containsProfanity); // boolean
+console.log(result.profaneWords);      // string[]
+console.log(result.processedText);     // string | undefined
+```
+
+## Python
+
+<Tabs items={['pip', 'poetry', 'conda']}>
+  <Tab value="pip">
+    ```bash copy title="Install with pip"
+    pip install glin-profanity
+    ```
+    
+    ### Virtual Environment (Recommended)
+    ```bash copy title="With virtual environment"
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    pip install glin-profanity
+    ```
+    
+    ### Development Dependencies
+    ```bash copy title="With dev dependencies"
+    pip install glin-profanity[dev]
+    # Includes: mypy, pytest, black, ruff
+    ```
+  </Tab>
+  
+  <Tab value="poetry">
+    ```bash copy title="Install with Poetry"
+    poetry add glin-profanity
+    ```
+    
+    ### Development Group
+    ```bash copy title="Poetry dev dependencies"
+    poetry add glin-profanity --group dev
+    ```
+    
+    ### Multiple Groups
+    ```bash copy title="Multiple dependency groups"
+    poetry add glin-profanity  # Main dependencies
+    poetry add pytest mypy --group test
+    poetry add black ruff --group lint
+    ```
+  </Tab>
+  
+  <Tab value="conda">
+    ```bash copy title="Install with Conda"
+    conda install -c conda-forge glin-profanity
+    ```
+    
+    ### Conda Environment
+    ```bash copy title="New conda environment"
+    conda create -n profanity-env python=3.10
+    conda activate profanity-env
+    conda install -c conda-forge glin-profanity
+    ```
+  </Tab>
+</Tabs>
+
+### Quick Verification (Python)
+
+<Steps>
+  <Step>
+    Create a test file to verify installation:
+    
+    ```python copy title="test_installation.py"
+    from glin_profanity import Filter
+    
+    # Create filter instance
+    filter_instance = Filter({
+        "languages": ["english"],
+        "enable_context_aware": True
+    })
+    
+    # Basic profanity check
+    result = filter_instance.check_profanity("This is a clean message")
+    
+    print(f"✓ Installation successful: {not result['contains_profanity']}")
+    print(f"Available fields: {list(result.keys())}")
+    ```
+  </Step>
+  
+  <Step>
+    Run the test:
+    
+    ```bash copy
+    python test_installation.py
+    ```
+    
+    Expected output:
+    ```
+    ✓ Installation successful: True
+    Available fields: ['contains_profanity', 'profane_words', 'processed_text', ...]
+    ```
+  </Step>
+</Steps>
+
+### Type Checking (Python)
+
+```python copy title="type_checking.py"
+from typing import Dict, List, Any
+from glin_profanity import Filter, FilterConfig
+
+# Type-safe configuration
+config: FilterConfig = {
+    "languages": ["english", "spanish"],
+    "enable_context_aware": True,
+    "auto_replace": True
+}
+
+filter_instance: Filter = Filter(config)
+
+# Type hints for results
+result: Dict[str, Any] = filter_instance.check_profanity("Test message")
+
+# MyPy compatible type checking ✓
+contains_profanity: bool = result["contains_profanity"]
+profane_words: List[str] = result["profane_words"]
+```
+
+## Development Dependencies
+
+### JavaScript Development
+
+```bash copy title="Development setup"
+npm install --save-dev @types/node typescript ts-node
+npm install glin-profanity
+
+# For testing
+npm install --save-dev jest @types/jest
+```
+
+### Python Development
+
+```bash copy title="Development setup"
+pip install glin-profanity
+pip install --dev mypy pytest black ruff
+
+# Or with poetry
+poetry add glin-profanity
+poetry add mypy pytest black ruff --group dev
+```
+
+## Package Details
+
+### JavaScript Package
+
+```json title="package.json dependencies"
+{
+  "dependencies": {
+    "glin-profanity": "^2.3.2"
+  }
+}
+```
+
+**Package size**: ~850KB (includes 23 language dictionaries)  
+**Tree-shaking**: Supports ES modules and dead code elimination  
+**Dependencies**: Zero runtime dependencies  
+**Browser support**: ES2020+ (Chrome 80+, Firefox 72+, Safari 13.1+)
+
+### Python Package
+
+```toml title="pyproject.toml dependencies"
+[tool.poetry.dependencies]
+python = "^3.8"
+glin-profanity = "^2.3.2"
+```
+
+**Package size**: ~1.2MB (includes language dictionaries and type stubs)  
+**Dependencies**: No required dependencies, optional dev dependencies  
+**Python support**: 3.8, 3.9, 3.10, 3.11, 3.12  
+**Type checking**: Full MyPy support with included stubs
+
+## Troubleshooting Installation
+
+### Common JavaScript Issues
+
+<Callout type="warn" title="Module Resolution">
+**Issue**: `Cannot resolve module 'glin-profanity'`
+
+**Solutions**:
+```bash
+# Clear npm cache
+npm cache clean --force
+npm install
+
+# Check Node.js version
+node --version  # Should be 16.0.0+
+
+# Reinstall with exact version
+npm install glin-profanity@2.3.2
+```
+</Callout>
+
+### Common Python Issues
+
+<Callout type="warn" title="Import Errors">
+**Issue**: `ModuleNotFoundError: No module named 'glin_profanity'`
+
+**Solutions**:
+```bash
+# Check Python version
+python --version  # Should be 3.8.0+
+
+# Check installation
+pip show glin-profanity
+
+# Force reinstall
+pip uninstall glin-profanity
+pip install glin-profanity
+
+# Virtual environment activation
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate     # Windows
+```
+</Callout>
+
+### Network Issues
+
+If you're behind a corporate firewall:
+
+```bash title="Corporate proxy setup"
+# npm with proxy
+npm install glin-profanity --proxy http://proxy.company.com:8080
+
+# pip with proxy
+pip install glin-profanity --proxy http://proxy.company.com:8080
+
+# Or set environment variables
+export https_proxy=http://proxy.company.com:8080
+export http_proxy=http://proxy.company.com:8080
+```
+
+### Memory Issues
+
+For memory-constrained environments:
+
+```javascript title="Minimal installation (JS)"
+// Import only what you need
+import { checkProfanity } from 'glin-profanity/core';
+// Smaller bundle size, basic functionality only
+```
+
+```python title="Minimal installation (Python)"
+# Use specific language dictionaries only
+from glin_profanity import Filter
+
+filter_instance = Filter({
+    "languages": ["english"],  # Single language only
+    "enable_context_aware": False  # Disable NLP features
+})
+```
+
+## Next Steps
+
+After successful installation:
+
+1. **Quick Start**: Try the [Quick Start Guide](/docs/glin-profanity/quickstart) for working examples
+2. **Configuration**: Learn about [Configuration Options](/docs/glin-profanity/configuration) to customize behavior
+3. **Framework Integration**: Set up with [React, Vue, Django, or Flask](/docs/glin-profanity/installation/frameworks)
+4. **API Reference**: Explore the complete [API Documentation](/docs/glin-profanity/core-functions)
+
+<Callout type="info">
+**Having issues?** Check our [Troubleshooting Guide](/docs/glin-profanity/troubleshooting) or [GitHub Issues](https://github.com/GLINKER/glin-profanity/issues) for additional help.
+</Callout>

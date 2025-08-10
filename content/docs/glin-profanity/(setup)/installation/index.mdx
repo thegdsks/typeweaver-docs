@@ -1,0 +1,116 @@
+---
+title: Installation Overview
+description: Choose your preferred installation method for Glin-Profanity across JavaScript, TypeScript, and Python environments
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="info" title="🚀 Universal Library">
+One API, multiple languages. Get profanity detection running in JavaScript, TypeScript, or Python with 23-language support.
+</Callout>
+
+Glin-Profanity offers multiple installation paths tailored to your project needs. Choose the approach that best fits your development workflow:
+
+<Cards>
+  <Card
+    title="📦 Package Managers"
+    description="Standard npm, yarn, pnpm, pip, poetry installation"
+    href="/docs/glin-profanity/installation/package-managers"
+  />
+  <Card
+    title="⚛️ Framework Integration"
+    description="React, Vue, Next.js, Express, Django, Flask setups"
+    href="/docs/glin-profanity/installation/frameworks"
+  />
+  <Card
+    title="🐳 Docker & Containers"
+    description="Containerized deployments and CI/CD pipelines"
+    href="/docs/glin-profanity/installation/docker"
+  />
+  <Card
+    title="🔗 CDN & Browser"
+    description="Direct browser usage without build tools"
+    href="/docs/glin-profanity/installation/browser"
+  />
+</Cards>
+
+## Quick Start
+
+For immediate setup, here are the most common installation commands:
+
+### JavaScript/TypeScript
+```bash copy
+npm install glin-profanity
+```
+
+### Python
+```bash copy
+pip install glin-profanity
+```
+
+### Verification
+```javascript copy title="test.js"
+import { checkProfanity } from 'glin-profanity';
+console.log('✓ Ready:', checkProfanity('test').containsProfanity === false);
+```
+
+```python copy title="test.py"
+from glin_profanity import Filter
+filter = Filter()
+print('✓ Ready:', not filter.check_profanity('test')['contains_profanity'])
+```
+
+## System Requirements
+
+| Platform | Minimum Version | Recommended |
+|----------|-----------------|-------------|
+| **Node.js** | 16.0.0 | 18.0.0+ |
+| **Python** | 3.8.0 | 3.10.0+ |
+| **TypeScript** | 4.5.0 | 5.0.0+ |
+| **React** | 16.8.0 | 18.0.0+ |
+
+## Installation Methods
+
+Choose the installation approach that best fits your project:
+
+### Standard Package Installation
+For most projects, use the standard package managers → [**Package Managers Guide**](/docs/glin-profanity/installation/package-managers)
+
+### Framework-Specific Setup  
+Tailored installation for React, Vue, Next.js, Django, Flask → [**Framework Integration**](/docs/glin-profanity/installation/frameworks)
+
+### Production Deployments
+Docker containers, CI/CD pipelines, cloud deployments → [**Docker & Containers**](/docs/glin-profanity/installation/docker)
+
+### Browser-Direct Usage
+CDN links, no-build setups, vanilla HTML/JS → [**Browser Installation**](/docs/glin-profanity/installation/browser)
+
+## Common Installation Patterns
+
+### For New Projects
+1. [Package Managers](/docs/glin-profanity/installation/package-managers) - Standard npm/pip installation
+2. [Quick Start](/docs/glin-profanity/quickstart) - Basic setup verification
+3. [Configuration](/docs/glin-profanity/configuration) - Customize behavior
+
+### For Existing Applications  
+1. [Framework Integration](/docs/glin-profanity/installation/frameworks) - React, Vue, Django, Flask setups
+2. [Server Integration](/docs/glin-profanity/server-integration) - Production deployment patterns
+3. [API Reference](/docs/glin-profanity/core-functions) - Method documentation
+
+### For Production Environments
+1. [Docker Setup](/docs/glin-profanity/installation/docker) - Containerized deployments
+2. [Config Presets](/docs/glin-profanity/config-presets) - Production-ready configurations
+3. [Dictionary Management](/docs/glin-profanity/dictionary-management) - Language updates and customization
+
+<Callout type="info" title="Need Help?">
+**Quick Start**: Most users should begin with [Package Managers](/docs/glin-profanity/installation/package-managers) followed by the [Quick Start Guide](/docs/glin-profanity/quickstart).
+
+**Framework Users**: Jump directly to [Framework Integration](/docs/glin-profanity/installation/frameworks) for React, Vue, Django, or Flask setup.
+
+**Production Deployment**: See [Docker & Containers](/docs/glin-profanity/installation/docker) for production-ready setups.
+</Callout>
+
+---
+
+**Next**: Choose your installation method above, or continue with [Package Managers](/docs/glin-profanity/installation/package-managers) for the standard setup.

@@ -1,0 +1,9 @@
+{
+  "title": "CLI Reference",
+  "defaultOpen": false,
+  "pages": [
+    "cli-reference",
+    "examples", 
+    "troubleshooting"
+  ]
+}

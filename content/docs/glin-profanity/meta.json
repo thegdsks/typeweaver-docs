@@ -1,0 +1,18 @@
+{
+  "title": "Glin-Profanity",
+  "description": "Multi-language profanity detection library",
+  "icon": "Shield",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "...(introduction)",
+    "---Setup---",
+    "...(setup)",
+    "---API Reference---",
+    "...(api-reference)",
+    "---Advanced---", 
+    "...(advanced)",
+    "---Roadmap---",
+    "...(roadmap)"
+  ]
+}

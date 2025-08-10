@@ -1,0 +1,13 @@
+{
+  "title": "API Reference",
+  "defaultOpen": false,
+  "pages": [
+    "core-functions",
+    "react-hook",
+    "filter-class",
+    "ml-toxicity-detector",
+    "hybrid-filter",
+    "python-api",
+    "cross-reference"
+  ]
+}

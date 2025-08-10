@@ -1,0 +1,13 @@
+{
+  "title": "Config Templates",
+  "defaultOpen": false,
+  "description": "Predefined configuration templates for CommitWeave",
+  "icon": "Template",
+  "pages": [
+    "index",
+    "team-standard",
+    "open-source-friendly",
+    "enterprise-secure",
+    "offline-local-ai"
+  ]
+}

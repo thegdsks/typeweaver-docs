@@ -1,0 +1,6 @@
+{
+  "title": "TypeWeaver Documentation",
+  "description": "Comprehensive documentation for TypeWeaver projects",
+  "icon": "BookOpen",
+  "pages": ["commitweave", "glin-profanity"]
+}

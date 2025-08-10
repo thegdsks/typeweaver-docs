@@ -1,0 +1,243 @@
+---
+title: Enterprise Secure Configuration
+description: Security-focused setup with strict validation, no AI dependencies, and audit-friendly logging
+---
+
+## When to Use
+
+Essential for enterprise environments requiring:
+
+- **Zero external API dependencies** for security compliance
+- **Strict commit message validation** for audit trails
+- **Deterministic behavior** without AI unpredictability
+- **Data sovereignty** with no information leaving the network
+- **Compliance-ready logging** for security audits
+
+This configuration prioritizes security and predictability over convenience, making it ideal for regulated industries and security-conscious organizations.
+
+## Configuration Template
+
+```json copy
+{
+  "$schema": "https://commitweave.dev/schema.json",
+  "ai": {
+    "enabled": false,
+    "allowFallback": false,
+    "logAttempts": true
+  },
+  "commit": {
+    "type": {
+      "required": true,
+      "strict": true,
+      "enum": [
+        "feat", "fix", "docs", "refactor", 
+        "test", "build", "chore"
+      ]
+    },
+    "scope": {
+      "required": true,
+      "strict": true,
+      "enum": [
+        "auth", "api", "ui", "db", "config",
+        "security", "audit", "compliance"
+      ]
+    },
+    "emoji": {
+      "enabled": false,
+      "allowed": false
+    },
+    "format": {
+      "maxLength": 50,
+      "minLength": 20,
+      "case": "lowercase",
+      "wrapBody": 50,
+      "enforceBlankLine": true,
+      "noSpecialChars": true
+    },
+    "breaking": {
+      "required": true,
+      "format": "BREAKING CHANGE:",
+      "requireApproval": true
+    }
+  },
+  "git": {
+    "signoff": true,
+    "gpgSign": true,
+    "requireCleanIndex": true,
+    "hooks": {
+      "skipVerify": false,
+      "enforceAll": true,
+      "validateMessage": true,
+      "requireTests": true
+    }
+  },
+  "ui": {
+    "interactive": true,
+    "fancyUI": false,
+    "asciiArt": false,
+    "animations": false,
+    "colors": false,
+    "emoji": false,
+    "editor": "${EDITOR:-vi}",
+    "prompts": {
+      "confirmCommit": true,
+      "showPreview": true,
+      "allowEdit": false,
+      "requireDescription": true,
+      "requireJustification": true
+    }
+  },
+  "validation": {
+    "enabled": true,
+    "strict": true,
+    "enforceAll": true,
+    "rules": {
+      "typeRequired": true,
+      "scopeRequired": true,
+      "maxLength": 50,
+      "minLength": 20,
+      "noEmoji": true,
+      "noSpecialChars": true,
+      "conventionalFormat": true,
+      "requireBody": true,
+      "requireFooter": false,
+      "breakingChangeFormat": true,
+      "noSecrets": true,
+      "auditCompliant": true
+    }
+  },
+  "security": {
+    "stripSecrets": true,
+    "logCommits": true,
+    "requireSignature": true,
+    "validateAuthor": true,
+    "auditTrail": true,
+    "secretPatterns": [
+      "password", "token", "key", "secret", 
+      "credential", "api_key", "private"
+    ]
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "auditLog": "/var/log/commitweave/audit.log",
+    "retentionDays": 365,
+    "includeMetadata": true
+  }
+}
+```
+
+## Security Features
+
+### Secret Detection and Stripping
+CommitWeave automatically scans for and removes sensitive information:
+- **API Keys**: `OPENAI_API_KEY`, `SECRET_TOKEN`
+- **Passwords**: `password=`, `pwd:`
+- **Private Keys**: `-----BEGIN PRIVATE KEY-----`
+- **Database URLs**: Connection strings with credentials
+
+### Audit Trail
+All commit operations are logged with:
+- **User identification**: Author name and email
+- **Timestamp**: ISO 8601 format with timezone
+- **Operation details**: Command used, validation results
+- **Security events**: Secret detection, validation failures
+
+## Setup Instructions
+
+1. **Save the configuration** as `.commitweave.json` in your project root
+2. **Configure GPG signing** for commit verification:
+   ```bash
+   git config --global user.signingkey YOUR_GPG_KEY_ID
+   git config --global commit.gpgsign true
+   ```
+3. **Set up audit logging** directory:
+   ```bash
+   sudo mkdir -p /var/log/commitweave
+   sudo chown $USER:$USER /var/log/commitweave
+   ```
+4. **Test security features**:
+   ```bash
+   commitweave doctor --security-check
+   ```
+
+<Callout type="warn">
+**Security Note**: This configuration requires GPG signing and strict validation. Ensure all team members have proper GPG setup before deployment.
+</Callout>
+
+## Enterprise Workflow
+
+### Secure Commit Process
+```bash
+# Interactive commit with security validation
+commitweave commit --validate --secure
+
+# Verify commit before push
+commitweave validate --security --range HEAD~1..HEAD
+
+# Export sanitized config for sharing
+commitweave config --export --strip-secrets
+```
+
+### Compliance Verification
+```bash
+# Generate audit report
+commitweave audit --range main..HEAD --format compliance
+
+# Validate all commits meet security standards  
+commitweave validate --strict --security --range origin/main..HEAD
+
+# Check for potential secrets in history
+commitweave security --scan-history --depth 100
+```
+
+## Config Export for Teams
+
+When sharing configuration across teams, use the built-in secret stripping:
+
+```bash
+# Export clean config without sensitive data
+commitweave config --export --output team-config.json --strip-secrets
+
+# Validate exported config
+commitweave config --validate --file team-config.json
+```
+
+The exported config will have sensitive values replaced with placeholders:
+```json
+{
+  "security": {
+    "auditLog": "${AUDIT_LOG_PATH}",
+    "secretPatterns": ["***REDACTED***"]
+  }
+}
+```
+
+## Compliance Integration
+
+### CI/CD Pipeline Integration
+```yaml
+# .github/workflows/security-validation.yml
+name: Security Validation
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: npm install -g commitweave
+      - run: commitweave validate --strict --security --audit --range ${{ github.event.before }}..${{ github.event.after }}
+      - run: commitweave security --scan-commits --range ${{ github.event.before }}..${{ github.event.after }}
+```
+
+### Integration with Security Tools
+- **SonarQube**: Export audit logs in compatible format
+- **Splunk**: Forward commit logs for security monitoring  
+- **JIRA**: Link commits to security tickets automatically
+- **Vault**: Integration for secure secret management
+
+---
+
+**Related Templates**: [Team Standard](/docs/commitweave/config-templates/team-standard) • [Offline Local AI](/docs/commitweave/config-templates/offline-local-ai)

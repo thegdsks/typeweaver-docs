@@ -1,0 +1,345 @@
+---
+title: Toxicity Labels
+description: Understanding the 7 toxicity categories detected by ML analysis
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+The ML toxicity model detects 7 distinct categories of harmful content. Understanding these labels helps you configure detection thresholds and handle different types of toxicity appropriately.
+
+## Overview
+
+<TypeTable
+  type={{
+    toxicity: {
+      description: "General toxic content - the broadest category",
+      type: "Catch-all for harmful content"
+    },
+    insult: {
+      description: "Personal attacks and put-downs",
+      type: "Direct attacks on individuals"
+    },
+    threat: {
+      description: "Threats of violence or harm",
+      type: "Physical or implied threats"
+    },
+    identity_attack: {
+      description: "Attacks based on identity characteristics",
+      type: "Race, religion, gender, etc."
+    },
+    obscene: {
+      description: "Vulgar or obscene content",
+      type: "Explicit language without target"
+    },
+    severe_toxicity: {
+      description: "Highly toxic content requiring immediate action",
+      type: "Extreme cases"
+    },
+    sexual_explicit: {
+      description: "Sexually explicit content",
+      type: "Adult content"
+    }
+  }}
+/>
+
+## Detailed Category Breakdown
+
+<Accordions>
+
+<Accordion title="toxicity" id="toxicity">
+
+**The broadest category** — flags generally toxic or harmful content that may not fit neatly into other categories.
+
+**Examples detected:**
+- "this is the worst thing I've ever seen"
+- "you people are all the same"
+- "what a joke"
+- "nobody cares about your opinion"
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['toxicity'], // Use alone for general screening
+  threshold: 0.85,
+});
+```
+
+**Use cases:**
+- General content screening
+- Catch-all for borderline content
+- First-pass filtering
+
+</Accordion>
+
+<Accordion title="insult" id="insult">
+
+**Personal attacks and put-downs** — direct attacks on a person's character, intelligence, or worth.
+
+**Examples detected:**
+- "you are an idiot"
+- "what a moron"
+- "you're worthless"
+- "such a loser"
+- "you're terrible at this"
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['insult', 'toxicity'],
+  threshold: 0.8,
+});
+```
+
+**Use cases:**
+- Chat moderation
+- Comment sections
+- Gaming communities
+- Professional platforms
+
+</Accordion>
+
+<Accordion title="threat" id="threat">
+
+**Threats of violence or harm** — content suggesting physical harm or violence.
+
+**Examples detected:**
+- "I'll find you"
+- "you should watch your back"
+- "I hope something bad happens to you"
+- "you'll regret this"
+
+<Callout type="warning">
+Threat detection should be taken seriously. Consider escalating detected threats for human review.
+</Callout>
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['threat'],
+  threshold: 0.7, // Lower threshold for safety
+});
+```
+
+**Use cases:**
+- Safety-critical applications
+- Direct messaging systems
+- Report flagging
+
+</Accordion>
+
+<Accordion title="identity_attack" id="identity-attack">
+
+**Attacks based on identity** — targeting someone's race, religion, gender, sexual orientation, nationality, or other identity characteristics.
+
+**Examples detected:**
+- Slurs and hate speech
+- Stereotyping statements
+- Discriminatory content
+- Dehumanizing language
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['identity_attack'],
+  threshold: 0.8,
+});
+```
+
+**Use cases:**
+- Hate speech detection
+- Diversity & inclusion enforcement
+- Community safety
+
+</Accordion>
+
+<Accordion title="obscene" id="obscene">
+
+**Vulgar or obscene content** — explicit language that may be inappropriate but isn't necessarily directed at someone.
+
+**Examples detected:**
+- Strong profanity
+- Crude language
+- Vulgar expressions
+- Explicit descriptions
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['obscene'],
+  threshold: 0.85,
+});
+```
+
+**Use cases:**
+- Family-friendly platforms
+- Professional environments
+- Content rating systems
+
+<Callout type="info">
+For explicit profanity, rule-based detection is often faster and equally effective. Use ML for contextual obscenity.
+</Callout>
+
+</Accordion>
+
+<Accordion title="severe_toxicity" id="severe-toxicity">
+
+**Highly toxic content** — the most extreme cases requiring immediate action.
+
+**Examples detected:**
+- Extremely offensive content
+- Combination of multiple toxic elements
+- Content that could cause significant harm
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['severe_toxicity'],
+  threshold: 0.9, // High threshold, only catch definite cases
+});
+```
+
+**Use cases:**
+- Zero-tolerance policies
+- Automatic removal triggers
+- Escalation to human moderators
+
+</Accordion>
+
+<Accordion title="sexual_explicit" id="sexual-explicit">
+
+**Sexually explicit content** — adult content that may be inappropriate for general audiences.
+
+**Examples detected:**
+- Sexual descriptions
+- Adult content
+- Suggestive material
+
+**Configuration:**
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['sexual_explicit'],
+  threshold: 0.85,
+});
+```
+
+**Use cases:**
+- Age-gated platforms
+- Content rating
+- NSFW filtering
+
+</Accordion>
+
+</Accordions>
+
+## Choosing Labels for Your Use Case
+
+### Chat/Gaming Moderation
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['insult', 'threat', 'toxicity'],
+  threshold: 0.8,
+});
+```
+
+### Professional/Workplace
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['insult', 'identity_attack', 'sexual_explicit', 'threat'],
+  threshold: 0.85,
+});
+```
+
+### Family-Friendly Platform
+```typescript
+const detector = new ToxicityDetector({
+  labels: ToxicityDetector.ALL_LABELS, // All 7 categories
+  threshold: 0.8,
+});
+```
+
+### Safety-Critical (Threats Focus)
+```typescript
+const detector = new ToxicityDetector({
+  labels: ['threat', 'severe_toxicity'],
+  threshold: 0.7, // Lower threshold for safety
+});
+```
+
+## Handling Different Categories
+
+```typescript
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+async function handleByCategory(text: string) {
+  const detector = new ToxicityDetector({ threshold: 0.8 });
+  const result = await detector.analyze(text);
+
+  if (!result.isToxic) {
+    return { action: 'allow' };
+  }
+
+  // Handle by severity
+  if (result.matchedCategories.includes('threat') ||
+      result.matchedCategories.includes('severe_toxicity')) {
+    return {
+      action: 'block_and_report',
+      escalate: true,
+      reason: 'Potential threat detected',
+    };
+  }
+
+  if (result.matchedCategories.includes('identity_attack')) {
+    return {
+      action: 'block',
+      warn: true,
+      reason: 'Hate speech policy violation',
+    };
+  }
+
+  if (result.matchedCategories.includes('insult')) {
+    return {
+      action: 'warn',
+      reason: 'Please keep discussions respectful',
+    };
+  }
+
+  // Default handling
+  return {
+    action: 'flag_for_review',
+    categories: result.matchedCategories,
+  };
+}
+```
+
+## Threshold Guidelines
+
+| Category | Conservative | Balanced | Sensitive |
+|----------|-------------|----------|-----------|
+| toxicity | 0.9 | 0.85 | 0.75 |
+| insult | 0.9 | 0.85 | 0.8 |
+| threat | 0.8 | 0.7 | 0.6 |
+| identity_attack | 0.85 | 0.8 | 0.75 |
+| obscene | 0.9 | 0.85 | 0.8 |
+| severe_toxicity | 0.95 | 0.9 | 0.85 |
+| sexual_explicit | 0.9 | 0.85 | 0.8 |
+
+<Callout type="tip">
+Start with balanced thresholds and adjust based on your false positive/negative rates in production.
+</Callout>
+
+## Model Limitations
+
+- **English-focused:** The model is trained primarily on English text
+- **Context gaps:** May miss sarcasm or context-dependent meaning
+- **Cultural bias:** Training data reflects Western internet culture
+- **New slang:** May not catch recently coined terms
+
+For comprehensive coverage, combine ML with rule-based detection using [HybridFilter](/docs/glin-profanity/hybrid-filter).
+
+## Cross-References
+
+- **[ToxicityDetector API](/docs/glin-profanity/ml-toxicity-detector)** — API reference
+- **[HybridFilter](/docs/glin-profanity/hybrid-filter)** — Combined ML + rules
+- **[ML Integration Guide](/docs/glin-profanity/ml-integration)** — Best practices

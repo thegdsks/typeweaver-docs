@@ -1,0 +1,318 @@
+---
+title: Hybrid Detection Strategies
+description: Choosing the right combination mode for rule-based and ML detection
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The HybridFilter's `combinationMode` determines how rule-based and ML results are combined. This guide helps you choose the right strategy for your use case.
+
+## Decision Matrix
+
+| Priority | Mode | When Both Detect | When Only Rules | When Only ML |
+|----------|------|------------------|-----------------|--------------|
+| **Coverage** | `'or'` | ✅ Block | ✅ Block | ✅ Block |
+| **Precision** | `'and'` | ✅ Block | ❌ Allow | ❌ Allow |
+| **ML Trust** | `'ml-override'` | ✅ Block | ❌ Allow | ✅ Block |
+| **Speed** | `'rules-first'` | ✅ Block | ✅ Block | ✅ Block* |
+
+*ML only checked when rules pass
+
+## Mode Details
+
+### `'or'` — Maximum Coverage (Default)
+
+Flag content if **either** detection method finds toxicity.
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'or',
+});
+```
+
+**Behavior:**
+```
+Rules: ✅  ML: ✅  →  Block (both agree)
+Rules: ✅  ML: ❌  →  Block (rules detected)
+Rules: ❌  ML: ✅  →  Block (ML detected)
+Rules: ❌  ML: ❌  →  Allow (neither detected)
+```
+
+**Best for:**
+- User-generated content platforms
+- High-risk environments (gaming, social)
+- When missing toxic content is worse than false positives
+- Comment sections and forums
+
+**Trade-offs:**
+- ✅ Catches the most toxic content
+- ✅ Combines strengths of both methods
+- ❌ Higher false positive rate
+- ❌ Every request runs ML (slower)
+
+---
+
+### `'and'` — Maximum Precision
+
+Flag content only if **both** detection methods agree.
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'and',
+});
+```
+
+**Behavior:**
+```
+Rules: ✅  ML: ✅  →  Block (both agree)
+Rules: ✅  ML: ❌  →  Allow (disagreement)
+Rules: ❌  ML: ✅  →  Allow (disagreement)
+Rules: ❌  ML: ❌  →  Allow (neither detected)
+```
+
+**Best for:**
+- Platforms where false positives are costly
+- Legal/compliance contexts
+- Professional communication tools
+- When you want high confidence
+
+**Trade-offs:**
+- ✅ Very low false positive rate
+- ✅ High confidence in blocked content
+- ❌ May miss some toxic content
+- ❌ Requires both methods to agree
+
+---
+
+### `'ml-override'` — Trust the ML
+
+Use ML result when available, fall back to rules if ML unavailable.
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'ml-override',
+});
+```
+
+**Behavior:**
+```
+ML available:
+  ML: ✅  →  Block (regardless of rules)
+  ML: ❌  →  Allow (regardless of rules)
+
+ML unavailable:
+  Rules: ✅  →  Block (fallback)
+  Rules: ❌  →  Allow (fallback)
+```
+
+**Best for:**
+- When ML is more accurate than your word lists
+- Context-heavy content (reviews, discussions)
+- Platforms where "damn good" shouldn't be blocked
+- When false positives from rules are a problem
+
+**Trade-offs:**
+- ✅ ML handles context better
+- ✅ Fewer false positives from word lists
+- ❌ May miss explicit profanity ML overlooks
+- ❌ Depends heavily on ML accuracy
+
+---
+
+### `'rules-first'` — Speed with Safety Net
+
+Use fast rules first, only invoke ML for content that passes rules.
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'rules-first',
+  borderlineThreshold: 0.5, // ML score threshold
+});
+```
+
+**Behavior:**
+```
+Rules: ✅  →  Block immediately (no ML needed)
+Rules: ❌  →  Check ML
+  ML score >= 0.5 & toxic:  →  Block
+  ML score >= 0.5 & clean:  →  Allow (ML verified)
+  ML score < 0.5:           →  Allow (skip ML)
+```
+
+**Best for:**
+- High-volume APIs
+- Real-time chat applications
+- When latency matters
+- Balanced coverage and speed
+
+**Trade-offs:**
+- ✅ Fast for obvious profanity (rules only)
+- ✅ ML catches what rules miss
+- ✅ Lower ML compute costs
+- ❌ Slightly more complex logic
+
+## Choosing Your Strategy
+
+<Tabs items={['Decision Flow', 'By Use Case', 'By Priority']}>
+  <Tab value="Decision Flow">
+    ```
+    Start
+      │
+      ▼
+    Is speed critical (<10ms)?
+      │
+      ├─ Yes → Use 'rules-first' or rules-only
+      │
+      └─ No
+          │
+          ▼
+        Are false positives costly?
+          │
+          ├─ Yes → Use 'and' for precision
+          │
+          └─ No
+              │
+              ▼
+            Do you trust ML over rules?
+              │
+              ├─ Yes → Use 'ml-override'
+              │
+              └─ No → Use 'or' for coverage
+    ```
+  </Tab>
+
+  <Tab value="By Use Case">
+    | Use Case | Recommended Mode |
+    |----------|-----------------|
+    | Gaming chat | `'or'` |
+    | Social media | `'or'` |
+    | Professional Slack | `'and'` |
+    | Customer support | `'and'` |
+    | Product reviews | `'ml-override'` |
+    | Forum discussions | `'ml-override'` |
+    | Real-time chat | `'rules-first'` |
+    | High-volume API | `'rules-first'` |
+  </Tab>
+
+  <Tab value="By Priority">
+    | Your Priority | Mode | Reason |
+    |---------------|------|--------|
+    | Catch everything | `'or'` | Either method can flag |
+    | Never wrongly block | `'and'` | Both must agree |
+    | Context matters | `'ml-override'` | ML understands context |
+    | Low latency | `'rules-first'` | Rules are fast |
+  </Tab>
+</Tabs>
+
+## Performance Comparison
+
+| Mode | Avg Latency | ML Calls | False Positives | Coverage |
+|------|-------------|----------|-----------------|----------|
+| `'or'` | ~80ms | Every request | Higher | Highest |
+| `'and'` | ~80ms | Every request | Lowest | Lower |
+| `'ml-override'` | ~80ms | Every request | Low | Good |
+| `'rules-first'` | ~5-80ms | Only on pass | Medium | High |
+
+## Configuration Examples
+
+### High-Security Platform
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'or',
+  mlThreshold: 0.75, // Lower threshold = more sensitive
+  mlLabels: ['threat', 'identity_attack', 'severe_toxicity'],
+  detectLeetspeak: true,
+  allowObfuscatedMatch: true,
+});
+```
+
+### Professional Workspace
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'and',
+  mlThreshold: 0.9, // High threshold = fewer false positives
+  languages: ['english'],
+});
+```
+
+### High-Volume Chat
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'rules-first',
+  borderlineThreshold: 0.6,
+  mlLabels: ['insult', 'threat', 'toxicity'],
+  detectLeetspeak: true,
+});
+```
+
+### Review/Discussion Platform
+
+```typescript
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'ml-override',
+  mlThreshold: 0.85,
+});
+```
+
+## Adjusting Borderline Threshold
+
+For `'rules-first'` mode, the `borderlineThreshold` determines when ML is consulted:
+
+```typescript
+// Conservative: ML checks most content
+{ borderlineThreshold: 0.3 }
+
+// Balanced: ML for medium-confidence cases
+{ borderlineThreshold: 0.5 }
+
+// Aggressive: ML only for uncertain cases
+{ borderlineThreshold: 0.7 }
+```
+
+<Callout type="tip">
+Start with `0.5` and adjust based on your coverage vs. speed requirements.
+</Callout>
+
+## Monitoring Your Choice
+
+Track these metrics to validate your mode choice:
+
+```typescript
+async function moderateWithMetrics(text: string) {
+  const result = await filter.checkProfanityAsync(text);
+
+  metrics.record({
+    mode: 'rules-first',
+    rulesDetected: result.ruleBasedResult.containsProfanity,
+    mlDetected: result.mlResult?.isToxic ?? null,
+    finalDecision: result.isToxic,
+    confidence: result.confidence,
+    latency: result.processingTimeMs,
+  });
+
+  return result;
+}
+
+// Review metrics to optimize:
+// - High rules+ML disagreement? Consider 'and' or 'ml-override'
+// - Too many false positives? Raise thresholds or use 'and'
+// - Missing toxic content? Lower thresholds or use 'or'
+```
+
+## Cross-References
+
+- **[HybridFilter API](/docs/glin-profanity/hybrid-filter)** — Full API reference
+- **[ML Integration Guide](/docs/glin-profanity/ml-integration)** — Best practices
+- **[Toxicity Labels](/docs/glin-profanity/toxicity-labels)** — ML category details

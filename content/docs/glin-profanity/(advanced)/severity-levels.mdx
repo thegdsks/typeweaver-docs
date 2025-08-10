@@ -1,0 +1,670 @@
+---
+title: Severity Levels
+description: EXACT vs FUZZY profanity classification with minimum severity filtering
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+Advanced profanity classification system that categorizes matches as EXACT (direct dictionary matches) or FUZZY (approximate/obfuscated matches) with minimum severity threshold filtering for granular control over detection sensitivity.
+
+<Callout type="info">
+Severity levels enable sophisticated filtering strategies - flag only EXACT matches for strict environments, or include FUZZY matches to catch obfuscated profanity in high-risk scenarios.
+</Callout>
+
+## SeverityLevel Enumeration
+
+<TypeTable
+  type={{
+    EXACT: {
+      description: "Direct dictionary match with exact character matching",
+      type: "1",
+      default: "Standard profanity detection - 'damn', 'shit', 'fuck'"
+    },
+    FUZZY: {
+      description: "Approximate match through fuzzy matching or obfuscation",
+      type: "2", 
+      default: "Obfuscated patterns - 'd*mn', 'sh1t', 'f*ck'"
+    }
+  }}
+/>
+
+### Cross-Language Implementation
+
+Both JavaScript and Python use identical severity enumeration values:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```typescript
+    export enum SeverityLevel {
+      EXACT = 1,  // Direct dictionary matches
+      FUZZY = 2,  // Fuzzy/obfuscated matches
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python
+    from enum import IntEnum
+    
+    class SeverityLevel(IntEnum):
+        EXACT = 1  # Direct dictionary matches  
+        FUZZY = 2  # Fuzzy/obfuscated matches
+    ```
+  </Tab>
+</Tabs>
+
+## Severity Classification Algorithm
+
+The system evaluates each profanity match and assigns a severity level based on the detection method used:
+
+<Accordions>
+
+<Accordion title="EXACT Matches - Direct Dictionary Matching" id="exact-matches">
+
+EXACT severity is assigned when profanity is detected through direct dictionary lookup with exact character matching.
+
+```javascript title="EXACT Match Examples"
+import { Filter } from 'glin-profanity';
+
+const filter = new Filter({ 
+  severityLevels: true,  // Enable severity tracking
+  languages: ['english']
+});
+
+// EXACT matches - direct dictionary words
+const exactCases = [
+  'This is damn good',           // 'damn' → EXACT
+  'Holy shit that was bad',      // 'shit' → EXACT
+  'What the fuck is this?',      // 'fuck' → EXACT
+  'You bastard!',                // 'bastard' → EXACT
+  'That bitch is annoying'       // 'bitch' → EXACT
+];
+
+exactCases.forEach(text => {
+  const result = filter.checkProfanity(text);
+  console.log(`Text: "${text}"`);
+  console.log(`Severity Map:`, result.severityMap);
+  // Output: { "damn": 1, "shit": 1, "fuck": 1, ... } (all EXACT = 1)
+});
+```
+
+**EXACT Detection Conditions:**
+- Word exists in dictionary exactly as written
+- Case-insensitive matching (if `caseSensitive: false`)
+- Word boundary matching (if `wordBoundaries: true`)
+- No character substitution or fuzzy matching applied
+
+**Performance:** Fastest detection method using direct hash table lookup
+
+</Accordion>
+
+<Accordion title="FUZZY Matches - Approximate & Obfuscated Detection" id="fuzzy-matches">
+
+FUZZY severity is assigned when profanity is detected through fuzzy matching algorithms or obfuscation normalization.
+
+```javascript title="FUZZY Match Examples"
+import { Filter } from 'glin-profanity';
+
+const filter = new Filter({
+  severityLevels: true,
+  allowObfuscatedMatch: true,    // Enable obfuscation detection
+  fuzzyToleranceLevel: 0.8,      // Character similarity threshold
+  languages: ['english']
+});
+
+// FUZZY matches - obfuscated and approximate patterns
+const fuzzyCases = [
+  'This is d*mn annoying',       // 'd*mn' → FUZZY (asterisk removal)
+  'What sh1t is this?',          // 'sh1t' → FUZZY (number substitution)
+  'Holy $hit that sucks',        // '$hit' → FUZZY (dollar substitution)
+  'You f@cking idiot',           // 'f@cking' → FUZZY (@ substitution)
+  'Such a b!tch move',           // 'b!tch' → FUZZY (! substitution)
+  'This is dmn bad'              // 'dmn' → FUZZY (missing character)
+];
+
+fuzzyCases.forEach(text => {
+  const result = filter.checkProfanity(text);
+  console.log(`Text: "${text}"`);
+  console.log(`Severity Map:`, result.severityMap);
+  // Output: { "d*mn": 2, "sh1t": 2, "$hit": 2, ... } (all FUZZY = 2)
+});
+```
+
+**FUZZY Detection Conditions:**
+- Obfuscated characters replaced (`@→a`, `$→s`, `1→i`, `*→removed`)
+- Fuzzy matching with similarity above tolerance threshold
+- Missing or extra characters within tolerance
+- Repeated character normalization
+
+**Performance:** Slower due to text normalization and fuzzy comparison algorithms
+
+</Accordion>
+
+</Accordions>
+
+## Minimum Severity Filtering
+
+Filter profanity results by minimum severity threshold using specialized methods that return only matches meeting the severity criteria.
+
+### JavaScript Implementation
+
+<Tabs items={['Basic Usage', 'Advanced Filtering']}>
+  <Tab value="Basic Usage">
+    ```javascript title="JavaScript Minimum Severity Filtering"
+    import { Filter, SeverityLevel } from 'glin-profanity';
+
+    const filter = new Filter({
+      severityLevels: true,
+      allowObfuscatedMatch: true
+    });
+
+    const text = "What the hell is this f*ck?";
+
+    // Only include FUZZY matches (obfuscated patterns)
+    const fuzzyOnly = filter.checkProfanityWithMinSeverity(text, SeverityLevel.FUZZY);
+    console.log(fuzzyOnly.filteredWords);  // ["f*ck"] - only obfuscated word
+    console.log(fuzzyOnly.result.severityMap);  // { "f*ck": 2 }
+
+    // Include all matches (EXACT + FUZZY)  
+    const allMatches = filter.checkProfanityWithMinSeverity(text, SeverityLevel.EXACT);
+    console.log(allMatches.filteredWords);  // ["hell", "f*ck"] - both words
+    console.log(allMatches.result.severityMap);  // { "hell": 1, "f*ck": 2 }
+    ```
+  </Tab>
+  
+  <Tab value="Advanced Filtering">
+    ```javascript title="Advanced Severity-Based Filtering"
+    import { Filter, SeverityLevel } from 'glin-profanity';
+
+    // Content moderation with severity-based actions
+    class SeverityModerator {
+      constructor() {
+        this.filter = new Filter({
+          severityLevels: true,
+          allowObfuscatedMatch: true,
+          enableContextAware: true,
+          confidenceThreshold: 0.7
+        });
+      }
+
+      moderateContent(text, userLevel = 'standard') {
+        const policies = {
+          strict: SeverityLevel.EXACT,    // Only flag direct profanity
+          standard: SeverityLevel.FUZZY,  // Flag all profanity including obfuscated
+          lenient: SeverityLevel.FUZZY    // Same as standard but with context analysis
+        };
+
+        const minSeverity = policies[userLevel] || SeverityLevel.FUZZY;
+        const result = this.filter.checkProfanityWithMinSeverity(text, minSeverity);
+        
+        return {
+          action: this.determineAction(result, userLevel),
+          filteredWords: result.filteredWords,
+          severityBreakdown: this.analyzeSeverity(result.result.severityMap),
+          recommendation: this.getRecommendation(result, userLevel)
+        };
+      }
+
+      analyzeSeverity(severityMap) {
+        const breakdown = { exact: [], fuzzy: [] };
+        
+        for (const [word, severity] of Object.entries(severityMap || {})) {
+          if (severity === SeverityLevel.EXACT) {
+            breakdown.exact.push(word);
+          } else if (severity === SeverityLevel.FUZZY) {
+            breakdown.fuzzy.push(word);
+          }
+        }
+        
+        return breakdown;
+      }
+
+      determineAction(result, userLevel) {
+        if (!result.result.containsProfanity) return 'approve';
+        
+        const { exact, fuzzy } = this.analyzeSeverity(result.result.severityMap);
+        
+        if (userLevel === 'strict' && exact.length > 0) return 'reject';
+        if (userLevel === 'standard' && (exact.length > 0 || fuzzy.length > 2)) return 'flag';
+        if (userLevel === 'lenient' && exact.length > 2) return 'warn';
+        
+        return 'approve';
+      }
+    }
+
+    // Usage example
+    const moderator = new SeverityModerator();
+    const testCases = [
+      'This movie is fucking brilliant!',    // Context-aware: likely positive
+      'You damn sh1t f*cking idiot!',        // High severity: multiple FUZZY
+      'What the hell is wrong?',             // Low severity: single EXACT
+      'This d@mn thing is broken'            // Medium severity: single FUZZY
+    ];
+
+    testCases.forEach(text => {
+      const result = moderator.moderateContent(text, 'standard');
+      console.log(`Text: "${text}"`);
+      console.log(`Action: ${result.action}`);
+      console.log(`EXACT: ${result.severityBreakdown.exact.join(', ')}`);
+      console.log(`FUZZY: ${result.severityBreakdown.fuzzy.join(', ')}`);
+      console.log('---');
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Python Implementation
+
+<Tabs items={['Basic Usage', 'Cross-Language Verification']}>
+  <Tab value="Basic Usage">
+    ```python title="Python Minimum Severity Filtering"
+    from glin_profanity import Filter, SeverityLevel
+
+    filter_instance = Filter({
+        "severity_levels": True,
+        "allow_obfuscated_match": True
+    })
+
+    text = "What the hell is this f*ck?"
+
+    # Only include FUZZY matches (obfuscated patterns)
+    fuzzy_only = filter_instance.check_profanity_with_min_severity(text, SeverityLevel.FUZZY)
+    print(fuzzy_only["filtered_words"])     # ["f*ck"] - only obfuscated word
+    print(fuzzy_only["result"]["severity_map"])  # {"f*ck": 2}
+
+    # Include all matches (EXACT + FUZZY)
+    all_matches = filter_instance.check_profanity_with_min_severity(text, SeverityLevel.EXACT)  
+    print(all_matches["filtered_words"])    # ["hell", "f*ck"] - both words
+    print(all_matches["result"]["severity_map"])  # {"hell": 1, "f*ck": 2}
+    ```
+  </Tab>
+  
+  <Tab value="Cross-Language Verification">
+    ```python title="Cross-Language Parity Testing"
+    from glin_profanity import Filter, SeverityLevel
+
+    def test_severity_parity():
+        """Verify identical behavior between JavaScript and Python implementations."""
+        
+        py_filter = Filter({
+            "severity_levels": True,
+            "allow_obfuscated_match": True,
+            "fuzzy_tolerance_level": 0.8
+        })
+        
+        # Test cases from cross-language parity tests
+        test_cases = [
+            "This damn text is very annoying",
+            "What the hell is this word?",
+            "Testing severity levels works"
+        ]
+        
+        for text in test_cases:
+            # Test complete results
+            full_result = py_filter.check_profanity(text)
+            print(f'Text: "{text}"')
+            print(f'Full severity map: {full_result.get("severity_map", {})}')
+            
+            # Test EXACT+ filtering (includes EXACT and FUZZY)
+            exact_plus = py_filter.check_profanity_with_min_severity(text, SeverityLevel.EXACT)
+            print(f'EXACT+ filtered: {exact_plus["filtered_words"]}')
+            
+            # Test FUZZY-only filtering  
+            fuzzy_only = py_filter.check_profanity_with_min_severity(text, SeverityLevel.FUZZY)
+            print(f'FUZZY-only filtered: {fuzzy_only["filtered_words"]}')
+            print('---')
+
+    test_severity_parity()
+    ```
+  </Tab>
+</Tabs>
+
+## Severity-Based Configuration Strategies
+
+### Content Policy Examples
+
+<Accordions>
+
+<Accordion title="Strict Policy - EXACT Only" id="strict-policy">
+
+Conservative approach that flags only direct profanity, suitable for professional environments and children's platforms.
+
+```javascript title="Strict Configuration"
+// Professional/Educational Environment
+const strictFilter = new Filter({
+  severityLevels: true,
+  allowObfuscatedMatch: false,    // Disable obfuscation detection
+  wordBoundaries: true,           // Exact word matching only
+  fuzzyToleranceLevel: 0.9,       // High tolerance (less fuzzy matching)
+  languages: ['english']
+});
+
+// Usage: Only flag direct dictionary matches
+function moderateStrict(text) {
+  // Only process EXACT matches
+  const result = strictFilter.checkProfanityWithMinSeverity(text, SeverityLevel.EXACT);
+  
+  return {
+    blocked: result.filteredWords.length > 0,
+    reason: result.filteredWords.length > 0 
+      ? `Direct profanity detected: ${result.filteredWords.join(', ')}`
+      : 'Content approved',
+    action: result.filteredWords.length > 0 ? 'block' : 'approve'
+  };
+}
+
+// Test cases
+const testCases = [
+  'This is damn good',           // BLOCKED (direct 'damn')
+  'This is d@mn good',           // ALLOWED (obfuscation ignored)
+  'What the heck is this?',      // ALLOWED (no profanity)
+  'Holy shit that was bad'       // BLOCKED (direct 'shit')
+];
+```
+
+**Use Cases:**
+- Corporate communication platforms  
+- Educational software
+- Children's content platforms
+- Professional forums and documentation
+
+</Accordion>
+
+<Accordion title="Balanced Policy - Contextual FUZZY" id="balanced-policy">
+
+Moderate approach that includes obfuscated profanity but uses context analysis to reduce false positives.
+
+```javascript title="Balanced Configuration"
+// General Consumer Platform  
+const balancedFilter = new Filter({
+  severityLevels: true,
+  allowObfuscatedMatch: true,     // Include obfuscated patterns
+  enableContextAware: true,       // Use context analysis
+  confidenceThreshold: 0.7,       // Moderate context threshold
+  fuzzyToleranceLevel: 0.8,       // Standard fuzzy matching
+  languages: ['english', 'spanish']
+});
+
+// Usage: Include FUZZY but apply context filtering
+function moderateBalanced(text) {
+  const result = balancedFilter.checkProfanityWithMinSeverity(text, SeverityLevel.EXACT);
+  
+  // Apply context-aware decision making
+  const contextOverride = result.result.contextScore && result.result.contextScore > 0.7;
+  const severityWeight = calculateSeverityWeight(result.result.severityMap);
+  
+  return {
+    blocked: !contextOverride && result.filteredWords.length > 0,
+    severity: severityWeight,
+    contextScore: result.result.contextScore,
+    reason: determineReason(result, contextOverride),
+    filteredWords: result.filteredWords,
+    action: determineAction(result, contextOverride, severityWeight)
+  };
+}
+
+function calculateSeverityWeight(severityMap) {
+  if (!severityMap) return 0;
+  
+  let weight = 0;
+  Object.values(severityMap).forEach(severity => {
+    weight += severity === SeverityLevel.EXACT ? 2 : 1;  // EXACT = 2pts, FUZZY = 1pt
+  });
+  
+  return weight;
+}
+
+// Test cases with expected outcomes
+const balancedTests = [
+  {
+    text: 'This movie is fucking amazing!',
+    expected: 'ALLOWED', // Positive context overrides
+    reason: 'Context analysis: positive sentiment'
+  },
+  {
+    text: 'You f*cking idiot piece of shit!',
+    expected: 'BLOCKED', // Multiple severity + negative context
+    reason: 'High severity weight + negative context'
+  },
+  {
+    text: 'This d@mn thing is broken',
+    expected: 'FLAGGED', // Single FUZZY, neutral context
+    reason: 'Low severity, flagged for review'
+  }
+];
+```
+
+**Use Cases:**
+- Social media platforms
+- Gaming chat systems  
+- Comment sections
+- User-generated content platforms
+
+</Accordion>
+
+<Accordion title="Aggressive Policy - All FUZZY + Low Tolerance" id="aggressive-policy">
+
+Comprehensive approach that catches all possible profanity including heavily obfuscated patterns, suitable for high-risk environments.
+
+```javascript title="Aggressive Configuration"
+// High-Risk Gaming/Social Platform
+const aggressiveFilter = new Filter({
+  severityLevels: true,
+  allowObfuscatedMatch: true,     
+  fuzzyToleranceLevel: 0.6,       // Lower tolerance = more aggressive matching
+  wordBoundaries: false,          // Catch partial matches
+  enableContextAware: false,      // No context overrides
+  languages: ['english', 'spanish', 'french']
+});
+
+// Usage: Catch all profanity including heavily disguised
+function moderateAggressive(text) {
+  // Include all FUZZY matches (most comprehensive)
+  const result = aggressiveFilter.checkProfanityWithMinSeverity(text, SeverityLevel.EXACT);
+  
+  const severityAnalysis = analyzeSeverityDistribution(result.result.severityMap);
+  const riskScore = calculateRiskScore(severityAnalysis, text.length);
+  
+  return {
+    blocked: result.filteredWords.length > 0,
+    riskScore: riskScore,
+    severityBreakdown: severityAnalysis,
+    filteredWords: result.filteredWords,
+    recommendation: getRecommendation(riskScore, severityAnalysis),
+    action: determineAggressiveAction(riskScore, severityAnalysis)
+  };
+}
+
+function analyzeSeverityDistribution(severityMap) {
+  const analysis = {
+    exactCount: 0,
+    fuzzyCount: 0,
+    totalWords: 0,
+    severityScore: 0
+  };
+  
+  if (!severityMap) return analysis;
+  
+  Object.values(severityMap).forEach(severity => {
+    analysis.totalWords++;
+    if (severity === SeverityLevel.EXACT) {
+      analysis.exactCount++;
+      analysis.severityScore += 3; // Higher weight for direct matches
+    } else if (severity === SeverityLevel.FUZZY) {
+      analysis.fuzzyCount++;
+      analysis.severityScore += 1; // Lower weight for fuzzy matches  
+    }
+  });
+  
+  return analysis;
+}
+
+// Test cases for aggressive filtering
+const aggressiveTests = [
+  'You f***ing b****d!',          // BLOCKED: Heavy obfuscation
+  'What the h3LL is th1$ $h1t?',  // BLOCKED: Multiple substitutions  
+  'This is bull$***',             // BLOCKED: Mixed obfuscation
+  'Holy cow this is amazing',      // ALLOWED: No profanity
+  'Damn this is good',            // BLOCKED: Direct match
+];
+```
+
+**Use Cases:**
+- Children's gaming platforms
+- Heavily moderated communities  
+- Zero-tolerance environments
+- Compliance-critical applications
+
+</Accordion>
+
+</Accordions>
+
+## Performance Impact by Severity
+
+### Processing Overhead
+
+<Callout type="info">
+Severity level tracking adds minimal overhead (~5-10%) but enables powerful filtering capabilities.
+</Callout>
+
+```javascript title="Performance Comparison"
+// Performance impact of severity tracking
+const basicFilter = new Filter();                    // ~0.1ms per check
+const severityFilter = new Filter({                  // ~0.11ms per check  
+  severityLevels: true
+});
+const advancedFilter = new Filter({                  // ~0.15-0.3ms per check
+  severityLevels: true,
+  allowObfuscatedMatch: true,    // Adds normalization overhead
+  fuzzyToleranceLevel: 0.7       // More aggressive = slower
+});
+
+// Optimization strategies
+const optimizedFilter = new Filter({
+  severityLevels: true,
+  allowObfuscatedMatch: true,    
+  fuzzyToleranceLevel: 0.8,      // Higher tolerance = faster
+  languages: ['english'],        // Single language = faster
+  wordBoundaries: true           // Exact matching = faster (when possible)
+});
+```
+
+### Memory Usage
+
+- **Severity Tracking**: +~0.1KB per result for severity mappings
+- **Match Objects**: +~0.2KB per result for detailed match information  
+- **Filtering Methods**: No additional static memory overhead
+
+**Total Impact**: Minimal memory increase, proportional to number of matches found
+
+## Integration Examples
+
+### Content Moderation Pipeline
+
+```javascript title="Production Content Moderation System"
+class ContentModerationPipeline {
+  constructor(environment = 'balanced') {
+    this.environments = {
+      strict: {
+        config: { severityLevels: true, allowObfuscatedMatch: false },
+        threshold: SeverityLevel.EXACT,
+        actions: { exact: 'block', fuzzy: 'approve' }
+      },
+      balanced: {
+        config: { severityLevels: true, allowObfuscatedMatch: true, enableContextAware: true },
+        threshold: SeverityLevel.EXACT, 
+        actions: { exact: 'flag', fuzzy: 'flag' }
+      },
+      aggressive: {
+        config: { severityLevels: true, allowObfuscatedMatch: true, fuzzyToleranceLevel: 0.6 },
+        threshold: SeverityLevel.EXACT,
+        actions: { exact: 'block', fuzzy: 'block' }
+      }
+    };
+    
+    const env = this.environments[environment];
+    this.filter = new Filter(env.config);
+    this.threshold = env.threshold;
+    this.actions = env.actions;
+  }
+  
+  async moderateContent(content, userId, contentType) {
+    const result = this.filter.checkProfanityWithMinSeverity(content, this.threshold);
+    const analysis = this.analyzeSeverityImpact(result);
+    
+    return {
+      contentId: generateId(),
+      userId: userId,
+      contentType: contentType,
+      moderationResult: {
+        blocked: analysis.shouldBlock,
+        flagged: analysis.shouldFlag,
+        severity: analysis.overallSeverity,
+        matches: analysis.severityBreakdown,
+        confidence: result.result.contextScore,
+        action: analysis.recommendedAction,
+        reason: analysis.reason
+      },
+      filteredContent: analysis.shouldBlock ? '[Content Blocked]' : content,
+      appealable: analysis.appealable
+    };
+  }
+  
+  analyzeSeverityImpact(result) {
+    const severityMap = result.result.severityMap || {};
+    const breakdown = { exact: 0, fuzzy: 0 };
+    
+    Object.values(severityMap).forEach(severity => {
+      if (severity === SeverityLevel.EXACT) breakdown.exact++;
+      else if (severity === SeverityLevel.FUZZY) breakdown.fuzzy++;
+    });
+    
+    const overallSeverity = breakdown.exact * 3 + breakdown.fuzzy * 1; // Weighted severity
+    const shouldBlock = this.shouldBlock(breakdown, result.result.contextScore);
+    const shouldFlag = !shouldBlock && (breakdown.exact > 0 || breakdown.fuzzy > 1);
+    
+    return {
+      shouldBlock,
+      shouldFlag,
+      overallSeverity,
+      severityBreakdown: breakdown,
+      recommendedAction: shouldBlock ? 'block' : shouldFlag ? 'flag' : 'approve',
+      reason: this.generateReason(breakdown, result.result.contextScore),
+      appealable: shouldBlock && result.result.contextScore && result.result.contextScore > 0.5
+    };
+  }
+}
+
+// Usage in different environments
+const environments = ['strict', 'balanced', 'aggressive'];
+const testContent = [
+  'This movie is fucking brilliant!',
+  'You damn idiot piece of shit!', 
+  'What the h3ll is this $h1t?',
+  'Holy cow this is amazing'
+];
+
+environments.forEach(env => {
+  const moderator = new ContentModerationPipeline(env);
+  console.log(`\n=== ${env.toUpperCase()} ENVIRONMENT ===`);
+  
+  testContent.forEach(async (content) => {
+    const result = await moderator.moderateContent(content, 'user123', 'comment');
+    console.log(`Content: "${content}"`);
+    console.log(`Action: ${result.moderationResult.action}`);
+    console.log(`Severity: ${result.moderationResult.severity}`);
+    console.log(`Reason: ${result.moderationResult.reason}`);
+    console.log('---');
+  });
+});
+```
+
+## Cross-References
+
+- **[Obfuscation Detection](/docs/glin-profanity/obfuscation-detection)** - FUZZY severity through character substitution
+- **[Context Analysis](/docs/glin-profanity/context-analysis)** - Combine with severity for intelligent filtering
+- **[Filter Class](/docs/glin-profanity/filter-class)** - checkProfanityWithMinSeverity method details
+- **[Python API](/docs/glin-profanity/python-api)** - check_profanity_with_min_severity implementation

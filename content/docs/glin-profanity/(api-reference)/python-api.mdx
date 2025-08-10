@@ -1,0 +1,612 @@
+---
+title: Python API
+description: Complete Python interface for profanity detection with cross-language parity
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
+
+Complete Python interface for profanity detection with 100% feature parity to JavaScript, using Pythonic naming conventions (snake_case) while maintaining identical functionality and behavior.
+
+<InlineTOC
+  items={[
+    { title: "Filter Class", url: "#filter-class", description: "Object-oriented interface" },
+    { title: "Filter Methods", url: "#filter-methods", description: "Core profanity detection methods" }, 
+    { title: "Type Definitions", url: "#type-definitions", description: "Python type system" },
+    { title: "Naming Conventions", url: "#naming-conventions", description: "JavaScript ↔ Python mapping" },
+    { title: "Framework Integration", url: "#framework-integration", description: "Django and Flask examples" }
+  ]}
+/>
+
+## Filter Class
+
+The main Python interface using object-oriented design with persistent configuration.
+
+### Constructor
+
+<Tabs items={['Python', 'JavaScript']}>
+  <Tab value="Python">
+    ```python
+    def __init__(self, config: FilterConfig | None = None) -> None:
+    ```
+    
+    **Example:**
+    ```python
+    from glin_profanity import Filter
+
+    # Basic filter with default configuration
+    filter_instance = Filter()
+
+    # Advanced filter with custom configuration
+    advanced_filter = Filter({
+        "languages": ["english", "spanish"],
+        "enable_context_aware": True,
+        "context_window": 5,
+        "confidence_threshold": 0.8
+    })
+    ```
+  </Tab>
+  
+  <Tab value="JavaScript">
+    ```typescript
+    constructor(config?: FilterConfig)
+    ```
+    
+    **Example:**
+    ```typescript
+    import { Filter } from 'glin-profanity';
+
+    // Basic filter with default configuration  
+    const filter = new Filter();
+
+    // Advanced filter with custom configuration
+    const advancedFilter = new Filter({
+      languages: ['english', 'spanish'],
+      enableContextAware: true,
+      contextWindow: 5,
+      confidenceThreshold: 0.8
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### FilterConfig Type Definition
+
+<TypeTable
+  type={{
+    languages: {
+      description: "Specific languages to check",
+      type: "list[Language] | None",
+      default: "None"
+    },
+    all_languages: {
+      description: "Check all 23 supported languages",
+      type: "bool",
+      default: "False"
+    },
+    case_sensitive: {
+      description: "Enable case-sensitive matching",
+      type: "bool",
+      default: "False"
+    },
+    word_boundaries: {
+      description: "Enforce word boundaries in matching",
+      type: "bool",
+      default: "True"
+    },
+    allow_obfuscated_match: {
+      description: "Detect disguised profanity (e.g. sh*t, f**k)",
+      type: "bool", 
+      default: "False"
+    },
+    fuzzy_tolerance_level: {
+      description: "Character similarity threshold for fuzzy matching",
+      type: "float",
+      default: "0.8"
+    },
+    custom_words: {
+      description: "Additional words to treat as profanity",
+      type: "list[str] | None",
+      default: "None"
+    },
+    ignore_words: {
+      description: "Words to exclude from profanity detection",
+      type: "list[str] | None", 
+      default: "globalWhitelist"
+    },
+    replace_with: {
+      description: "String to replace detected profanity",
+      type: "str | None",
+      default: "None"
+    },
+    severity_levels: {
+      description: "Enable EXACT/FUZZY severity classification",
+      type: "bool",
+      default: "False"
+    },
+    enable_context_aware: {
+      description: "Enable advanced context analysis",
+      type: "bool",
+      default: "False"
+    },
+    context_window: {
+      description: "Number of words before/after match to analyze",
+      type: "int",
+      default: "3"
+    },
+    confidence_threshold: {
+      description: "Context confidence threshold (0.0-1.0)",
+      type: "float",
+      default: "0.7"
+    },
+    domain_whitelists: {
+      description: "Domain-specific whitelist mappings",
+      type: "dict[str, list[str]] | None",
+      default: "None"
+    },
+    log_profanity: {
+      description: "Enable debug console logging",
+      type: "bool",
+      default: "False"
+    }
+  }}
+/>
+
+## Filter Methods
+
+### is_profane
+
+<Tabs items={['Python', 'JavaScript']}>
+  <Tab value="Python">
+    ```python
+    def is_profane(self, value: str) -> bool:
+    ```
+    
+    **Example:**
+    ```python
+    from glin_profanity import Filter
+
+    filter_instance = Filter()
+
+    print(filter_instance.is_profane("hello world"))  # False
+    print(filter_instance.is_profane("damn good"))    # True
+    print(filter_instance.is_profane("sh*t happens")) # True (with obfuscation)
+    ```
+  </Tab>
+  
+  <Tab value="JavaScript">
+    ```typescript
+    isProfane(value: string): boolean
+    ```
+    
+    **Example:**
+    ```typescript
+    import { Filter } from 'glin-profanity';
+
+    const filter = new Filter();
+
+    console.log(filter.isProfane("hello world"));  // false
+    console.log(filter.isProfane("damn good"));    // true  
+    console.log(filter.isProfane("sh*t happens")); // true (with obfuscation)
+    ```
+  </Tab>
+</Tabs>
+
+### matches
+
+<Tabs items={['Python', 'JavaScript']}>
+  <Tab value="Python">
+    ```python
+    def matches(self, word: str) -> bool:
+    ```
+    
+    **Purpose:** Alias for is_profane for API compatibility
+    
+    **Example:**
+    ```python
+    filter_instance = Filter()
+    
+    # Identical functionality to is_profane
+    print(filter_instance.matches("damn"))     # True
+    print(filter_instance.is_profane("damn"))  # True
+    ```
+  </Tab>
+  
+  <Tab value="JavaScript">
+    ```typescript
+    matches(word: string): boolean
+    ```
+    
+    **Purpose:** Alias for isProfane for API compatibility
+    
+    **Example:**
+    ```typescript  
+    const filter = new Filter();
+    
+    // Identical functionality to isProfane
+    console.log(filter.matches("damn"));    // true
+    console.log(filter.isProfane("damn"));  // true
+    ```
+  </Tab>
+</Tabs>
+
+### check_profanity
+
+<Tabs items={['Python', 'JavaScript']}>
+  <Tab value="Python">
+    ```python
+    def check_profanity(self, text: str) -> CheckProfanityResult:
+    ```
+    
+    **Example:**
+    ```python
+    from glin_profanity import Filter
+
+    filter_instance = Filter({
+        "enable_context_aware": True,
+        "severity_levels": True
+    })
+
+    result = filter_instance.check_profanity("This movie is fucking amazing!")
+
+    print(result["contains_profanity"])  # False (positive context)
+    print(result["context_score"])       # 0.85 (positive sentiment)
+    print(result["reason"])              # "Positive emotional context detected"
+    ```
+  </Tab>
+  
+  <Tab value="JavaScript">
+    ```typescript
+    checkProfanity(text: string): CheckProfanityResult
+    ```
+    
+    **Example:**
+    ```typescript
+    import { Filter } from 'glin-profanity';
+
+    const filter = new Filter({
+      enableContextAware: true,
+      severityLevels: true
+    });
+
+    const result = filter.checkProfanity("This movie is fucking amazing!");
+
+    console.log(result.containsProfanity); // false (positive context)
+    console.log(result.contextScore);      // 0.85 (positive sentiment)
+    console.log(result.reason);            // "Positive emotional context detected"
+    ```
+  </Tab>
+</Tabs>
+
+### check_profanity_with_min_severity
+
+<Tabs items={['Python', 'JavaScript']}>
+  <Tab value="Python">
+    ```python
+    def check_profanity_with_min_severity(
+        self, text: str, min_severity: SeverityLevel = SeverityLevel.EXACT
+    ) -> dict[str, object]:
+    ```
+    
+    **Example:**
+    ```python
+    from glin_profanity import Filter, SeverityLevel
+
+    filter_instance = Filter({"severity_levels": True})
+    text = "What the hell is this f*ck?"
+
+    # Only include FUZZY matches (obfuscated)
+    fuzzy_only = filter_instance.check_profanity_with_min_severity(
+        text, SeverityLevel.FUZZY
+    )
+    print(fuzzy_only["filtered_words"])  # ["f*ck"]
+
+    # Include all matches
+    all_matches = filter_instance.check_profanity_with_min_severity(
+        text, SeverityLevel.EXACT
+    )
+    print(all_matches["filtered_words"])  # ["hell", "f*ck"]
+    ```
+  </Tab>
+  
+  <Tab value="JavaScript">
+    ```typescript
+    checkProfanityWithMinSeverity(
+      text: string, 
+      minSeverity: SeverityLevel = SeverityLevel.EXACT
+    ): { filteredWords: string[]; result: CheckProfanityResult }
+    ```
+    
+    **Example:**
+    ```typescript
+    import { Filter, SeverityLevel } from 'glin-profanity';
+
+    const filter = new Filter({ severityLevels: true });
+    const text = "What the hell is this f*ck?";
+
+    // Only include FUZZY matches (obfuscated)
+    const fuzzyOnly = filter.checkProfanityWithMinSeverity(text, SeverityLevel.FUZZY);
+    console.log(fuzzyOnly.filteredWords); // ["f*ck"]
+
+    // Include all matches
+    const allMatches = filter.checkProfanityWithMinSeverity(text, SeverityLevel.EXACT);
+    console.log(allMatches.filteredWords); // ["hell", "f*ck"]
+    ```
+  </Tab>
+</Tabs>
+
+## Type Definitions
+
+### CheckProfanityResult
+
+<TypeTable
+  type={{
+    contains_profanity: {
+      description: "True if profanity detected",
+      type: "bool",
+      default: "N/A"
+    },
+    profane_words: {
+      description: "Array of detected profane words",
+      type: "list[str]",
+      default: "N/A"
+    },
+    processed_text: {
+      description: "Text with profanity replaced",
+      type: "str | None",
+      default: "None"
+    },
+    severity_map: {
+      description: "Word severity mappings",
+      type: "dict[str, SeverityLevel] | None",
+      default: "None"
+    },
+    matches: {
+      description: "Detailed match information",
+      type: "list[Match] | None",
+      default: "None"
+    },
+    context_score: {
+      description: "Context analysis score (0-1)",
+      type: "float | None",
+      default: "None"
+    },
+    reason: {
+      description: "Context analysis reason",
+      type: "str | None",
+      default: "None"
+    }
+  }}
+/>
+
+### Match
+
+<TypeTable
+  type={{
+    word: {
+      description: "Detected profane word",
+      type: "str",
+      default: "N/A"
+    },
+    index: {
+      description: "Character index in text",
+      type: "int",
+      default: "N/A"
+    },
+    severity: {
+      description: "Match severity level",
+      type: "SeverityLevel",
+      default: "N/A"
+    },
+    context_score: {
+      description: "Context confidence score",
+      type: "float | None",
+      default: "None"
+    },
+    reason: {
+      description: "Context analysis reason",
+      type: "str | None",
+      default: "None"
+    },
+    is_whitelisted: {
+      description: "Whether word is domain whitelisted",
+      type: "bool | None",
+      default: "None"
+    }
+  }}
+/>
+
+### SeverityLevel
+
+```python
+class SeverityLevel(IntEnum):
+    EXACT = 1  # Direct/exact matches
+    FUZZY = 2  # Fuzzy/approximate matches
+```
+
+### Language
+
+```python
+Language = Literal[
+    "arabic", "chinese", "czech", "danish", "english", "esperanto", 
+    "finnish", "french", "german", "hindi", "hungarian", "italian", 
+    "japanese", "korean", "norwegian", "persian", "polish", 
+    "portuguese", "russian", "spanish", "swedish", "thai", "turkish"
+]
+```
+
+## Naming Conventions
+
+### JavaScript ↔ Python Mapping
+
+<Tabs items={['Configuration', 'Results', 'Methods']}>
+  <Tab value="Configuration">
+    ```python
+    # JavaScript camelCase -> Python snake_case
+    js_config = {
+        "enableContextAware": True,     # -> "enable_context_aware"
+        "contextWindow": 5,             # -> "context_window"
+        "confidenceThreshold": 0.8,     # -> "confidence_threshold"
+        "allowObfuscatedMatch": True,   # -> "allow_obfuscated_match"
+        "fuzzyToleranceLevel": 0.7,     # -> "fuzzy_tolerance_level"
+        "domainWhitelists": {},         # -> "domain_whitelists"
+        "logProfanity": False,          # -> "log_profanity"
+        "severityLevels": True          # -> "severity_levels"
+    }
+
+    python_config = {
+        "enable_context_aware": True,
+        "context_window": 5,
+        "confidence_threshold": 0.8,
+        "allow_obfuscated_match": True,
+        "fuzzy_tolerance_level": 0.7,
+        "domain_whitelists": {},
+        "log_profanity": False,
+        "severity_levels": True
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Results">
+    ```python
+    # JavaScript camelCase -> Python snake_case
+    js_result = {
+        "containsProfanity": True,      # -> "contains_profanity"
+        "profaneWords": ["damn"],       # -> "profane_words"
+        "processedText": "...",         # -> "processed_text"
+        "severityMap": {},              # -> "severity_map"
+        "contextScore": 0.5,            # -> "context_score"
+        "isWhitelisted": False          # -> "is_whitelisted"
+    }
+
+    python_result = {
+        "contains_profanity": True,
+        "profane_words": ["damn"],
+        "processed_text": "...",
+        "severity_map": {},
+        "context_score": 0.5,
+        "is_whitelisted": False
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Methods">
+    ```python
+    # JavaScript camelCase -> Python snake_case
+
+    # JavaScript Filter class
+    filter.isProfane("text")                        # -> is_profane("text")
+    filter.checkProfanity("text")                   # -> check_profanity("text")
+    filter.checkProfanityWithMinSeverity("text")    # -> check_profanity_with_min_severity("text")
+    
+    # Python Filter class
+    filter_instance.is_profane("text")
+    filter_instance.check_profanity("text")
+    filter_instance.check_profanity_with_min_severity("text")
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+Both APIs provide **identical functionality and behavior** - only the naming conventions differ to match language-specific standards (camelCase for JavaScript, snake_case for Python).
+</Callout>
+
+## Framework Integration
+
+### Django Model Integration
+
+```python
+from django.db import models
+from django.core.exceptions import ValidationError
+from glin_profanity import Filter
+
+class Comment(models.Model):
+    content = models.TextField()
+    is_approved = models.BooleanField(default=False)
+    
+    def clean(self):
+        # Validate content for profanity
+        filter_instance = Filter({
+            "enable_context_aware": True,
+            "confidence_threshold": 0.8,
+            "severity_levels": True
+        })
+        
+        result = filter_instance.check_profanity(self.content)
+        
+        if result["contains_profanity"]:
+            # Get severe words only
+            severe_result = filter_instance.check_profanity_with_min_severity(
+                self.content, SeverityLevel.FUZZY
+            )
+            
+            if severe_result["filtered_words"]:
+                raise ValidationError(
+                    f"Content contains inappropriate language: "
+                    f"{', '.join(severe_result['filtered_words'])}"
+                )
+        
+        # Auto-approve if context is positive
+        if result.get("context_score", 0) > 0.7:
+            self.is_approved = True
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+```
+
+### Flask API Integration
+
+```python
+from flask import Flask, request, jsonify
+from glin_profanity import Filter
+
+app = Flask(__name__)
+
+# Initialize filter with optimal configuration
+content_filter = Filter({
+    "enable_context_aware": True,
+    "languages": ["english", "spanish"],
+    "severity_levels": True,
+    "domain_whitelists": {
+        "english": ["boss", "enemy", "game", "character"]
+    }
+})
+
+@app.route('/api/moderate', methods=['POST'])
+def moderate_content():
+    data = request.json
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+    
+    try:
+        result = content_filter.check_profanity(text)
+        
+        return jsonify({
+            "text": text,
+            "contains_profanity": result["contains_profanity"],
+            "profane_words": result["profane_words"],
+            "processed_text": result.get("processed_text"),
+            "context_score": result.get("context_score"),
+            "reason": result.get("reason"),
+            "severity_map": result.get("severity_map", {})
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+## Cross-References
+
+- **[Core Functions](/docs/glin-profanity/core-functions)** - JavaScript equivalent functions
+- **[Filter Class](/docs/glin-profanity/filter-class)** - JavaScript Filter class documentation
+- **[React Hook](/docs/glin-profanity/react-hook)** - React integration patterns
+- **[Quick Start](/docs/glin-profanity/quickstart)** - Basic Python usage examples
+- **[Installation](/docs/glin-profanity/installation)** - Python package installation guide

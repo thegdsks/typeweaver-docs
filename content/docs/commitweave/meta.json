@@ -1,0 +1,17 @@
+{
+  "title": "CommitWeave",
+  "description": "AI-powered Git commit tool",
+  "icon": "GitCommit",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "...(introduction)",
+    "---Setup---", 
+    "...(setup)",
+    "vscode-extension",
+    "---CLI Reference---",
+    "...(cli-reference)",
+    "---Advanced---",
+    "...(advanced)"
+  ]
+}

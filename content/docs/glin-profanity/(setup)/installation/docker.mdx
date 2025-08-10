@@ -1,0 +1,1123 @@
+---
+title: Docker & Containers
+description: Containerized deployments, CI/CD pipelines, and production Docker setups for Glin-Profanity
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Files, File, Folder } from 'fumadocs-ui/components/files';
+
+Production-ready Docker configurations, multi-stage builds, and container orchestration for scalable profanity filtering services.
+
+## Base Docker Images
+
+Pre-configured Docker images with Glin-Profanity installed and optimized for production use.
+
+### Node.js Applications
+
+<Tabs items={['Express API', 'Next.js App', 'Multi-stage Build']}>
+  <Tab value="Express API">
+    ```dockerfile copy title="Dockerfile"
+    FROM node:18-alpine AS base
+    
+    # Install dependencies only when needed
+    FROM base AS deps
+    RUN apk add --no-cache libc6-compat
+    WORKDIR /app
+    
+    # Copy package files
+    COPY package*.json ./
+    RUN npm ci --only=production
+    
+    # Production image
+    FROM base AS runner
+    WORKDIR /app
+    
+    # Create non-root user
+    RUN addgroup --system --gid 1001 nodejs
+    RUN adduser --system --uid 1001 nodejs
+    
+    # Copy dependencies and source
+    COPY --from=deps /app/node_modules ./node_modules
+    COPY . .
+    
+    # Install Glin-Profanity
+    RUN npm install glin-profanity
+    
+    USER nodejs
+    EXPOSE 3000
+    
+    ENV NODE_ENV=production
+    ENV PORT=3000
+    
+    CMD ["node", "server.js"]
+    ```
+    
+    ```javascript copy title="server.js"
+    const express = require('express');
+    const { checkProfanity } = require('glin-profanity');
+    
+    const app = express();
+    const PORT = process.env.PORT || 3000;
+    
+    app.use(express.json());
+    
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+      res.json({ status: 'healthy', service: 'profanity-api' });
+    });
+    
+    // Profanity checking endpoint
+    app.post('/api/check', (req, res) => {
+      try {
+        const { text, config = {} } = req.body;
+        
+        if (!text) {
+          return res.status(400).json({ error: 'Text is required' });
+        }
+        
+        const result = checkProfanity(text, {
+          enableContextAware: true,
+          allLanguages: true,
+          ...config
+        });
+        
+        res.json({
+          isClean: !result.containsProfanity,
+          violations: result.profaneWords,
+          processedText: result.processedText
+        });
+        
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Profanity API running on port ${PORT}`);
+    });
+    ```
+  </Tab>
+  
+  <Tab value="Next.js App">
+    ```dockerfile copy title="Dockerfile"
+    FROM node:18-alpine AS base
+    
+    # Install dependencies
+    FROM base AS deps
+    RUN apk add --no-cache libc6-compat
+    WORKDIR /app
+    
+    COPY package*.json ./
+    RUN npm ci
+    
+    # Build the app
+    FROM base AS builder
+    WORKDIR /app
+    COPY --from=deps /app/node_modules ./node_modules
+    COPY . .
+    
+    # Install Glin-Profanity
+    RUN npm install glin-profanity
+    
+    # Build Next.js
+    RUN npm run build
+    
+    # Production image
+    FROM base AS runner
+    WORKDIR /app
+    
+    ENV NODE_ENV=production
+    
+    RUN addgroup --system --gid 1001 nodejs
+    RUN adduser --system --uid 1001 nextjs
+    
+    # Copy built application
+    COPY --from=builder /app/public ./public
+    COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+    COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+    
+    USER nextjs
+    EXPOSE 3000
+    
+    CMD ["node", "server.js"]
+    ```
+    
+    ```json copy title="next.config.js"
+    /** @type {import('next').NextConfig} */
+    const nextConfig = {
+      output: 'standalone',
+      experimental: {
+        outputFileTracingExcludes: {
+          '*': [
+            'node_modules/@swc/core-linux-x64-gnu',
+            'node_modules/@swc/core-linux-x64-musl',
+          ],
+        },
+      },
+    }
+    
+    module.exports = nextConfig
+    ```
+  </Tab>
+  
+  <Tab value="Multi-stage Build">
+    ```dockerfile copy title="Dockerfile.multistage"
+    # Stage 1: Base image with common dependencies
+    FROM node:18-alpine AS base
+    RUN apk add --no-cache libc6-compat
+    WORKDIR /app
+    
+    # Stage 2: Install dependencies
+    FROM base AS deps
+    COPY package*.json ./
+    # Install ALL dependencies (including devDependencies)
+    RUN npm ci
+    
+    # Stage 3: Build application
+    FROM base AS builder
+    COPY --from=deps /app/node_modules ./node_modules
+    COPY . .
+    
+    # Install Glin-Profanity and build
+    RUN npm install glin-profanity
+    RUN npm run build
+    RUN npm prune --production
+    
+    # Stage 4: Runtime image
+    FROM node:18-alpine AS runtime
+    WORKDIR /app
+    
+    # Security: Create non-root user
+    RUN addgroup --system --gid 1001 appgroup && \
+        adduser --system --uid 1001 --ingroup appgroup appuser
+    
+    # Copy only production dependencies and built app
+    COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+    COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+    COPY --from=builder --chown=appuser:appgroup /app/package.json ./
+    
+    # Switch to non-root user
+    USER appuser
+    
+    # Health check
+    HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+      CMD node health-check.js || exit 1
+    
+    EXPOSE 3000
+    CMD ["node", "dist/server.js"]
+    ```
+  </Tab>
+</Tabs>
+
+### Python Applications
+
+<Tabs items={['Flask API', 'Django App', 'FastAPI']}>
+  <Tab value="Flask API">
+    ```dockerfile copy title="Dockerfile"
+    FROM python:3.11-slim AS base
+    
+    # Set environment variables
+    ENV PYTHONDONTWRITEBYTECODE=1 \
+        PYTHONUNBUFFERED=1 \
+        PIP_NO_CACHE_DIR=1 \
+        PIP_DISABLE_PIP_VERSION_CHECK=1
+    
+    # Install system dependencies
+    RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Create non-root user
+    RUN useradd --create-home --shell /bin/bash app
+    
+    # Set work directory
+    WORKDIR /app
+    
+    # Install Python dependencies
+    COPY requirements.txt .
+    RUN pip install --no-cache-dir -r requirements.txt
+    
+    # Install Glin-Profanity
+    RUN pip install glin-profanity
+    
+    # Copy application code
+    COPY --chown=app:app . .
+    
+    # Switch to non-root user
+    USER app
+    
+    # Expose port
+    EXPOSE 5000
+    
+    # Health check
+    HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+      CMD curl -f http://localhost:5000/health || exit 1
+    
+    # Run application
+    CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "app:app"]
+    ```
+    
+    ```python copy title="app.py"
+    from flask import Flask, request, jsonify
+    from glin_profanity import Filter
+    import logging
+    import os
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    app = Flask(__name__)
+    
+    # Initialize profanity filter
+    profanity_filter = Filter({
+        "all_languages": True,
+        "enable_context_aware": True,
+        "severity_levels": True
+    })
+    
+    @app.route('/health')
+    def health_check():
+        return jsonify({
+            'status': 'healthy',
+            'service': 'glin-profanity-api',
+            'version': '1.0.0'
+        })
+    
+    @app.route('/api/check', methods=['POST'])
+    def check_profanity():
+        try:
+            data = request.get_json()
+            
+            if not data or 'text' not in data:
+                return jsonify({'error': 'Text is required'}), 400
+            
+            result = profanity_filter.check_profanity(data['text'])
+            
+            return jsonify({
+                'is_clean': not result['contains_profanity'],
+                'violations': result['profane_words'],
+                'processed_text': result.get('processed_text'),
+                'confidence': result.get('context_score', 1.0)
+            })
+            
+        except Exception as e:
+            logger.error(f"Profanity check failed: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+    
+    if __name__ == '__main__':
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port, debug=False)
+    ```
+    
+    ```txt copy title="requirements.txt"
+    Flask==2.3.3
+    gunicorn==21.2.0
+    glin-profanity>=2.3.0
+    ```
+  </Tab>
+  
+  <Tab value="Django App">
+    ```dockerfile copy title="Dockerfile"
+    FROM python:3.11-slim AS base
+    
+    # Build stage
+    FROM base AS builder
+    
+    ENV PYTHONDONTWRITEBYTECODE=1 \
+        PYTHONUNBUFFERED=1
+    
+    # Install build dependencies
+    RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Install Python dependencies
+    COPY requirements.txt /tmp/
+    RUN pip install --user --no-cache-dir -r /tmp/requirements.txt
+    
+    # Production stage
+    FROM base AS production
+    
+    ENV PYTHONDONTWRITEBYTECODE=1 \
+        PYTHONUNBUFFERED=1 \
+        PATH=/home/app/.local/bin:$PATH
+    
+    # Install runtime dependencies
+    RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpq5 \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Create app user
+    RUN useradd --create-home app
+    
+    # Copy dependencies
+    COPY --from=builder /root/.local /home/app/.local
+    
+    # Set work directory
+    WORKDIR /app
+    
+    # Copy application
+    COPY --chown=app:app . .
+    
+    # Switch to app user
+    USER app
+    
+    # Collect static files
+    RUN python manage.py collectstatic --noinput
+    
+    EXPOSE 8000
+    
+    CMD ["gunicorn", "--bind", "0.0.0.0:8000", "myproject.wsgi:application"]
+    ```
+  </Tab>
+  
+  <Tab value="FastAPI">
+    ```dockerfile copy title="Dockerfile"
+    FROM python:3.11-slim
+    
+    ENV PYTHONDONTWRITEBYTECODE=1 \
+        PYTHONUNBUFFERED=1
+    
+    WORKDIR /app
+    
+    # Install dependencies
+    COPY requirements.txt .
+    RUN pip install --no-cache-dir -r requirements.txt
+    
+    # Install Glin-Profanity
+    RUN pip install glin-profanity
+    
+    # Copy app
+    COPY . .
+    
+    EXPOSE 8000
+    
+    CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ```
+    
+    ```python copy title="main.py"
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    from glin_profanity import Filter
+    import logging
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    app = FastAPI(title="Glin-Profanity API", version="1.0.0")
+    
+    # Initialize filter
+    profanity_filter = Filter({
+        "enable_context_aware": True,
+        "all_languages": True
+    })
+    
+    class TextRequest(BaseModel):
+        text: str
+        config: dict = {}
+    
+    class CheckResponse(BaseModel):
+        is_clean: bool
+        violations: list[str]
+        processed_text: str = None
+        confidence: float = 1.0
+    
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "service": "glin-profanity-api"}
+    
+    @app.post("/api/check", response_model=CheckResponse)
+    async def check_profanity(request: TextRequest):
+        try:
+            result = profanity_filter.check_profanity(request.text)
+            
+            return CheckResponse(
+                is_clean=not result['contains_profanity'],
+                violations=result['profane_words'],
+                processed_text=result.get('processed_text'),
+                confidence=result.get('context_score', 1.0)
+            )
+            
+        except Exception as e:
+            logger.error(f"Profanity check failed: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
+    ```
+  </Tab>
+</Tabs>
+
+## Docker Compose
+
+Production-ready multi-service setups with load balancing, caching, and monitoring.
+
+### Basic Service Stack
+
+```yaml copy title="docker-compose.yml"
+version: '3.8'
+
+services:
+  profanity-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - profanity-api
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+```
+
+### Advanced Production Stack
+
+```yaml copy title="docker-compose.prod.yml"
+version: '3.8'
+
+services:
+  profanity-api:
+    image: glin-profanity-api:latest
+    deploy:
+      replicas: 5
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://mongo:27017/profanity
+      - LOG_LEVEL=info
+    networks:
+      - profanity-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - profanity-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  mongodb:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - profanity-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    networks:
+      - profanity-network
+    depends_on:
+      - profanity-api
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - profanity-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - profanity-network
+
+networks:
+  profanity-network:
+    driver: overlay
+    attachable: true
+
+volumes:
+  redis_data:
+  mongo_data:
+  nginx_cache:
+  prometheus_data:
+  grafana_data:
+```
+
+## Kubernetes Deployment
+
+Scalable Kubernetes manifests for production deployments.
+
+<Files>
+  <Folder name="k8s" defaultOpen>
+    <File name="namespace.yaml">Kubernetes namespace</File>
+    <File name="deployment.yaml">Application deployment</File>
+    <File name="service.yaml">Service configuration</File>
+    <File name="ingress.yaml">Ingress rules</File>
+    <File name="configmap.yaml">Configuration</File>
+    <File name="secrets.yaml">Sensitive data</File>
+    <File name="hpa.yaml">Horizontal Pod Autoscaler</File>
+  </Folder>
+</Files>
+
+### Kubernetes Manifests
+
+<Tabs items={['Deployment', 'Service & Ingress', 'Scaling']}>
+  <Tab value="Deployment">
+    ```yaml copy title="k8s/deployment.yaml"
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: glin-profanity-api
+      namespace: profanity
+      labels:
+        app: glin-profanity-api
+        version: v1
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: glin-profanity-api
+      template:
+        metadata:
+          labels:
+            app: glin-profanity-api
+            version: v1
+        spec:
+          containers:
+          - name: api
+            image: glin-profanity-api:latest
+            ports:
+            - containerPort: 3000
+              name: http
+            env:
+            - name: NODE_ENV
+              value: "production"
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: redis-url
+            - name: LOG_LEVEL
+              value: "info"
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: 3000
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: 3000
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              timeoutSeconds: 3
+              failureThreshold: 2
+          restartPolicy: Always
+    ```
+  </Tab>
+  
+  <Tab value="Service & Ingress">
+    ```yaml copy title="k8s/service.yaml"
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: glin-profanity-service
+      namespace: profanity
+      labels:
+        app: glin-profanity-api
+    spec:
+      selector:
+        app: glin-profanity-api
+      ports:
+      - name: http
+        port: 80
+        targetPort: 3000
+        protocol: TCP
+      type: ClusterIP
+    ---
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: glin-profanity-ingress
+      namespace: profanity
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/rate-limit: "100"
+        nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    spec:
+      tls:
+      - hosts:
+        - profanity-api.yourdomain.com
+        secretName: profanity-tls
+      rules:
+      - host: profanity-api.yourdomain.com
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: glin-profanity-service
+                port:
+                  number: 80
+    ```
+  </Tab>
+  
+  <Tab value="Scaling">
+    ```yaml copy title="k8s/hpa.yaml"
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata:
+      name: glin-profanity-hpa
+      namespace: profanity
+    spec:
+      scaleTargetRef:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: glin-profanity-api
+      minReplicas: 3
+      maxReplicas: 20
+      metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 70
+      - type: Resource
+        resource:
+          name: memory
+          target:
+            type: Utilization
+            averageUtilization: 80
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 10
+            periodSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 60
+    ---
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: app-config
+      namespace: profanity
+    data:
+      redis-url: "redis://redis-service:6379"
+      log-level: "info"
+      max-request-size: "1mb"
+    ```
+  </Tab>
+</Tabs>
+
+## CI/CD Integration
+
+Automated testing, building, and deployment pipelines.
+
+### GitHub Actions
+
+```yaml copy title=".github/workflows/docker.yml"
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/glin-profanity-api
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Glin-Profanity
+      run: npm install glin-profanity
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Run integration tests
+      run: npm run test:integration
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to Kubernetes
+      run: |
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        
+        # Update image tag
+        kubectl set image deployment/glin-profanity-api \
+          api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          -n profanity
+        
+        # Wait for rollout
+        kubectl rollout status deployment/glin-profanity-api -n profanity
+```
+
+### GitLab CI/CD
+
+```yaml copy title=".gitlab-ci.yml"
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+test:
+  stage: test
+  image: node:18-alpine
+  script:
+    - npm ci
+    - npm install glin-profanity
+    - npm test
+    - npm run test:integration
+  coverage: '/Coverage: \d+\.\d+%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+
+build:
+  stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+    - docker tag $IMAGE_TAG $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+    - develop
+
+deploy_staging:
+  stage: deploy
+  script:
+    - kubectl set image deployment/glin-profanity-api api=$IMAGE_TAG -n staging
+    - kubectl rollout status deployment/glin-profanity-api -n staging
+  environment:
+    name: staging
+    url: https://profanity-staging.yourdomain.com
+  only:
+    - develop
+
+deploy_production:
+  stage: deploy
+  script:
+    - kubectl set image deployment/glin-profanity-api api=$IMAGE_TAG -n production
+    - kubectl rollout status deployment/glin-profanity-api -n production
+  environment:
+    name: production
+    url: https://profanity-api.yourdomain.com
+  when: manual
+  only:
+    - main
+```
+
+## Performance Optimization
+
+Container optimization strategies for production workloads.
+
+### Multi-layer Caching
+
+```dockerfile copy title="Dockerfile.optimized"
+# Use specific base image versions for reproducibility
+FROM node:18.17-alpine3.18 AS base
+
+# Install only production dependencies in separate layer
+FROM base AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Build stage with all dependencies
+FROM base AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Minimal runtime image
+FROM node:18.17-alpine3.18 AS runtime
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy only necessary files
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
+
+# Install Glin-Profanity in production layer
+USER nodejs
+RUN npm install glin-profanity
+
+# Security and performance settings
+ENV NODE_ENV=production \
+    NODE_OPTIONS="--max-old-space-size=512" \
+    PORT=3000
+
+EXPOSE 3000
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/server.js"]
+```
+
+### Resource Limits
+
+```yaml copy title="docker-compose.production.yml"
+version: '3.8'
+
+services:
+  profanity-api:
+    image: glin-profanity-api:latest
+    deploy:
+      resources:
+        limits:
+          # Adjust based on your workload
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+    environment:
+      # Optimize Node.js memory usage
+      NODE_OPTIONS: "--max-old-space-size=384"
+      # Enable clustering for better CPU utilization
+      NODE_CLUSTER_WORKERS: "2"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+```
+
+## Monitoring & Logging
+
+Container observability with metrics, logs, and distributed tracing.
+
+### Logging Configuration
+
+```javascript copy title="logger.js"
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: {
+    service: 'glin-profanity-api',
+    version: process.env.npm_package_version,
+    pod: process.env.HOSTNAME,
+    node: process.env.NODE_NAME
+  },
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ]
+});
+
+// Add file transport in development
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.File({
+    filename: 'logs/error.log',
+    level: 'error'
+  }));
+  logger.add(new winston.transports.File({
+    filename: 'logs/combined.log'
+  }));
+}
+
+module.exports = logger;
+```
+
+<Callout type="info">
+**Next Steps**: After containerizing your application, explore [Production Configuration](/docs/glin-profanity/config-presets) and [Server Integration](/docs/glin-profanity/server-integration) for optimal performance in containerized environments.
+</Callout>

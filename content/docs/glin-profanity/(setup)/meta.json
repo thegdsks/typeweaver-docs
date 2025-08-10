@@ -1,0 +1,11 @@
+{
+  "title": "Setup", 
+  "defaultOpen": false,
+  "pages": [
+    "installation",
+    "quickstart",
+    "configuration",
+    "config-presets",
+    "examples"
+  ]
+}

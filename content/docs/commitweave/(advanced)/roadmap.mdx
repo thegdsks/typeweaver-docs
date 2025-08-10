@@ -1,0 +1,90 @@
+---
+title: Roadmap
+description: What we've built, what we're building, and what's coming next for CommitWeave
+---
+
+import { MessageCircle, GitCommit, HelpCircle, Rocket, CheckCircle, Clock, Target, Lightbulb, Play, Download, BookOpen } from 'lucide-react';
+import { CommitWeaveRoadmap, CommitWeaveRoadmapData } from '@/components/roadmap';
+
+## Overview
+
+CommitWeave has evolved significantly with multiple shipped features, active development, and exciting plans ahead. This roadmap shows our current state and future direction.
+
+<CommitWeaveRoadmap items={CommitWeaveRoadmapData} />
+
+## Development Status
+
+### <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 inline mr-2" />Shipped Features
+
+We've successfully shipped **11 major features** including:
+- Interactive CLI with 23ms cold-start performance
+- Full VS Code extension with 5 commands  
+- Multi-AI provider support (OpenAI, Claude, Mock)
+- Advanced configuration system with export/import
+- Comprehensive testing suite with cross-platform support
+
+### <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 inline mr-2" />Currently Building
+
+**2 active development** items:
+- Git hooks system with pre/post-commit templates
+- Plugin system for custom commit types and extensibility
+
+### <Target className="w-5 h-5 text-orange-600 dark:text-orange-400 inline mr-2" />Planned Next
+
+**6 planned features** for upcoming releases:
+- Multi-repository support
+- Web-based configuration builder
+- Enhanced AI providers (Google PaLM, local models)
+- Analytics & usage metrics
+- Issue tracker integrations
+- JetBrains IDEs extension
+
+### <Lightbulb className="w-5 h-5 text-purple-600 dark:text-purple-400 inline mr-2" />Future Ideas
+
+**6 potential features** we're exploring:
+- Framework configuration templates
+- Configuration backup & sync
+- Browser extensions for web Git platforms
+- Mobile app for repository management
+
+## 💬 Help Shape Our Roadmap
+
+Your feedback directly influences what we build next:
+
+<div className="flex flex-wrap gap-3 mt-4">
+  <a 
+    href="https://github.com/GLINCKER/commitweave/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=Feature+Request%3A+"
+    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors no-underline text-sm"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <MessageCircle className="w-4 h-4" />
+    Request Features
+  </a>
+  
+  <a 
+    href="https://github.com/GLINCKER/commitweave/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=Bug+Report%3A+"
+    className="inline-flex items-center gap-2 px-4 py-2 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900 font-medium rounded-lg transition-colors no-underline text-sm"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <GitCommit className="w-4 h-4" />
+    Report Issues
+  </a>
+  
+  <a 
+    href="https://github.com/GLINCKER/commitweave/issues/new?assignees=&labels=question&projects=&template=question.md&title=Question%3A+"
+    className="inline-flex items-center gap-2 px-4 py-2 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900 font-medium rounded-lg transition-colors no-underline text-sm"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <HelpCircle className="w-4 h-4" />
+    Ask Questions
+  </a>
+</div>
+
+---
+
+<div className="text-center text-fd-muted-foreground text-sm">
+  <p>This roadmap reflects our current development priorities as of Q4 2025. Timelines may shift based on technical challenges and user feedback.</p>
+</div>

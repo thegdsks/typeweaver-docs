@@ -1,0 +1,928 @@
+---
+title: Troubleshooting & FAQ
+description: Common issues and solutions for profanity detection problems
+---
+
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Comprehensive troubleshooting guide for common profanity detection issues. Find solutions to false positives, performance problems, missing matches, and configuration challenges with detailed explanations and code examples.
+
+<Callout type="info">
+Most profanity detection issues stem from configuration mismatches or misunderstanding of how context-aware filtering and word boundaries work. This guide addresses the most common problems developers encounter.
+</Callout>
+
+## Common Issues & Solutions
+
+<Accordions>
+
+<Accordion title="False Positives - Words Incorrectly Flagged" id="false-positives">
+
+False positives occur when legitimate words are incorrectly flagged as profanity. This is often due to substring matching or lack of context awareness.
+
+### Configuration Options for False Positives
+
+<TypeTable
+  type={{
+    enableContextAware: {
+      description: "Enable sentiment analysis to reduce false positives",
+      type: "boolean",
+      default: "false"
+    },
+    confidenceThreshold: {
+      description: "Context confidence required to override profanity detection (0.0-1.0)",
+      type: "number",
+      default: "0.7"
+    },
+    wordBoundaries: {
+      description: "Enforce word boundaries to prevent substring matches",
+      type: "boolean", 
+      default: "true"
+    },
+    ignoreWords: {
+      description: "Custom whitelist to exclude specific words from detection",
+      type: "string[]",
+      default: "[]"
+    },
+    domainWhitelists: {
+      description: "Domain-specific whitelists (gaming, movies, etc.)",
+      type: "Record<string, string[]>",
+      default: "{}"
+    }
+  }}
+/>
+
+### Common False Positive Scenarios
+
+**1. Substring Matches (Scunthorpe Problem)**
+```javascript
+// Problem: "Scunthorpe" contains "cunt"
+const result = checkProfanity("I live in Scunthorpe", {
+  wordBoundaries: false  // ❌ This causes substring matching
+});
+console.log(result.containsProfanity); // true (incorrect)
+
+// Solution: Enable word boundaries
+const fixedResult = checkProfanity("I live in Scunthorpe", {
+  wordBoundaries: true   // ✅ Only match whole words
+});
+console.log(fixedResult.containsProfanity); // false (correct)
+```
+
+**2. Positive Context Detection**
+```javascript
+// Problem: Positive expressions flagged
+const result = checkProfanity("This movie is fucking amazing!", {
+  enableContextAware: false  // ❌ No context analysis
+});
+console.log(result.containsProfanity); // true (overly strict)
+
+// Solution: Enable context-aware filtering
+const fixedResult = checkProfanity("This movie is fucking amazing!", {
+  enableContextAware: true,    // ✅ Analyze sentiment
+  confidenceThreshold: 0.7     // Require 70% confidence
+});
+console.log(fixedResult.containsProfanity); // false (context override)
+console.log(fixedResult.contextScore); // 0.85 (positive context)
+```
+
+**3. Domain-Specific Terms**
+```javascript
+// Problem: Gaming terms flagged inappropriately
+const result = checkProfanity("Kill the boss enemy", {
+  languages: ['english']  // ❌ No gaming context
+});
+console.log(result.containsProfanity); // May flag "kill"
+
+// Solution: Add gaming whitelist
+const fixedResult = checkProfanity("Kill the boss enemy", {
+  languages: ['english'],
+  domainWhitelists: {
+    english: ['kill', 'dead', 'enemy', 'boss', 'weapon', 'attack']
+  }
+});
+console.log(fixedResult.containsProfanity); // false (whitelisted)
+```
+
+**4. Technical/Professional Terms**
+```javascript
+// Problem: Technical terms flagged
+const technicalTerms = [
+  "penetration testing",     // Security testing
+  "master-slave architecture", // Database terminology
+  "execution environment",   // Programming context
+  "kill process"            // System administration
+];
+
+// Solution: Custom ignore list
+const result = checkProfanity("Run penetration testing", {
+  ignoreWords: ['penetration', 'master', 'slave', 'execution', 'kill'],
+  enableContextAware: true
+});
+```
+
+### Quick Fix Checklist
+- ✅ Enable `wordBoundaries: true` for exact word matching
+- ✅ Enable `enableContextAware: true` for sentiment analysis
+- ✅ Adjust `confidenceThreshold` (higher = more permissive)
+- ✅ Add domain-specific whitelists for your use case
+- ✅ Use `ignoreWords` for known false positives
+
+</Accordion>
+
+<Accordion title="Performance Tuning - Slow Detection" id="performance-tuning">
+
+Performance issues typically arise from checking too many languages, using complex configurations, or processing large amounts of text without optimization.
+
+### Performance Configuration Options
+
+<TypeTable
+  type={{
+    languages: {
+      description: "Specific languages to check (fewer = faster)",
+      type: "string[]",
+      default: "['english']"
+    },
+    allLanguages: {
+      description: "Check all 23 languages (slower but comprehensive)",
+      type: "boolean",
+      default: "false"
+    },
+    enableCaching: {
+      description: "Cache results for repeated text (significant speedup)",
+      type: "boolean",
+      default: "false"
+    },
+    enableContextAware: {
+      description: "Context analysis adds ~200-500ms overhead",
+      type: "boolean",
+      default: "false"
+    },
+    fuzzyMatching: {
+      description: "Fuzzy matching adds computational overhead",
+      type: "boolean",
+      default: "true"
+    },
+    fuzzyTolerance: {
+      description: "Lower tolerance = more fuzzy checks = slower",
+      type: "number",
+      default: "0.8"
+    }
+  }}
+/>
+
+### Performance Optimization Strategies
+
+**1. Language Selection Optimization**
+```javascript
+// Slow: Checking all languages
+const slowConfig = {
+  allLanguages: true  // ❌ Checks all 23 languages
+};
+
+// Fast: Specific languages only
+const fastConfig = {
+  languages: ['english']  // ✅ Single language = 10x faster
+};
+
+// Balanced: Common languages for your userbase
+const balancedConfig = {
+  languages: ['english', 'spanish', 'french']  // ✅ 3 languages = good balance
+};
+
+// Performance comparison
+console.time('slow');
+checkProfanity("Test text", slowConfig);
+console.timeEnd('slow'); // ~50-100ms
+
+console.time('fast');
+checkProfanity("Test text", fastConfig);
+console.timeEnd('fast'); // ~5-10ms
+```
+
+**2. Caching Implementation**
+```javascript
+// Without caching: Each check processes independently
+const noCacheConfig = {
+  enableCaching: false  // ❌ Every check is fresh
+};
+
+// With caching: Repeated text returns cached results
+const cachedConfig = {
+  enableCaching: true,   // ✅ Cache frequently checked text
+  cacheSize: 1000       // Limit cache size for memory management
+};
+
+// Example: Processing many similar comments
+const comments = [
+  "This is great!",
+  "This is great!",      // Same text - cached result
+  "This is amazing!",
+  "This is great!"       // Same as first - cached result
+];
+
+// First check: ~10ms, Cached checks: ~0.1ms
+```
+
+**3. Batch Processing Optimization**
+```javascript
+// Inefficient: Individual checks
+const processCommentsSlowly = (comments) => {
+  comments.forEach(comment => {
+    const result = checkProfanity(comment, config);
+    // Process each comment individually
+  });
+};
+
+// Efficient: Batch processing with Filter class
+const processCommentsFast = (comments) => {
+  const filter = new Filter({
+    languages: ['english'],
+    enableCaching: true
+  });
+  
+  // Reuse filter instance for better performance
+  const results = comments.map(comment => filter.checkProfanity(comment));
+  return results;
+};
+
+// Performance improvement: 3-5x faster for multiple checks
+```
+
+**4. Context-Aware Performance Tuning**
+```javascript
+// High overhead: Complex context analysis
+const heavyConfig = {
+  enableContextAware: true,
+  contextWindow: 7,        // ❌ Large context window
+  confidenceThreshold: 0.5  // ❌ Low threshold = more analysis
+};
+
+// Optimized: Balanced context analysis
+const optimizedConfig = {
+  enableContextAware: true,
+  contextWindow: 3,        // ✅ Smaller window
+  confidenceThreshold: 0.7  // ✅ Higher threshold = less analysis
+};
+
+// Use context-aware only when needed
+const smartConfig = (contentType) => {
+  if (contentType === 'chat') {
+    return { enableContextAware: true };  // Chat needs context
+  } else if (contentType === 'username') {
+    return { enableContextAware: false }; // Usernames don't need context
+  }
+};
+```
+
+**5. Memory Management**
+```javascript
+// Memory leak: Creating new Filter instances
+const badPattern = () => {
+  for (let i = 0; i < 1000; i++) {
+    const filter = new Filter(config);  // ❌ New instance each time
+    filter.checkProfanity("text");
+  }
+};
+
+// Memory efficient: Reuse Filter instance
+const goodPattern = () => {
+  const filter = new Filter(config);    // ✅ Single instance
+  for (let i = 0; i < 1000; i++) {
+    filter.checkProfanity("text");
+  }
+};
+
+// Clear caches when done
+filter.clearCache(); // Free memory
+```
+
+### Performance Benchmarks
+| Configuration | Single Check | 100 Checks | Memory Usage |
+|---------------|-------------|-------------|--------------|
+| English only | 2-5ms | 200-500ms | ~1MB |
+| 3 languages | 5-10ms | 500ms-1s | ~2MB |
+| All languages | 20-50ms | 2-5s | ~5MB |
+| With caching | 2-5ms first, 0.1ms cached | 50-200ms | ~3MB |
+| Context-aware | +200-500ms | +20-50s | +1MB |
+
+</Accordion>
+
+<Accordion title="Missing Matches - Not Detecting Profanity" id="missing-matches">
+
+Missing matches occur when profanity exists but isn't detected, usually due to word boundaries, obfuscation, or language configuration issues.
+
+### Detection Configuration Options
+
+<TypeTable
+  type={{
+    wordBoundaries: {
+      description: "Enforce word boundaries (may miss embedded profanity)",
+      type: "boolean",
+      default: "true"
+    },
+    caseSensitive: {
+      description: "Case-sensitive matching (may miss different cases)",
+      type: "boolean",
+      default: "false"
+    },
+    allowObfuscatedMatch: {
+      description: "Detect disguised profanity (sh1t, f*ck, d@mn)",
+      type: "boolean",
+      default: "false"
+    },
+    fuzzyMatching: {
+      description: "Match similar words with character differences",
+      type: "boolean",
+      default: "true"
+    },
+    fuzzyTolerance: {
+      description: "Character similarity threshold (lower = more matches)",
+      type: "number",
+      default: "0.8"
+    },
+    languages: {
+      description: "Languages to check (missing languages = missed profanity)",
+      type: "string[]",
+      default: "['english']"
+    }
+  }}
+/>
+
+### Common Missing Match Scenarios
+
+**1. Obfuscated/Disguised Profanity**
+```javascript
+// Problem: Disguised profanity not detected
+const result = checkProfanity("This sh1t is terrible", {
+  allowObfuscatedMatch: false  // ❌ Obfuscation detection disabled
+});
+console.log(result.containsProfanity); // false (missed sh1t)
+
+// Solution: Enable obfuscation detection
+const fixedResult = checkProfanity("This sh1t is terrible", {
+  allowObfuscatedMatch: true,  // ✅ Detect character substitutions
+  fuzzyTolerance: 0.8         // Adjust sensitivity
+});
+console.log(fixedResult.containsProfanity); // true (detected sh1t → shit)
+
+// Common obfuscation patterns detected:
+const obfuscatedExamples = [
+  "sh1t",      // Numbers: 1→i, 3→e, 4→a, 5→s, 0→o
+  "f*ck",      // Asterisks removed
+  "d@mn",      // Symbols: @→a, $→s, !→i
+  "shiiiit",   // Repeated characters normalized
+  "a$$hole"    // Multiple substitutions
+];
+```
+
+**2. Word Boundary Issues**
+```javascript
+// Problem: Embedded profanity not detected
+const result = checkProfanity("godddamn", {
+  wordBoundaries: true  // ❌ Requires exact word boundaries
+});
+console.log(result.containsProfanity); // false (missed "damn" inside "godddamn")
+
+// Solution: Disable word boundaries for embedded detection
+const fixedResult = checkProfanity("godddamn", {
+  wordBoundaries: false,  // ✅ Allow partial matches
+  fuzzyMatching: true     // Also enable fuzzy matching
+});
+console.log(fixedResult.containsProfanity); // true (detected embedded "damn")
+
+// Use case specific boundaries:
+const strictConfig = { wordBoundaries: true };   // For usernames, titles
+const lenientConfig = { wordBoundaries: false }; // For natural text, comments
+```
+
+**3. Case Sensitivity Issues**
+```javascript
+// Problem: Different cases not detected
+const result = checkProfanity("DAMN THIS SUCKS", {
+  caseSensitive: true  // ❌ Exact case matching required
+});
+console.log(result.containsProfanity); // May miss if dictionary has lowercase
+
+// Solution: Case insensitive matching (default)
+const fixedResult = checkProfanity("DAMN THIS SUCKS", {
+  caseSensitive: false  // ✅ Case insensitive (default)
+});
+console.log(fixedResult.containsProfanity); // true (case normalized)
+```
+
+**4. Language Configuration**
+```javascript
+// Problem: Wrong language configured
+const result = checkProfanity("Esta mierda es terrible", {
+  languages: ['english']  // ❌ Spanish profanity, English detection
+});
+console.log(result.containsProfanity); // false (language mismatch)
+
+// Solution: Include relevant languages
+const fixedResult = checkProfanity("Esta mierda es terrible", {
+  languages: ['english', 'spanish']  // ✅ Multi-language detection
+});
+console.log(fixedResult.containsProfanity); // true (detected Spanish "mierda")
+
+// Auto-detect language approach
+const smartResult = checkProfanity("Esta mierda es terrible", {
+  allLanguages: true  // ✅ Check all languages (slower but comprehensive)
+});
+```
+
+**5. Fuzzy Tolerance Too High**
+```javascript
+// Problem: Fuzzy tolerance too strict
+const result = checkProfanity("dmn this sucks", {
+  fuzzyTolerance: 0.9  // ❌ High tolerance = strict matching
+});
+console.log(result.containsProfanity); // false (dmn vs damn = 75% similar < 90%)
+
+// Solution: Lower tolerance for more matches
+const fixedResult = checkProfanity("dmn this sucks", {
+  fuzzyTolerance: 0.7  // ✅ Lower tolerance = more permissive
+});
+console.log(fixedResult.containsProfanity); // true (75% > 70% threshold)
+
+// Tolerance guidelines:
+// 0.9+ = Very strict (only obvious matches)
+// 0.8 = Standard (recommended for most use cases)
+// 0.7 = Permissive (may catch more edge cases)
+// 0.6- = Very permissive (may have false positives)
+```
+
+**6. Context Override Issues**
+```javascript
+// Problem: Context analysis incorrectly overriding detection
+const result = checkProfanity("You damn fool!", {
+  enableContextAware: true,
+  confidenceThreshold: 0.5  // ❌ Low threshold may override valid profanity
+});
+// May return false if context seems neutral
+
+// Solution: Adjust context threshold or disable for certain content
+const fixedResult = checkProfanity("You damn fool!", {
+  enableContextAware: true,
+  confidenceThreshold: 0.8  // ✅ Higher threshold = less override
+});
+
+// Or disable context for insults/direct profanity
+const directInsultConfig = {
+  enableContextAware: false  // Direct profanity should always be flagged
+};
+```
+
+### Debugging Missing Matches
+```javascript
+// Debug configuration to find missing matches
+const debugConfig = {
+  languages: ['english', 'spanish', 'french'], // Multiple languages
+  allowObfuscatedMatch: true,    // Catch disguised profanity
+  wordBoundaries: false,         // Allow embedded matches
+  fuzzyMatching: true,          // Enable fuzzy matching
+  fuzzyTolerance: 0.6,          // Permissive tolerance
+  caseSensitive: false,         // Case insensitive
+  enableContextAware: false,    // No context override
+  returnMatches: true           // Get detailed match information
+};
+
+const result = checkProfanity("problematic text", debugConfig);
+console.log(result.matches); // See exactly what was matched and why
+```
+
+</Accordion>
+
+<Accordion title="Configuration Errors - Settings Not Working" id="configuration-errors">
+
+Configuration errors often result from typos, incompatible settings, or misunderstanding default behaviors.
+
+### Configuration Validation
+
+<TypeTable
+  type={{
+    validateConfig: {
+      description: "Validate configuration object before use",
+      type: "function",
+      default: "validateConfig(config)"
+    },
+    getDefaultConfig: {
+      description: "Get default configuration values",
+      type: "function", 
+      default: "getDefaultConfig()"
+    },
+    mergeConfigs: {
+      description: "Safely merge partial configurations",
+      type: "function",
+      default: "mergeConfigs(base, override)"
+    }
+  }}
+/>
+
+### Common Configuration Mistakes
+
+**1. Typos in Configuration Keys**
+```javascript
+// Problem: Typosed configuration keys
+const badConfig = {
+  langauges: ['english'],           // ❌ Typo: "langauges"
+  enableContextAware: true,         // ❌ Wrong: should be "enable_context_aware" in Python
+  fuzzyToleranceLevel: 0.8         // ❌ Wrong: should be "fuzzy_tolerance"
+};
+
+// Solution: Use correct configuration keys
+const goodConfig = {
+  languages: ['english'],          // ✅ Correct spelling
+  enableContextAware: true,        // ✅ Correct camelCase for JavaScript
+  fuzzyTolerance: 0.8             // ✅ Correct parameter name
+};
+
+// Validation function to catch errors
+import { validateConfig } from 'glin-profanity';
+const validation = validateConfig(badConfig);
+if (!validation.valid) {
+  console.error('Config errors:', validation.errors);
+  // ["Unknown property: langauges", "Unknown property: fuzzyToleranceLevel"]
+}
+```
+
+**2. JavaScript vs Python Naming**
+```javascript
+// JavaScript (camelCase)
+const jsConfig = {
+  enableContextAware: true,
+  contextWindow: 3,
+  confidenceThreshold: 0.7,
+  allowObfuscatedMatch: true,
+  fuzzyTolerance: 0.8,
+  severityLevels: true
+};
+
+// Python (snake_case) - equivalent configuration
+const pythonConfig = {
+  enable_context_aware: true,
+  context_window: 3,
+  confidence_threshold: 0.7,
+  allow_obfuscated_match: true,
+  fuzzy_tolerance: 0.8,
+  severity_levels: true
+};
+```
+
+**3. Incompatible Setting Combinations**
+```javascript
+// Problem: Conflicting settings
+const conflictingConfig = {
+  wordBoundaries: true,           // ❌ Exact word matching
+  allowObfuscatedMatch: true     // ❌ But obfuscation needs partial matching
+};
+
+// Solution: Compatible settings
+const compatibleConfig = {
+  wordBoundaries: false,          // ✅ Allow partial matching
+  allowObfuscatedMatch: true     // ✅ Obfuscation detection works
+};
+
+// Or use auto-configuration
+const autoConfig = {
+  allowObfuscatedMatch: true     // ✅ Automatically sets wordBoundaries: false
+  // wordBoundaries is automatically disabled
+};
+```
+
+**4. Type Errors**
+```javascript
+// Problem: Wrong data types
+const badTypes = {
+  languages: 'english',           // ❌ Should be array
+  fuzzyTolerance: '0.8',         // ❌ Should be number
+  enableContextAware: 'true'     // ❌ Should be boolean
+};
+
+// Solution: Correct data types
+const goodTypes = {
+  languages: ['english'],         // ✅ Array of strings
+  fuzzyTolerance: 0.8,           // ✅ Number between 0-1
+  enableContextAware: true       // ✅ Boolean
+};
+
+// TypeScript helps catch these at compile time
+interface FilterConfig {
+  languages?: string[];
+  fuzzyTolerance?: number;
+  enableContextAware?: boolean;
+}
+```
+
+**5. Range Validation**
+```javascript
+// Problem: Values outside valid ranges
+const invalidRanges = {
+  fuzzyTolerance: 1.5,           // ❌ Should be 0.0-1.0
+  confidenceThreshold: -0.2,     // ❌ Should be 0.0-1.0
+  contextWindow: -1              // ❌ Should be positive integer
+};
+
+// Solution: Valid ranges
+const validRanges = {
+  fuzzyTolerance: 0.8,           // ✅ 0.0-1.0
+  confidenceThreshold: 0.7,      // ✅ 0.0-1.0
+  contextWindow: 3               // ✅ Positive integer
+};
+
+// Validation with error messages
+const result = validateConfig(invalidRanges);
+console.log(result.errors);
+// ["fuzzyTolerance must be between 0.0 and 1.0"]
+```
+
+### Configuration Best Practices
+```javascript
+// 1. Start with defaults and override selectively
+const baseConfig = getDefaultConfig();
+const customConfig = {
+  ...baseConfig,
+  languages: ['english', 'spanish'],
+  enableContextAware: true
+};
+
+// 2. Use configuration presets for common scenarios
+import { presets } from 'glin-profanity';
+const chatConfig = presets.chatModeration;
+const gameConfig = presets.gameChat;
+
+// 3. Validate configuration in development
+if (process.env.NODE_ENV === 'development') {
+  const validation = validateConfig(customConfig);
+  if (!validation.valid) {
+    throw new Error(`Invalid config: ${validation.errors.join(', ')}`);
+  }
+}
+
+// 4. Use TypeScript for compile-time validation
+const typedConfig: FilterConfig = {
+  languages: ['english'],
+  enableContextAware: true,
+  // TypeScript will catch typos and type errors
+};
+```
+
+</Accordion>
+
+<Accordion title="Language Detection Issues" id="language-detection">
+
+Language detection problems occur when content is in unexpected languages or when multi-language content isn't properly handled.
+
+### Language Configuration Options
+
+<TypeTable
+  type={{
+    languages: {
+      description: "Specific languages to check",
+      type: "string[]",
+      default: "['english']"
+    },
+    allLanguages: {
+      description: "Check all 23 supported languages",
+      type: "boolean",
+      default: "false"
+    },
+    autoDetectLanguage: {
+      description: "Automatically detect content language (future feature)",
+      type: "boolean",
+      default: "false"
+    },
+    primaryLanguage: {
+      description: "Primary language for mixed content",
+      type: "string",
+      default: "english"
+    }
+  }}
+/>
+
+### Language Detection Solutions
+
+**1. Mixed Language Content**
+```javascript
+// Problem: Mixed language content not fully detected
+const mixedContent = "This is bullshit and also mierda";
+
+const singleLangResult = checkProfanity(mixedContent, {
+  languages: ['english']  // ❌ Only detects "bullshit", misses "mierda"
+});
+
+// Solution: Multi-language detection
+const multiLangResult = checkProfanity(mixedContent, {
+  languages: ['english', 'spanish']  // ✅ Detects both profanities
+});
+
+console.log(multiLangResult.profaneWords); // ["bullshit", "mierda"]
+```
+
+**2. Unknown Language Content**
+```javascript
+// Problem: Content in unexpected language
+const foreignContent = "Dette er fandeme dårligt"; // Danish profanity
+
+const result = checkProfanity(foreignContent, {
+  languages: ['english']  // ❌ Danish not included
+});
+
+// Solution: Include more languages or use allLanguages
+const comprehensiveResult = checkProfanity(foreignContent, {
+  allLanguages: true  // ✅ Checks all 23 languages (slower)
+});
+
+// Or add specific language if known
+const specificResult = checkProfanity(foreignContent, {
+  languages: ['english', 'danish']  // ✅ Include Danish
+});
+```
+
+**3. Transliterated Content**
+```javascript
+// Content with romanized/transliterated text
+const transliterated = [
+  "konnichiwa baka desu",     // Japanese romanized
+  "nǐ hǎo shǎbī",            // Chinese with tones  
+  "anyeonghaseyo babo"        // Korean romanized
+];
+
+// Check with original script languages
+const result = checkProfanity(transliterated[0], {
+  languages: ['english', 'japanese']  // Include original language
+});
+```
+
+### Supported Languages Reference
+```javascript
+const supportedLanguages = [
+  'arabic', 'chinese', 'czech', 'danish', 'english', 'esperanto',
+  'finnish', 'french', 'german', 'hindi', 'hungarian', 'italian',
+  'japanese', 'korean', 'norwegian', 'persian', 'polish',
+  'portuguese', 'russian', 'spanish', 'swedish', 'thai', 'turkish'
+];
+
+// Validate language codes
+const validateLanguages = (langs) => {
+  return langs.filter(lang => supportedLanguages.includes(lang));
+};
+```
+
+</Accordion>
+
+<Accordion title="Integration Problems - Framework Issues" id="integration-problems">
+
+Integration issues arise when using Glin-Profanity with specific frameworks, build tools, or deployment environments.
+
+### Common Integration Fixes
+
+**1. React Hook Issues**
+```javascript
+// Problem: Hook not updating properly
+const MyComponent = () => {
+  const { checkText, result } = useProfanityChecker();
+  
+  useEffect(() => {
+    checkText("test text");
+  }, []); // ❌ checkText not in dependency array
+  
+  return <div>{result?.containsProfanity ? 'Bad' : 'Good'}</div>;
+};
+
+// Solution: Proper dependency management
+const MyComponent = () => {
+  const { checkText, result } = useProfanityChecker();
+  
+  useEffect(() => {
+    checkText("test text");
+  }, [checkText]); // ✅ Include checkText in dependencies
+  
+  return <div>{result?.containsProfanity ? 'Bad' : 'Good'}</div>;
+};
+```
+
+**2. Server-Side Rendering (SSR) Issues**
+```javascript
+// Problem: Client-server hydration mismatch
+const ServerComponent = () => {
+  const [profanityResult, setProfanityResult] = useState(null);
+  
+  useEffect(() => {
+    // ❌ This runs only on client, causing hydration mismatch
+    const result = checkProfanity("text");
+    setProfanityResult(result);
+  }, []);
+  
+  return <div>{profanityResult?.containsProfanity ? 'Bad' : 'Good'}</div>;
+};
+
+// Solution: Consistent server-client rendering
+const ServerComponent = ({ initialResult }) => {
+  const [profanityResult, setProfanityResult] = useState(initialResult);
+  
+  return <div>{profanityResult?.containsProfanity ? 'Bad' : 'Good'}</div>;
+};
+
+// In getServerSideProps or getStaticProps
+export const getServerSideProps = async () => {
+  const initialResult = checkProfanity("text");
+  return { props: { initialResult } };
+};
+```
+
+**3. Build/Bundle Issues**
+```javascript
+// Problem: Import errors in different environments
+// ❌ May not work in all bundlers
+import { checkProfanity } from 'glin-profanity/dist/index.js';
+
+// Solution: Use main entry point
+// ✅ Works with all bundlers
+import { checkProfanity } from 'glin-profanity';
+
+// For specific imports
+import { Filter } from 'glin-profanity/filter';
+import { useProfanityChecker } from 'glin-profanity/react';
+```
+
+**4. Environment Variable Issues**
+```javascript
+// Problem: Environment-specific configuration not working
+const config = {
+  languages: process.env.PROFANITY_LANGUAGES?.split(',') // ❌ May be undefined
+};
+
+// Solution: Proper environment handling
+const config = {
+  languages: process.env.PROFANITY_LANGUAGES?.split(',') || ['english'],
+  enableContextAware: process.env.PROFANITY_CONTEXT === 'true',
+  // Provide sensible defaults
+};
+```
+
+</Accordion>
+
+</Accordions>
+
+## Quick Diagnosis Tool
+
+Use this checklist to quickly identify common issues:
+
+### False Positives Checklist
+- [ ] Is `wordBoundaries: true` enabled? (Prevents substring matches)
+- [ ] Is `enableContextAware: true` configured? (Reduces context-based false positives)
+- [ ] Are you using domain-specific whitelists? (Gaming, technical terms)
+- [ ] Is `confidenceThreshold` set appropriately? (0.7-0.8 recommended)
+
+### Missing Matches Checklist  
+- [ ] Is `allowObfuscatedMatch: true` for disguised profanity?
+- [ ] Are the correct languages configured?
+- [ ] Is `wordBoundaries: false` for embedded profanity?
+- [ ] Is `fuzzyTolerance` set low enough? (0.6-0.8)
+- [ ] Is context analysis overriding valid detections?
+
+### Performance Issues Checklist
+- [ ] Are you checking too many languages?
+- [ ] Is caching enabled for repeated content?
+- [ ] Are you reusing Filter instances?
+- [ ] Is context analysis disabled for simple use cases?
+
+### Configuration Issues Checklist
+- [ ] Are parameter names correct? (camelCase JS, snake_case Python)
+- [ ] Are value types correct? (arrays, numbers, booleans)
+- [ ] Are ranges valid? (0.0-1.0 for thresholds)
+- [ ] Are language codes correct?
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="⚙️ Configuration"
+    description="Complete configuration reference with all options"
+    href="/docs/glin-profanity/configuration"
+  />
+  <Card
+    title="🧠 Context-Aware Filtering"
+    description="Understanding sentiment analysis and confidence scores"
+    href="/docs/glin-profanity/context-analysis"
+  />
+  <Card
+    title="🕵️ Obfuscation Detection"
+    description="Character substitution and fuzzy matching details"
+    href="/docs/glin-profanity/obfuscation-detection"
+  />
+  <Card
+    title="⚖️ Severity Levels"
+    description="EXACT vs FUZZY classification and filtering"
+    href="/docs/glin-profanity/severity-levels"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Still having issues?** Check the [GitHub Issues](https://github.com/GLINR/glin-profanity/issues) for additional troubleshooting help, or create a new issue with your specific configuration and problem description.
+</Callout>

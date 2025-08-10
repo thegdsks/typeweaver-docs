@@ -1,0 +1,265 @@
+---
+title: Windows Installation
+description: Install CommitWeave on Windows using various methods
+---
+
+CommitWeave works seamlessly on Windows with multiple installation options available.
+
+## Package Managers
+
+### Chocolatey
+
+<Callout type="info" title="Coming Soon">
+Chocolatey package is in development.
+</Callout>
+
+```powershell
+# Coming soon
+choco install commitweave
+```
+
+### Scoop
+
+<Callout type="info" title="Coming Soon">
+Scoop package is in development.
+</Callout>
+
+```powershell
+# Coming soon
+scoop install commitweave
+```
+
+### winget
+
+<Callout type="info" title="Coming Soon">
+Windows Package Manager support is in development.
+</Callout>
+
+```powershell
+# Coming soon
+winget install typeweaver.commitweave
+```
+
+## Node.js Package Managers (Recommended)
+
+The most reliable method is using Node.js package managers:
+
+<Tabs items={['npm', 'yarn', 'pnpm']} groupId="package-managers" persist>
+  <Tab value="npm">
+    ```cmd
+    npm install -g @typeweaver/commitweave
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```cmd
+    yarn global add @typeweaver/commitweave
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```cmd
+    pnpm add -g @typeweaver/commitweave
+    ```
+  </Tab>
+</Tabs>
+
+## Prerequisites
+
+<Steps>
+  <Step>
+    ### Install Node.js
+    Download the Windows installer from [nodejs.org](https://nodejs.org):
+    
+    - Choose the **LTS version** (18.x or higher)
+    - Select **"Add to PATH"** during installation
+    - Install for all users (recommended)
+  </Step>
+  
+  <Step>
+    ### Install Git
+    Download Git for Windows from [git-scm.com](https://git-scm.com):
+    
+    - Choose **"Git from the command line and also from 3rd-party software"**
+    - Select **"Use bundled OpenSSH"**
+    - Choose **"Checkout Windows-style, commit Unix-style line endings"**
+  </Step>
+  
+  <Step>
+    ### Install CommitWeave
+    Open **Command Prompt** or **PowerShell** as Administrator:
+    
+    ```cmd
+    npm install -g @typeweaver/commitweave
+    ```
+  </Step>
+</Steps>
+
+## Windows-Specific Features
+
+### PowerShell Integration
+
+Add PowerShell completion for enhanced experience:
+
+```powershell
+# Add to PowerShell profile
+if (!(Test-Path $PROFILE)) {
+    New-Item -Path $PROFILE -Type File -Force
+}
+Add-Content $PROFILE "commitweave completion powershell | Out-String | Invoke-Expression"
+```
+
+### Windows Terminal
+
+For the best experience, use [Windows Terminal](https://www.microsoft.com/store/apps/9n0dx20hk701):
+
+```json
+// settings.json
+{
+  "profiles": {
+    "defaults": {
+      "fontFace": "Cascadia Code",
+      "fontSize": 10
+    }
+  }
+}
+```
+
+### WSL Integration
+
+If using Windows Subsystem for Linux, install CommitWeave in both environments:
+
+<Tabs items={['Windows', 'WSL']} groupId="environment">
+  <Tab value="Windows">
+    ```cmd
+    # Windows Command Prompt/PowerShell
+    npm install -g @typeweaver/commitweave
+    ```
+  </Tab>
+  <Tab value="WSL">
+    ```bash
+    # WSL Terminal
+    npm install -g @typeweaver/commitweave
+    ```
+  </Tab>
+</Tabs>
+
+## IDE Integration
+
+### Visual Studio Code
+
+1. Install the **CommitWeave VSCode Extension** from the marketplace
+2. Configure in VSCode settings:
+
+```json
+{
+  "commitweave.enabled": true,
+  "commitweave.aiProvider": "openai"
+}
+```
+
+### Visual Studio
+
+For Visual Studio users, set up Git hooks:
+
+1. Navigate to **Tools** > **Options** > **Source Control** > **Git Global Settings**
+2. Set up pre-commit hooks pointing to CommitWeave
+
+## Troubleshooting
+
+### Execution Policy (PowerShell)
+
+If you encounter execution policy errors:
+
+```powershell
+# Check current policy
+Get-ExecutionPolicy
+
+# Set execution policy (run as Administrator)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### PATH Issues
+
+If `commitweave` command is not found:
+
+<Tabs items={['Command Prompt', 'PowerShell']} groupId="shell">
+  <Tab value="Command Prompt">
+    ```cmd
+    # Check npm global directory
+    npm config get prefix
+    
+    # Add to PATH permanently
+    setx PATH "%PATH%;%APPDATA%\npm"
+    ```
+  </Tab>
+  <Tab value="PowerShell">
+    ```powershell
+    # Check npm global directory
+    npm config get prefix
+    
+    # Add to PATH permanently
+    [Environment]::SetEnvironmentVariable("Path", $env:Path + ";" + $env:APPDATA + "\npm", "User")
+    ```
+  </Tab>
+</Tabs>
+
+### Antivirus Interference
+
+Some antivirus software may flag Node.js executables:
+
+1. **Windows Defender**: Add Node.js and npm directories to exclusions
+2. **Third-party AV**: Configure to allow Node.js global packages
+
+### Long Path Support
+
+Enable long path support for deep project structures:
+
+```cmd
+# Run as Administrator
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1
+```
+
+### Line Ending Issues
+
+Configure Git to handle line endings correctly:
+
+```cmd
+# Global configuration
+git config --global core.autocrlf true
+git config --global core.safecrlf false
+```
+
+## Performance Optimization
+
+### Faster Installs
+
+Use faster npm registry mirrors:
+
+```cmd
+# Use npm registry mirror
+npm config set registry https://registry.npmmirror.com/
+
+# Or use cnpm
+npm install -g cnpm
+cnpm install -g @typeweaver/commitweave
+```
+
+### Disk Space
+
+Clean npm cache if running low on disk space:
+
+```cmd
+npm cache clean --force
+npm cache verify
+```
+
+## Next Steps
+
+After installation on Windows:
+
+1. **Configure environment**: Set up API keys in environment variables
+2. **Initialize project**: Run `commitweave init` in your Git repository
+3. **Test installation**: Verify with `commitweave --version`
+
+<Callout type="tip">
+Consider using **Windows Terminal** with **PowerShell 7** for the best CommitWeave experience on Windows.
+</Callout>

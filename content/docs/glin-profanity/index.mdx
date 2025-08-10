@@ -1,0 +1,93 @@
+---
+title: Glin-Profanity
+description: Multi-language profanity detection with ML-powered toxicity analysis
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Glin-Profanity is an open-source content moderation library for JavaScript/TypeScript and Python. It handles the evasion techniques users actually try — leetspeak substitutions, Unicode homoglyphs, and ML-powered contextual toxicity detection.
+
+<Callout type="info">
+**v3.0 Release** — Now with TensorFlow.js ML integration for contextual toxicity detection.
+</Callout>
+
+## Key Features
+
+- **Leetspeak Detection** — Catches `f4ck`, `5h1t`, `@$$` and similar obfuscations
+- **Unicode Normalization** — Detects Cyrillic and homoglyph substitutions
+- **23 Language Support** — Built-in dictionaries for global coverage
+- **ML Toxicity Detection** — TensorFlow.js-powered contextual analysis (v3+)
+- **21M+ ops/sec** — Optimized with LRU caching
+- **React Hook** — Built-in `useProfanityChecker` for real-time validation
+
+## Quick Start
+
+```bash
+npm install glin-profanity
+```
+
+```typescript
+import { Filter } from 'glin-profanity';
+
+const filter = new Filter({
+  languages: ['english'],
+  detectLeetspeak: true,
+});
+
+filter.isProfane('f4ck');  // true
+filter.isProfane('hello'); // false
+```
+
+## With ML Detection (v3+)
+
+```bash
+npm install glin-profanity @tensorflow/tfjs @tensorflow-models/toxicity
+```
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+const filter = new HybridFilter({
+  enableML: true,
+  languages: ['english'],
+});
+
+await filter.initialize();
+
+// Catches toxic content without explicit profanity
+const result = await filter.checkProfanityAsync('you are worthless');
+console.log(result.isToxic); // true
+```
+
+## Documentation Sections
+
+<Cards>
+  <Card
+    title="Quick Start"
+    description="Get up and running in 5 minutes"
+    href="/docs/glin-profanity/quickstart"
+  />
+  <Card
+    title="Installation"
+    description="npm, pip, CDN, Docker, and framework guides"
+    href="/docs/glin-profanity/installation"
+  />
+  <Card
+    title="API Reference"
+    description="Filter, ToxicityDetector, HybridFilter, and React Hook"
+    href="/docs/glin-profanity/core-functions"
+  />
+  <Card
+    title="ML Integration"
+    description="TensorFlow.js setup and best practices"
+    href="/docs/glin-profanity/ml-integration"
+  />
+</Cards>
+
+## Resources
+
+- [Live Demo](https://www.glincker.com/tools/glin-profanity) — Try it in your browser
+- [GitHub](https://github.com/GLINCKER/glin-profanity) — Source code and issues
+- [npm](https://www.npmjs.com/package/glin-profanity) — JavaScript package
+- [PyPI](https://pypi.org/project/glin-profanity/) — Python package

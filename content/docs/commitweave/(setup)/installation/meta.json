@@ -1,0 +1,7 @@
+{
+  "title": "Installation",
+  "defaultOpen": false,
+  "description": "Install CommitWeave on your platform",
+  "icon": "Download",
+  "pages": ["index", "npm-yarn-pnpm", "macos", "windows", "docker"]
+}

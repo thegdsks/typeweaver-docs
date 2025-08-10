@@ -1,0 +1,52 @@
+---
+title: Core Functions
+description: Essential JavaScript/TypeScript functions for profanity detection
+---
+
+The core functions provide the primary interface for profanity detection in JavaScript and TypeScript applications.
+
+## checkProfanity
+
+The primary function for comprehensive profanity detection.
+
+```typescript
+function checkProfanity(
+  text: string, 
+  config?: ProfanityCheckerConfig
+): ProfanityCheckResult
+```
+
+### Basic Example
+
+```javascript
+import { checkProfanity } from 'glin-profanity';
+
+const result = checkProfanity("This is damn good!");
+console.log(result.containsProfanity); // true
+console.log(result.profaneWords); // ["damn"]
+```
+
+## isWordProfane
+
+Quick boolean check for individual words.
+
+```typescript
+function isWordProfane(
+  word: string, 
+  config?: ProfanityCheckerConfig
+): boolean
+```
+
+### Basic Example
+
+```javascript
+import { isWordProfane } from 'glin-profanity';
+
+console.log(isWordProfane('hello')); // false
+console.log(isWordProfane('damn')); // true
+```
+
+## Cross-References
+
+- [React Hook](/docs/glin-profanity/react-hook) - React integration
+- [Filter Class](/docs/glin-profanity/filter-class) - Object-oriented API

@@ -1,0 +1,9 @@
+{
+  "title": "Introduction",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "what-is-commitweave", 
+    "comparisons"
+  ]
+}

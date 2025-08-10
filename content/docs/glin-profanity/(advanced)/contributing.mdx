@@ -1,0 +1,683 @@
+---
+title: Contribution Guidelines
+description: How to contribute to Glin-Profanity development and expand language support
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Files, File, Folder } from 'fumadocs-ui/components/files';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Welcome contributors to expand Glin-Profanity's multi-language support and improve profanity detection capabilities. Learn how to add languages, improve algorithms, submit dictionaries, and contribute to the open-source community.
+
+<Callout type="info" title="🤝 Community Driven">
+Glin-Profanity supports 23 languages thanks to community contributions. Help us expand to even more languages and improve detection accuracy.
+</Callout>
+
+## Contributing to Language Support
+
+<Steps>
+
+<Step>
+### Adding a New Language
+
+Learn how to add support for a new language to Glin-Profanity's detection system.
+
+**Language Addition Checklist:**
+
+Before starting language contribution, ensure:
+- Language has active native speakers willing to review content
+- Sufficient profanity vocabulary exists for meaningful detection
+- Cultural context understanding for appropriate vs inappropriate language
+- Someone available for ongoing maintenance and updates
+
+**Dictionary Creation Process:**
+
+```javascript title="Language Dictionary Structure"
+// languages/[language-code].json
+{
+  "language": "portuguese",
+  "code": "pt",
+  "contributors": ["contributor@email.com"],
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-15",
+  "words": {
+    "exact": [
+      {
+        "word": "merda",
+        "severity": "MODERATE", 
+        "contexts": ["general"],
+        "alternatives": ["droga", "caramba"]
+      },
+      {
+        "word": "porra", 
+        "severity": "MILD",
+        "contexts": ["casual", "exclamation"],
+        "alternatives": ["nossa", "puxa"]
+      }
+    ],
+    "fuzzy": [
+      {
+        "pattern": "crl*",
+        "matches": ["caralho", "crlh", "craia"],
+        "severity": "MODERATE"
+      }
+    ]
+  },
+  "whitelist": {
+    "gaming": ["matar", "morrer", "destruir"],
+    "medical": ["penis", "vagina", "anus"],
+    "academic": ["sexual", "reproduction"]
+  },
+  "culturalNotes": [
+    "Portuguese has strong regional variations between Brazil and Portugal",
+    "Many words acceptable in Portugal may be offensive in Brazil",
+    "Consider context-aware filtering for religious terms"
+  ]
+}
+```
+
+**Testing New Languages:**
+
+```python title="Language Testing Script"
+#!/usr/bin/env python3
+"""
+Test suite for new language contributions
+"""
+
+import json
+from glin_profanity import Filter
+
+def test_new_language(language_code: str):
+    """Test basic functionality for new language"""
+    
+    # Load language dictionary
+    with open(f'languages/{language_code}.json', 'r', encoding='utf-8') as f:
+        lang_data = json.load(f)
+    
+    # Initialize filter with new language
+    filter_instance = Filter({
+        'languages': [language_code],
+        'enable_context_aware': True
+    })
+    
+    # Test cases
+    test_cases = [
+        # Basic profanity detection
+        {
+            'text': lang_data['words']['exact'][0]['word'],
+            'expected': True,
+            'description': 'Basic profanity detection'
+        },
+        # Clean text verification
+        {
+            'text': 'This is clean text in the language',
+            'expected': False,
+            'description': 'Clean text should not be flagged'
+        },
+        # Context-aware testing
+        {
+            'text': f"This is a {lang_data['words']['exact'][0]['word']} movie!",
+            'expected': False,  # Should be bypassed by context
+            'description': 'Positive context should bypass profanity'
+        },
+        # Whitelist verification
+        {
+            'text': lang_data['whitelist']['gaming'][0] if 'gaming' in lang_data['whitelist'] else 'whitelist test',
+            'expected': False,
+            'description': 'Whitelisted terms should not be flagged'
+        }
+    ]
+    
+    results = []
+    for test_case in test_cases:
+        result = filter_instance.check_profanity(test_case['text'])
+        passed = result['contains_profanity'] == test_case['expected']
+        
+        results.append({
+            'test': test_case['description'],
+            'text': test_case['text'],
+            'expected': test_case['expected'],
+            'actual': result['contains_profanity'],
+            'passed': passed,
+            'details': result
+        })
+    
+    return results
+
+def validate_language_dictionary(language_code: str):
+    """Validate language dictionary structure"""
+    try:
+        with open(f'languages/{language_code}.json', 'r', encoding='utf-8') as f:
+            lang_data = json.load(f)
+        
+        required_fields = ['language', 'code', 'contributors', 'words']
+        missing_fields = [field for field in required_fields if field not in lang_data]
+        
+        if missing_fields:
+            return False, f"Missing required fields: {missing_fields}"
+        
+        # Validate word structure
+        if 'exact' not in lang_data['words']:
+            return False, "Dictionary must contain 'exact' words section"
+        
+        for word_entry in lang_data['words']['exact']:
+            required_word_fields = ['word', 'severity']
+            missing_word_fields = [field for field in required_word_fields if field not in word_entry]
+            
+            if missing_word_fields:
+                return False, f"Word entry missing fields: {missing_word_fields}"
+        
+        return True, "Dictionary structure is valid"
+        
+    except Exception as e:
+        return False, f"Dictionary validation error: {str(e)}"
+
+# Usage
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) != 2:
+        print("Usage: python test_language.py <language_code>")
+        sys.exit(1)
+    
+    language_code = sys.argv[1]
+    
+    # Validate dictionary structure
+    is_valid, message = validate_language_dictionary(language_code)
+    print(f"Dictionary validation: {message}")
+    
+    if is_valid:
+        # Run functionality tests
+        test_results = test_new_language(language_code)
+        
+        print(f"\nTest Results for {language_code}:")
+        print("-" * 50)
+        
+        passed_count = 0
+        for result in test_results:
+            status = "✅ PASS" if result['passed'] else "❌ FAIL"
+            print(f"{status}: {result['test']}")
+            if result['passed']:
+                passed_count += 1
+            else:
+                print(f"  Expected: {result['expected']}, Got: {result['actual']}")
+                print(f"  Text: '{result['text']}'")
+        
+        print(f"\nPassed: {passed_count}/{len(test_results)} tests")
+        
+        if passed_count == len(test_results):
+            print("\n🎉 All tests passed! Language contribution is ready for submission.")
+        else:
+            print(f"\n⚠️  {len(test_results) - passed_count} tests failed. Please review and fix issues.")
+```
+
+**Cultural Sensitivity Guidelines:**
+
+- **Native Speaker Review**: All dictionaries must be reviewed by native speakers
+- **Regional Variations**: Document differences between regions (UK vs US English, Brazil vs Portugal Portuguese)
+- **Context Awareness**: Understand when words are appropriate vs inappropriate
+- **Religious Sensitivity**: Handle religious terms with cultural understanding
+- **Historical Context**: Consider historical and cultural significance of terms
+
+</Step>
+
+<Step>
+### Testing Your Contributions
+
+Comprehensive testing ensures your language contributions work correctly and maintain quality standards.
+
+**Local Testing Setup:**
+
+```bash title="Setting up Local Testing Environment"
+# Clone the repository
+git clone https://github.com/GLINR/glin-profanity.git
+cd glin-profanity
+
+# Install development dependencies
+npm install
+pip install -r requirements-dev.txt
+
+# Install pre-commit hooks
+pre-commit install
+
+# Run existing test suite to ensure everything works
+npm test
+pytest tests/
+
+# Test your new language
+python scripts/test_language.py your-language-code
+```
+
+**Automated Testing Pipeline:**
+
+```javascript title="JavaScript Language Tests"
+// tests/languages/test-new-language.spec.js
+import { checkProfanity, Filter } from 'glin-profanity';
+
+describe('New Language Support', () => {
+  const languageCode = 'your-language';
+  
+  test('should detect basic profanity', () => {
+    const result = checkProfanity('profane word here', {
+      languages: [languageCode]
+    });
+    
+    expect(result.containsProfanity).toBe(true);
+    expect(result.profaneWords).toContain('profane word here');
+  });
+  
+  test('should handle clean text correctly', () => {
+    const result = checkProfanity('clean text in new language', {
+      languages: [languageCode]
+    });
+    
+    expect(result.containsProfanity).toBe(false);
+    expect(result.profaneWords).toHaveLength(0);
+  });
+  
+  test('should respect context-aware filtering', () => {
+    const positiveContext = checkProfanity('This movie is fucking amazing!', {
+      languages: [languageCode],
+      enableContextAware: true,
+      confidenceThreshold: 0.7
+    });
+    
+    expect(positiveContext.containsProfanity).toBe(false);
+  });
+  
+  test('should detect obfuscated profanity', () => {
+    const obfuscated = checkProfanity('sh1t and d@mn', {
+      languages: [languageCode],
+      allowObfuscatedMatch: true
+    });
+    
+    expect(obfuscated.containsProfanity).toBe(true);
+  });
+  
+  test('should handle fuzzy matching correctly', () => {
+    const fuzzy = checkProfanity('shiiiit', {
+      languages: [languageCode],
+      fuzzyMatching: true,
+      fuzzyTolerance: 0.8
+    });
+    
+    expect(fuzzy.containsProfanity).toBe(true);
+  });
+  
+  test('should respect gaming whitelist', () => {
+    const gamingTerm = checkProfanity('kill the boss enemy', {
+      languages: [languageCode],
+      domainWhitelists: {
+        [languageCode]: ['kill', 'boss', 'enemy', 'weapon']
+      }
+    });
+    
+    expect(gamingTerm.containsProfanity).toBe(false);
+  });
+});
+```
+
+**Quality Assurance Checklist:**
+
+Before submitting language contributions, verify:
+
+- ✅ **Dictionary Structure**: Valid JSON with required fields
+- ✅ **Word Coverage**: Minimum 50 profane words for basic functionality  
+- ✅ **Severity Classification**: Words properly categorized as MILD/MODERATE/SEVERE
+- ✅ **Context Awareness**: Appropriate positive/negative context examples
+- ✅ **Cultural Sensitivity**: Native speaker review completed
+- ✅ **Testing**: All automated tests pass
+- ✅ **Documentation**: Language added to README and documentation
+- ✅ **Obfuscation Patterns**: Common character substitutions included
+- ✅ **Regional Variants**: Different spellings and regional terms covered
+- ✅ **Performance**: No significant impact on detection speed
+
+**Performance Benchmarking:**
+
+```bash title="Performance Testing"
+# Benchmark new language performance
+npm run benchmark -- --language your-language
+
+# Memory usage testing
+npm run test:memory -- --language your-language
+
+# Large text processing test
+echo "Large text content..." | node scripts/benchmark.js --language your-language
+```
+
+</Step>
+
+<Step>  
+### Submitting Pull Requests
+
+Professional submission process for language contributions and feature improvements.
+
+**Pull Request Preparation:**
+
+**Branch Naming Convention:**
+```bash
+# Language additions
+git checkout -b language/portuguese-support
+git checkout -b language/arabic-improvements
+
+# Feature additions  
+git checkout -b feature/severity-filtering
+git checkout -b feature/context-analysis-improvements
+
+# Bug fixes
+git checkout -b fix/fuzzy-matching-accuracy
+git checkout -b fix/memory-leak-filter-class
+```
+
+**Commit Message Format:**
+```bash
+# Language additions
+git commit -m "feat(lang): add Portuguese language support
+
+- Add Brazilian Portuguese dictionary with 150+ words
+- Include regional variations and context-aware rules
+- Add gaming and academic whitelists
+- All tests passing with native speaker review
+
+Closes #123"
+
+# Feature improvements
+git commit -m "feat(context): improve sentiment analysis accuracy
+
+- Enhance positive context detection by 15%
+- Add domain-specific phrase patterns
+- Improve confidence scoring algorithm
+- Update documentation with new examples
+
+Closes #456"
+
+# Bug fixes  
+git commit -m "fix(fuzzy): resolve character substitution edge cases
+
+- Fix handling of multiple consecutive substitutions
+- Improve Unicode normalization for special characters
+- Add test cases for edge conditions
+- Performance impact: <5ms additional processing
+
+Fixes #789"
+```
+
+**Pull Request Template:**
+
+```markdown
+## Description
+Brief description of your contribution and motivation.
+
+## Type of Change
+- [ ] New language support
+- [ ] Feature enhancement  
+- [ ] Bug fix
+- [ ] Documentation improvement
+- [ ] Performance optimization
+
+## New Language Details (if applicable)
+- **Language**: Portuguese (Brazilian)
+- **Language Code**: pt-br  
+- **Native Speakers Consulted**: 2
+- **Word Count**: 150+ exact, 25+ fuzzy patterns
+- **Regional Considerations**: Brazil vs Portugal variations documented
+
+## Testing Completed
+- [ ] All existing tests pass
+- [ ] New language tests created and passing
+- [ ] Performance benchmarks completed
+- [ ] Manual testing with native speakers
+- [ ] Documentation updated
+
+## Performance Impact  
+- Memory usage: +2MB for new language dictionaries
+- Processing time: <5ms additional per check
+- Bundle size: +15KB minified
+
+## Cultural Sensitivity Review
+- [ ] Native speaker review completed
+- [ ] Regional variations documented  
+- [ ] Religious/cultural terms handled appropriately
+- [ ] Context-aware rules validated
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Self-review completed
+- [ ] Documentation updated
+- [ ] Tests added/updated
+- [ ] No breaking changes
+- [ ] Backwards compatible
+```
+
+**Review Process:**
+
+**Automated Checks:**
+- ESLint and Prettier code formatting
+- TypeScript compilation without errors
+- All test suites passing (Jest, pytest)
+- Performance benchmarks within acceptable ranges
+- Security vulnerability scanning
+- Bundle size impact analysis
+
+**Manual Review:**
+- Code quality and maintainability
+- Cultural sensitivity and appropriateness
+- Native speaker verification for language additions
+- Documentation clarity and completeness
+- Test coverage adequacy
+
+**Community Review:**
+- Public PR review period (7 days minimum)
+- Community testing and feedback
+- Native speaker community validation
+- Security review for dictionary content
+
+</Step>
+
+</Steps>
+
+## Development Environment Setup
+
+### Local Development
+
+<Files>
+<Folder name="glin-profanity" defaultOpen>
+  <Folder name="packages">
+    <Folder name="js">
+      <Folder name="src">
+        <File name="core.ts" />
+        <File name="filters.ts" />
+        <File name="nlp.ts" />
+      </Folder>
+      <Folder name="tests">
+        <File name="core.test.ts" />
+        <File name="languages.test.ts" />
+      </Folder>
+    </Folder>
+    <Folder name="py">
+      <Folder name="glin_profanity">
+        <File name="__init__.py" />
+        <File name="filter.py" />
+        <File name="nlp.py" />
+      </Folder>
+      <Folder name="tests">
+        <File name="test_core.py" />
+        <File name="test_languages.py" />
+      </Folder>
+    </Folder>
+  </Folder>
+  <Folder name="dictionaries">
+    <File name="english.json" />
+    <File name="spanish.json" />
+    <File name="french.json" />
+    <File name="your-language.json" />
+  </Folder>
+  <Folder name="scripts">
+    <File name="test_language.py" />
+    <File name="benchmark.js" />
+    <File name="validate_dictionaries.py" />
+  </Folder>
+  <Folder name="docs">
+    <File name="CONTRIBUTING.md" />
+    <File name="LANGUAGE_GUIDE.md" />
+    <File name="API.md" />
+  </Folder>
+  <File name="package.json" />
+  <File name="requirements.txt" />
+  <File name="pyproject.toml" />
+</Folder>
+</Files>
+
+### Development Workflow
+
+**Setting Up Development Environment:**
+
+```bash title="Complete Development Setup"
+# 1. Fork and clone repository
+git clone https://github.com/YOUR-USERNAME/glin-profanity.git
+cd glin-profanity
+
+# 2. Install dependencies
+npm install
+pip install -r requirements-dev.txt
+
+# 3. Install pre-commit hooks (automatic formatting and linting)
+pre-commit install
+
+# 4. Verify installation
+npm test
+pytest tests/
+
+# 5. Create feature branch
+git checkout -b language/your-language-support
+
+# 6. Make changes and test
+# ... your development work ...
+
+# 7. Run comprehensive testing
+npm run test:all
+python -m pytest tests/ --coverage
+
+# 8. Commit and push
+git add .
+git commit -m "feat(lang): add your language support"
+git push origin language/your-language-support
+
+# 9. Create pull request via GitHub UI
+```
+
+**Available Scripts:**
+
+```json title="Development Scripts (package.json)"
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:all": "npm run test && npm run test:py",
+    "test:py": "python -m pytest tests/",
+    "lint": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "build": "rollup -c",
+    "benchmark": "node scripts/benchmark.js",
+    "validate:dictionaries": "python scripts/validate_dictionaries.py",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
+  }
+}
+```
+
+## Community Guidelines
+
+### Code of Conduct
+
+**Our Standards:**
+
+- **Respectful Communication**: Treat all contributors with respect and professionalism
+- **Cultural Sensitivity**: Handle language and cultural topics with appropriate care
+- **Constructive Feedback**: Provide helpful, actionable feedback in reviews
+- **Inclusive Environment**: Welcome contributors from all backgrounds and skill levels
+- **Quality Focus**: Maintain high standards for code quality and testing
+
+**Language Contribution Ethics:**
+
+- **Native Speaker Involvement**: Require native speaker review for all language additions
+- **Cultural Context**: Understand cultural and regional appropriateness of terms  
+- **Accuracy Priority**: Prioritize accuracy over completeness in dictionary creation
+- **Responsible Filtering**: Balance effective filtering with avoiding overreach
+- **Privacy Respect**: Never log or store user content inappropriately
+
+**Community Support:**
+
+- **Discord Community**: Join our Discord for real-time collaboration and support
+- **GitHub Discussions**: Use GitHub Discussions for questions and feature requests
+- **Code Review**: Participate in peer code review process
+- **Mentorship**: Experienced contributors mentor newcomers
+- **Recognition**: Contributors recognized in changelog and documentation
+
+### Getting Help
+
+**Support Channels:**
+
+<Cards>
+  <Card
+    title="💬 Discord Community"
+    description="Real-time chat with developers and contributors"
+    href="https://discord.gg/glinr-studio"
+  />
+  <Card
+    title="💭 GitHub Discussions" 
+    description="Structured discussions on features and questions"
+    href="https://github.com/GLINR/glin-profanity/discussions"
+  />
+  <Card
+    title="🐛 Issue Tracker"
+    description="Report bugs and request features"
+    href="https://github.com/GLINR/glin-profanity/issues"
+  />
+  <Card
+    title="📖 Documentation"
+    description="Complete API reference and guides"
+    href="/docs/glin-profanity"
+  />
+</Cards>
+
+**Before Contributing:**
+
+- **Read Documentation**: Familiarize yourself with API and architecture
+- **Check Existing Issues**: Avoid duplicate work by checking open issues
+- **Start Small**: Begin with small contributions before major features
+- **Join Community**: Introduce yourself in Discord or GitHub Discussions
+- **Ask Questions**: Don't hesitate to ask for help or clarification
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="🔒 Security Best Practices"
+    description="Implement secure profanity filtering in production"
+    href="/docs/glin-profanity/security"
+  />
+  <Card
+    title="🧠 Context-Aware Filtering"
+    description="Advanced sentiment analysis and intelligent detection" 
+    href="/docs/glin-profanity/context-analysis"
+  />
+  <Card
+    title="📚 Dictionary Management"
+    description="Managing and updating profanity dictionaries"
+    href="/docs/glin-profanity/dictionary-management"
+  />
+  <Card
+    title="⚙️ Configuration"
+    description="Complete configuration reference and options"
+    href="/docs/glin-profanity/configuration"
+  />
+</Cards>
+
+---
+
+<Callout type="success">
+**Ready to Contribute?** Start by forking the repository, setting up your development environment, and joining our Discord community. We're excited to have you help expand Glin-Profanity's language support and capabilities!
+</Callout>

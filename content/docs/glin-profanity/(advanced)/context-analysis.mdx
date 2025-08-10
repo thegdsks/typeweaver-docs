@@ -1,0 +1,467 @@
+---
+title: Context Analysis
+description: Advanced context-aware filtering with sentiment analysis and domain-specific whitelisting
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+Advanced context-aware profanity filtering that analyzes surrounding text to reduce false positives and understand intent. This sophisticated NLP system examines sentiment, phrase patterns, and domain-specific contexts to make intelligent filtering decisions.
+
+<Callout type="info">
+Context analysis dramatically improves accuracy by distinguishing between "This movie is fucking amazing!" (positive context) vs "You fucking idiot!" (negative context).
+</Callout>
+
+## How Context Analysis Works
+
+<Steps>
+
+<Step>
+**Text Tokenization and Window Extraction**
+
+The analyzer first tokenizes the input text and extracts a configurable window of words around each profanity match.
+
+```javascript
+// Example: "This movie is fucking amazing and incredible!"
+// Match: "fucking" at word index 3
+// contextWindow: 3
+// Extracted context: ["this", "movie", "is", "fucking", "amazing", "and", "incredible"]
+```
+
+**Implementation Details:**
+- Tokenization removes punctuation and normalizes case
+- Window size is configurable (default: 3 words before/after)
+- Character-to-word mapping handles complex text structures
+</Step>
+
+<Step>
+**Phrase Pattern Detection**
+
+The system checks for predefined positive and negative phrase patterns that contain profanity but have clear contextual meaning.
+
+```javascript
+// Positive phrases (high confidence scores)
+const POSITIVE_PHRASES = new Map([
+  ['the bomb', 0.9],        // "this movie is the bomb"
+  ['da bomb', 0.9],         // slang for "the best" 
+  ['photo bomb', 0.8],      // photography term
+  ['bath bomb', 0.8],       // cosmetic product
+]);
+
+// Negative phrases (low confidence scores)
+const NEGATIVE_PHRASES = new Map([
+  ['you are', 0.1],         // "you are [profanity]"
+  ['ur a', 0.1],           // "ur a [profanity]"
+  ['such a', 0.2],         // "such a [profanity]"
+]);
+```
+
+**Pattern Matching Process:**
+- Exact phrase matching takes precedence over sentiment analysis
+- Phrases return predetermined confidence scores (0.0-1.0)
+- Covers common expressions, slang, and technical terms
+</Step>
+
+<Step>
+**Domain-Specific Whitelisting**
+
+Context analyzer checks for domain-specific positive indicators that suggest non-offensive usage.
+
+```javascript
+// Gaming context indicators
+const GAMING_POSITIVE = new Set([
+  'player', 'gamer', 'team', 'squad', 'boss', 'raid', 'quest',
+  'achievement', 'skill', 'build', 'strategy', 'level', 'match'
+]);
+
+// Custom domain whitelists
+const domainWhitelists = {
+  english: ['enemy', 'character', 'weapon', 'item', 'spell']
+};
+```
+
+**Whitelist Logic:**
+- If ANY whitelist word appears in context window → confidence score 0.8
+- Combines built-in gaming terms with custom domain words
+- Immediate positive classification without sentiment analysis
+</Step>
+
+<Step>
+**Distance-Weighted Sentiment Scoring**
+
+Advanced sentiment analysis with proximity-based weighting for nuanced context understanding.
+
+```javascript
+// Sentiment calculation algorithm
+function calculateSentimentScore(contextWords, matchPosition) {
+  let positiveCount = 0;
+  let negativeCount = 0;
+  
+  // Weight words by distance from profanity match
+  for (let i = 0; i < contextWords.length; i++) {
+    const distance = Math.abs(i - matchPosition);
+    const weight = Math.max(0.1, 1 - (distance * 0.2));
+    
+    if (POSITIVE_INDICATORS.has(word)) {
+      positiveCount += weight;
+    } else if (NEGATIVE_INDICATORS.has(word)) {
+      negativeCount += weight;
+    }
+  }
+  
+  return positiveCount / (positiveCount + negativeCount);
+}
+```
+
+**Scoring Features:**
+- **Distance Weighting**: Words closer to profanity have higher influence
+- **Personal Pronoun Detection**: "you", "your" reduce positive scores
+- **Object Reference Detection**: "movie", "game", "this" boost positive scores
+- **Neutral Handling**: Returns 0.5 when no sentiment indicators found
+</Step>
+
+</Steps>
+
+## Configuration Options
+
+### contextWindow
+
+Controls how many words before and after the profanity match to analyze for context.
+
+```javascript
+const config = {
+  enableContextAware: true,
+  contextWindow: 3,  // Default: 3 words before/after
+};
+
+// contextWindow: 2
+// "This damn movie" → Context: ["this", "damn", "movie"]
+// contextWindow: 5  
+// "This damn good movie rocks" → Context: ["this", "damn", "good", "movie", "rocks"]
+```
+
+**Recommendations:**
+- **Small (1-2)**: Fast processing, less context
+- **Medium (3-4)**: Balanced accuracy and performance  
+- **Large (5-7)**: Maximum context, slower processing
+
+### confidenceThreshold
+
+Sets the minimum confidence score required to override profanity detection.
+
+```javascript
+const config = {
+  enableContextAware: true,
+  confidenceThreshold: 0.7,  // Default: 0.7 (70% confidence)
+};
+
+// Example scoring:
+// "This movie is fucking amazing!" → contextScore: 0.85 → NOT flagged (>0.7)
+// "You fucking idiot!" → contextScore: 0.15 → FLAGGED (<0.7)
+// "That's damn good" → contextScore: 0.65 → FLAGGED (<0.7)
+```
+
+**Threshold Guidelines:**
+- **Strict (0.8-0.9)**: High confidence required, fewer false negatives
+- **Balanced (0.6-0.8)**: Good balance of accuracy
+- **Lenient (0.4-0.6)**: More permissive, more false negatives possible
+
+## Sentiment Indicators
+
+### Positive Indicators
+
+Words that suggest positive context and reduce profanity likelihood:
+
+<Tabs items={['Enthusiasm', 'Quality', 'Slang', 'Objects']}>
+  <Tab value="Enthusiasm">
+    ```javascript
+    const POSITIVE_ENTHUSIASM = [
+      'amazing', 'awesome', 'excellent', 'fantastic', 'great', 
+      'wonderful', 'brilliant', 'perfect', 'incredible', 'outstanding',
+      'superb', 'magnificent', 'spectacular', 'phenomenal', 'terrific'
+    ];
+    ```
+  </Tab>
+  
+  <Tab value="Quality">
+    ```javascript
+    const POSITIVE_QUALITY = [
+      'best', 'good', 'nice', 'cool', 'sweet', 'epic', 'legendary',
+      'godlike', 'insane', 'crazy', 'wild', 'beast', 'fire', 'lit'
+    ];
+    ```
+  </Tab>
+  
+  <Tab value="Slang">
+    ```javascript
+    const POSITIVE_SLANG = [
+      'rad', 'sick', 'dope', 'fire', 'lit', 'epic', 'legendary',
+      'godlike', 'insane', 'crazy', 'wild', 'beast'
+    ];
+    ```
+  </Tab>
+  
+  <Tab value="Objects">
+    ```javascript
+    const POSITIVE_OBJECTS = [
+      'movie', 'film', 'show', 'song', 'music', 'game', 'book',
+      'restaurant', 'food', 'dish', 'meal', 'place', 'experience'
+    ];
+    ```
+  </Tab>
+</Tabs>
+
+### Negative Indicators
+
+Words that suggest negative context and increase profanity likelihood:
+
+```javascript
+const NEGATIVE_INDICATORS = [
+  // Direct insults
+  'hate', 'stupid', 'idiot', 'moron', 'loser', 'worthless', 'pathetic',
+  
+  // Quality descriptors
+  'terrible', 'awful', 'horrible', 'disgusting', 'garbage', 'trash',
+  'worst', 'bad', 'ugly', 'gross', 'nasty', 'lame', 'weak',
+  
+  // Personal pronouns (context-dependent)
+  'you', 'your', 'yourself', 'u', 'ur', 'ure', 'youre'
+];
+```
+
+## Domain Whitelisting
+
+<Accordions>
+
+<Accordion title="Gaming Domain Whitelist">
+
+Gaming-specific terms that indicate positive context for otherwise flagged words:
+
+```javascript
+const GAMING_POSITIVE = new Set([
+  'player', 'gamer', 'team', 'squad', 'clan', 'guild', 'match', 'game',
+  'round', 'level', 'boss', 'raid', 'quest', 'achievement', 'skill',
+  'build', 'loadout', 'strategy', 'tactic', 'play', 'move', 'combo'
+]);
+
+// Example usage
+const filter = new Filter({
+  enableContextAware: true,
+  domainWhitelists: {
+    english: ['enemy', 'weapon', 'item', 'spell', 'character']
+  }
+});
+
+// Gaming context examples:
+// "That boss fight was badass!" → NOT flagged (gaming + positive)
+// "Epic raid with the squad!" → NOT flagged (gaming context)
+// "This weapon is sick!" → NOT flagged (gaming + positive slang)
+```
+
+**Common Gaming Scenarios:**
+- Boss fights and enemy encounters
+- Weapon and item descriptions  
+- Team coordination and strategy
+- Achievement and skill discussions
+
+</Accordion>
+
+<Accordion title="Custom Domain Management">
+
+Add and manage domain-specific whitelists for your use case:
+
+```javascript
+// Initialize with custom domain whitelist
+const contextAnalyzer = new ContextAnalyzer({
+  contextWindow: 5,
+  language: 'english',
+  domainWhitelists: ['movie', 'character', 'scene', 'plot']
+});
+
+// Update entire whitelist
+contextAnalyzer.updateDomainWhitelist([
+  'product', 'review', 'quality', 'feature', 'design'
+]);
+
+// Add specific terms to existing whitelist  
+contextAnalyzer.addToDomainWhitelist([
+  'tutorial', 'guide', 'example', 'demo'
+]);
+```
+
+**Industry-Specific Examples:**
+
+```javascript
+// E-commerce/Reviews
+const ecommerceWhitelist = [
+  'product', 'item', 'quality', 'shipping', 'customer', 'service',
+  'review', 'rating', 'purchase', 'order', 'delivery'
+];
+
+// Entertainment/Media
+const mediaWhitelist = [
+  'movie', 'show', 'episode', 'season', 'character', 'actor',
+  'director', 'plot', 'story', 'soundtrack', 'effects'
+];
+
+// Education/Documentation  
+const educationWhitelist = [
+  'lesson', 'tutorial', 'guide', 'example', 'explanation',
+  'concept', 'theory', 'practice', 'exercise', 'assignment'
+];
+```
+
+</Accordion>
+
+<Accordion title="Dynamic Whitelist Updates">
+
+Runtime whitelist management for adaptive filtering:
+
+```javascript
+class AdaptiveFilter {
+  constructor() {
+    this.filter = new Filter({
+      enableContextAware: true,
+      contextWindow: 4,
+      confidenceThreshold: 0.75
+    });
+  }
+
+  // Update whitelist based on detected domain
+  adaptToContent(contentType) {
+    const whitelists = {
+      gaming: ['player', 'boss', 'level', 'quest', 'skill'],
+      reviews: ['product', 'quality', 'service', 'experience'], 
+      social: ['friend', 'post', 'comment', 'share', 'like'],
+      education: ['lesson', 'tutorial', 'example', 'concept']
+    };
+
+    if (whitelists[contentType]) {
+      this.filter.contextAnalyzer?.updateDomainWhitelist(
+        whitelists[contentType]
+      );
+    }
+  }
+
+  // Machine learning integration example
+  async learnFromFeedback(text, userFeedback) {
+    const result = this.filter.checkProfanity(text);
+    
+    if (userFeedback.falsePositive && result.containsProfanity) {
+      // Extract context words for potential whitelist addition
+      const contextWords = this.extractRelevantContext(text);
+      this.filter.contextAnalyzer?.addToDomainWhitelist(contextWords);
+    }
+  }
+}
+```
+
+**Best Practices:**
+- Start with built-in gaming whitelist
+- Add domain-specific terms based on your content
+- Monitor false positives and adjust whitelist accordingly
+- Use feedback loops to improve accuracy over time
+
+</Accordion>
+
+</Accordions>
+
+## Real-World Examples
+
+### Positive Context Detection
+
+```javascript
+const filter = new Filter({
+  enableContextAware: true,
+  contextWindow: 4,
+  confidenceThreshold: 0.7
+});
+
+// Entertainment context
+const result1 = filter.checkProfanity("This movie is fucking amazing!");
+console.log(result1.containsProfanity);  // false
+console.log(result1.contextScore);       // 0.85
+console.log(result1.reason);             // "Positive context detected"
+
+// Gaming context with whitelist
+const result2 = filter.checkProfanity("That boss fight was badass!");
+console.log(result2.containsProfanity);  // false  
+console.log(result2.contextScore);       // 0.8
+console.log(result2.reason);             // "Domain-specific whitelist match"
+
+// Product review context
+const result3 = filter.checkProfanity("This product is the bomb!");
+console.log(result3.containsProfanity);  // false
+console.log(result3.contextScore);       // 0.9
+console.log(result3.reason);             // "Positive phrase detected: 'the bomb'"
+```
+
+### Negative Context Detection
+
+```javascript
+// Personal attack context
+const result4 = filter.checkProfanity("You fucking idiot!");
+console.log(result4.containsProfanity);  // true
+console.log(result4.contextScore);       // 0.15
+console.log(result4.reason);             // "Negative context detected"
+
+// Hostile language
+const result5 = filter.checkProfanity("That's such a damn stupid idea");
+console.log(result5.containsProfanity);  // true
+console.log(result5.contextScore);       // 0.25
+console.log(result5.reason);             // "Negative context detected"
+```
+
+### Context Score Interpretation
+
+| Score Range | Interpretation | Action | Example |
+|-------------|---------------|--------|---------|
+| 0.0 - 0.3 | Strong negative context | Flag as profanity | "You fucking moron!" |
+| 0.3 - 0.6 | Weak/neutral context | Depends on threshold | "This damn thing broke" |
+| 0.6 - 0.8 | Positive context | Likely not profanity | "Damn good coffee!" |
+| 0.8 - 1.0 | Strong positive context | Not profanity | "This movie is fucking brilliant!" |
+
+## Performance Considerations
+
+<Callout type="warning">
+Context analysis adds computational overhead. Enable only when accuracy is more important than speed.
+</Callout>
+
+### Performance Impact
+
+```javascript
+// Performance comparison (approximate)
+const basicFilter = new Filter();  // ~0.1ms per check
+const contextFilter = new Filter({
+  enableContextAware: true,        // ~0.5-2ms per check
+  contextWindow: 3
+});
+
+// Optimization strategies
+const optimizedFilter = new Filter({
+  enableContextAware: true,
+  contextWindow: 2,                // Smaller window = faster
+  confidenceThreshold: 0.8,        // Higher threshold = fewer analyses
+  domainWhitelists: {              // Targeted whitelists
+    english: ['game', 'movie', 'show']  // Only essential terms
+  }
+});
+```
+
+### Memory Usage
+
+- **Sentiment Indicators**: ~2KB for positive/negative word sets
+- **Gaming Whitelist**: ~1KB for gaming-specific terms  
+- **Phrase Patterns**: ~0.5KB for positive/negative phrases
+- **Per Analysis**: ~0.1KB temporary context extraction
+
+**Total Memory Overhead**: ~4KB static + minimal per-analysis allocation
+
+## Cross-References
+
+- **[Filter Class](/docs/glin-profanity/filter-class)** - Object-oriented API with context analysis
+- **[Core Functions](/docs/glin-profanity/core-functions)** - enableContextAware configuration
+- **[Configuration](/docs/glin-profanity/configuration)** - Complete context-aware options
+- **[Python API](/docs/glin-profanity/python-api)** - Cross-language context analysis implementation

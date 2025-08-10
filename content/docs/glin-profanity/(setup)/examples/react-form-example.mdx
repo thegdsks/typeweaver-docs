@@ -1,0 +1,652 @@
+---
+title: React Form Integration
+description: Ready-to-use React component with useProfanityChecker hook
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Complete React form component example using the useProfanityChecker hook for real-time profanity detection and form validation. This production-ready component demonstrates best practices for user feedback and error handling.
+
+<Callout type="info">
+This example shows how to integrate profanity checking seamlessly into React forms with real-time validation, user feedback, and graceful error handling.
+</Callout>
+
+## Complete Form Component
+
+```tsx title="components/ProfanityCheckedForm.tsx"
+import React, { useState } from 'react';
+import { useProfanityChecker } from 'glin-profanity/react';
+
+interface FormData {
+  title: string;
+  content: string;
+  author: string;
+}
+
+interface ProfanityCheckedFormProps {
+  onSubmit: (data: FormData) => Promise<void>;
+  initialData?: Partial<FormData>;
+  className?: string;
+}
+
+export const ProfanityCheckedForm: React.FC<ProfanityCheckedFormProps> = ({
+  onSubmit,
+  initialData = {},
+  className = ''
+}) => {
+  // Form state
+  const [formData, setFormData] = useState<FormData>({
+    title: initialData.title || '',
+    content: initialData.content || '',
+    author: initialData.author || ''
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Profanity checker hook with configuration
+  const { checkText, result, isDirty, reset } = useProfanityChecker({
+    languages: ['english'],
+    enableContextAware: true,
+    confidenceThreshold: 0.7,
+    severityFilter: 'MODERATE',
+    autoReplace: false
+  });
+  
+  // Real-time profanity checking
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Check content and title fields for profanity
+    if (field === 'content' || field === 'title') {
+      checkText(value);
+    }
+    
+    // Clear submit error when user starts typing
+    if (submitError) {
+      setSubmitError(null);
+    }
+  };
+  
+  // Form submission with profanity validation
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      // Final profanity check on all text fields
+      const contentResult = checkText(formData.content);
+      const titleResult = checkText(formData.title);
+      
+      // Check if any content contains profanity
+      const hasProfanity = contentResult?.containsProfanity || titleResult?.containsProfanity;
+      
+      if (hasProfanity) {
+        const flaggedWords = [
+          ...(contentResult?.profaneWords || []),
+          ...(titleResult?.profaneWords || [])
+        ];
+        
+        setSubmitError(
+          `Content contains inappropriate language: ${flaggedWords.join(', ')}. ` +
+          'Please review and modify your content before submitting.'
+        );
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Submit clean content
+      await onSubmit(formData);
+      
+      // Reset form on successful submission
+      setFormData({ title: '', content: '', author: '' });
+      reset();
+      
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'An error occurred while submitting');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Get profanity status for styling
+  const getProfanityStatus = () => {
+    if (!isDirty || !result) return 'neutral';
+    return result.containsProfanity ? 'error' : 'success';
+  };
+  
+  const profanityStatus = getProfanityStatus();
+  
+  return (
+    <form onSubmit={handleSubmit} className={`profanity-checked-form ${className}`}>
+      <div className="form-group">
+        <label htmlFor="author" className="form-label">
+          Author Name
+        </label>
+        <input
+          id="author"
+          type="text"
+          value={formData.author}
+          onChange={(e) => handleInputChange('author', e.target.value)}
+          placeholder="Your name"
+          className="form-input"
+          required
+        />
+      </div>
+      
+      <div className="form-group">
+        <label htmlFor="title" className="form-label">
+          Title
+        </label>
+        <input
+          id="title"
+          type="text"
+          value={formData.title}
+          onChange={(e) => handleInputChange('title', e.target.value)}
+          placeholder="Enter a title"
+          className={`form-input ${profanityStatus === 'error' ? 'error' : ''}`}
+          required
+        />
+        {profanityStatus === 'error' && result?.profaneWords && (
+          <div className="profanity-warning">
+            ⚠️ Inappropriate language detected: {result.profaneWords.join(', ')}
+          </div>
+        )}
+      </div>
+      
+      <div className="form-group">
+        <label htmlFor="content" className="form-label">
+          Content
+        </label>
+        <textarea
+          id="content"
+          value={formData.content}
+          onChange={(e) => handleInputChange('content', e.target.value)}
+          placeholder="Enter your content here..."
+          className={`form-textarea ${profanityStatus === 'error' ? 'error' : ''}`}
+          rows={6}
+          required
+        />
+        {profanityStatus === 'error' && result?.profaneWords && (
+          <div className="profanity-warning">
+            ⚠️ Inappropriate language detected: {result.profaneWords.join(', ')}
+          </div>
+        )}
+        {profanityStatus === 'success' && isDirty && (
+          <div className="profanity-success">
+            ✅ Content looks good!
+          </div>
+        )}
+      </div>
+      
+      {/* Context-aware feedback */}
+      {result?.contextScore && result.contextScore > 0.7 && result.containsProfanity && (
+        <div className="context-notice">
+          💡 Note: Some flagged words may be acceptable in context. 
+          Context confidence: {Math.round(result.contextScore * 100)}%
+        </div>
+      )}
+      
+      {/* Submit error display */}
+      {submitError && (
+        <div className="submit-error">
+          ❌ {submitError}
+        </div>
+      )}
+      
+      {/* Submit button */}
+      <div className="form-actions">
+        <button
+          type="submit"
+          disabled={isSubmitting || (isDirty && result?.containsProfanity)}
+          className={`submit-button ${
+            isDirty && result?.containsProfanity ? 'disabled' : ''
+          }`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit Content'}
+        </button>
+        
+        {isDirty && result?.containsProfanity && (
+          <p className="submit-help">
+            Please remove inappropriate language before submitting
+          </p>
+        )}
+      </div>
+    </form>
+  );
+};
+
+export default ProfanityCheckedForm;
+```
+
+## Styling (CSS)
+
+```css title="components/ProfanityCheckedForm.css"
+.profanity-checked-form {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input.error,
+.form-textarea.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.profanity-warning {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.profanity-success {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #16a34a;
+  font-size: 14px;
+}
+
+.context-notice {
+  margin: 16px 0;
+  padding: 12px;
+  background-color: #fffbeb;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 14px;
+}
+
+.submit-error {
+  margin: 16px 0;
+  padding: 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.form-actions {
+  margin-top: 24px;
+}
+
+.submit-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.submit-button:disabled,
+.submit-button.disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.submit-help {
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 14px;
+}
+```
+
+## Integration Steps
+
+<Steps>
+
+<Step>
+### Import Hook and Component
+
+First, install the package and import the necessary components:
+
+```bash
+npm install glin-profanity
+```
+
+```tsx title="App.tsx"
+import React from 'react';
+import { ProfanityCheckedForm } from './components/ProfanityCheckedForm';
+import './components/ProfanityCheckedForm.css';
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Content Submission Form</h1>
+      <ProfanityCheckedForm
+        onSubmit={handleFormSubmit}
+        className="my-custom-form"
+      />
+    </div>
+  );
+}
+
+const handleFormSubmit = async (data) => {
+  console.log('Form submitted with clean data:', data);
+  
+  // Submit to your API
+  const response = await fetch('/api/content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to submit content');
+  }
+};
+
+export default App;
+```
+
+</Step>
+
+<Step>
+### Bind to Form Fields
+
+The hook automatically binds to form state and provides real-time validation:
+
+```tsx title="Form Binding Example"
+const { checkText, result, isDirty, reset } = useProfanityChecker({
+  languages: ['english'],
+  enableContextAware: true,
+  confidenceThreshold: 0.7,
+  severityFilter: 'MODERATE'
+});
+
+// Bind to input change events
+const handleInputChange = (field: string, value: string) => {
+  setFormData(prev => ({ ...prev, [field]: value }));
+  
+  // Real-time profanity checking
+  if (field === 'content' || field === 'title') {
+    checkText(value);
+  }
+};
+
+// Access results
+if (result?.containsProfanity) {
+  console.log('Flagged words:', result.profaneWords);
+  console.log('Context score:', result.contextScore);
+}
+```
+
+</Step>
+
+<Step>
+### Prevent Submit on Profanity
+
+The form automatically prevents submission when profanity is detected:
+
+```tsx title="Submit Prevention Logic"
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // Final profanity check before submission
+  const contentResult = checkText(formData.content);
+  const titleResult = checkText(formData.title);
+  
+  const hasProfanity = contentResult?.containsProfanity || titleResult?.containsProfanity;
+  
+  if (hasProfanity) {
+    // Show error and prevent submission
+    setSubmitError('Content contains inappropriate language');
+    return;
+  }
+  
+  // Proceed with clean content
+  await onSubmit(formData);
+};
+
+// Disable submit button when profanity is detected
+<button
+  type="submit"
+  disabled={isSubmitting || (isDirty && result?.containsProfanity)}
+>
+  Submit Content
+</button>
+```
+
+</Step>
+
+<Step>
+### Visual Feedback and User Experience
+
+The component provides comprehensive visual feedback:
+
+```tsx title="User Feedback Features"
+// Real-time status indicators
+const getProfanityStatus = () => {
+  if (!isDirty || !result) return 'neutral';
+  return result.containsProfanity ? 'error' : 'success';
+};
+
+// Context-aware feedback
+{result?.contextScore && result.contextScore > 0.7 && result.containsProfanity && (
+  <div className="context-notice">
+    💡 Note: Some flagged words may be acceptable in context.
+    Context confidence: {Math.round(result.contextScore * 100)}%
+  </div>
+)}
+
+// Visual styling based on status
+<input
+  className={`form-input ${profanityStatus === 'error' ? 'error' : ''}`}
+  onChange={(e) => handleInputChange('title', e.target.value)}
+/>
+
+// Success feedback
+{profanityStatus === 'success' && isDirty && (
+  <div className="profanity-success">
+    ✅ Content looks good!
+  </div>
+)}
+```
+
+</Step>
+
+</Steps>
+
+## Advanced Features
+
+### Custom Configuration per Field
+
+```tsx title="Field-Specific Configuration"
+const ProfanityCheckedForm = () => {
+  // Different configs for different fields
+  const titleChecker = useProfanityChecker({
+    languages: ['english'],
+    severityFilter: 'MILD',  // Strict for titles
+    enableContextAware: false
+  });
+  
+  const contentChecker = useProfanityChecker({
+    languages: ['english', 'spanish'],
+    severityFilter: 'MODERATE',  // More lenient for content
+    enableContextAware: true,
+    confidenceThreshold: 0.8
+  });
+  
+  const handleTitleChange = (value: string) => {
+    setFormData(prev => ({ ...prev, title: value }));
+    titleChecker.checkText(value);
+  };
+  
+  const handleContentChange = (value: string) => {
+    setFormData(prev => ({ ...prev, content: value }));
+    contentChecker.checkText(value);
+  };
+  
+  // Check both results before submission
+  const canSubmit = !titleChecker.result?.containsProfanity && 
+                   !contentChecker.result?.containsProfanity;
+};
+```
+
+### Debounced Checking
+
+```tsx title="Performance Optimization"
+import { useMemo, useCallback } from 'react';
+import { debounce } from 'lodash';
+
+const ProfanityCheckedForm = () => {
+  const { checkText, result, isDirty } = useProfanityChecker({
+    languages: ['english'],
+    enableContextAware: true
+  });
+  
+  // Debounce profanity checking to reduce API calls
+  const debouncedCheck = useMemo(
+    () => debounce((text: string) => checkText(text), 300),
+    [checkText]
+  );
+  
+  const handleInputChange = useCallback((field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Debounced profanity checking
+    if (field === 'content' || field === 'title') {
+      debouncedCheck(value);
+    }
+  }, [debouncedCheck]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      debouncedCheck.cancel();
+    };
+  }, [debouncedCheck]);
+};
+```
+
+### Integration with Form Libraries
+
+```tsx title="React Hook Form Integration"
+import { useForm, Controller } from 'react-hook-form';
+import { useProfanityChecker } from 'glin-profanity/react';
+
+const ProfanityCheckedForm = () => {
+  const { control, handleSubmit, watch, formState: { errors } } = useForm();
+  const { checkText, result } = useProfanityChecker({
+    languages: ['english'],
+    enableContextAware: true
+  });
+  
+  // Watch content field for profanity checking
+  const contentValue = watch('content');
+  
+  useEffect(() => {
+    if (contentValue) {
+      checkText(contentValue);
+    }
+  }, [contentValue, checkText]);
+  
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Controller
+        name="content"
+        control={control}
+        rules={{
+          required: 'Content is required',
+          validate: () => {
+            if (result?.containsProfanity) {
+              return `Inappropriate language detected: ${result.profaneWords?.join(', ')}`;
+            }
+            return true;
+          }
+        }}
+        render={({ field }) => (
+          <textarea
+            {...field}
+            className={errors.content ? 'error' : ''}
+            placeholder="Enter content..."
+          />
+        )}
+      />
+      {errors.content && <p className="error">{errors.content.message}</p>}
+    </form>
+  );
+};
+```
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="⚛️ React Hook"
+    description="Complete useProfanityChecker hook documentation and API reference"
+    href="/docs/glin-profanity/react-hook"
+  />
+  <Card
+    title="🔧 Core Functions"
+    description="JavaScript API for custom integrations beyond React"
+    href="/docs/glin-profanity/core-functions"
+  />
+  <Card
+    title="⚙️ Configuration"
+    description="Advanced configuration options for fine-tuning behavior"
+    href="/docs/glin-profanity/configuration"
+  />
+  <Card
+    title="🧠 Context-Aware Filtering"
+    description="Understanding sentiment analysis and context scoring"
+    href="/docs/glin-profanity/context-analysis"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Pro Tip**: Use different severity levels for different form fields. Titles and headlines might need stricter filtering (MILD) while content can be more lenient (MODERATE) with context-aware analysis enabled.
+</Callout>

@@ -1,0 +1,204 @@
+---
+title: Open Source Friendly Configuration
+description: Optimized for public repositories with emphasis on conventional commits and community standards
+---
+
+## When to Use
+
+Ideal for open source projects that prioritize:
+
+- **Strict conventional commit compliance** for clear project history
+- **Community accessibility** with minimal setup requirements
+- **Consistent formatting** across diverse contributors  
+- **Professional appearance** without overwhelming visual elements
+- **Validation-first approach** to maintain quality standards
+
+This configuration emphasizes clarity and accessibility, making it perfect for public repositories and community-driven projects.
+
+## Configuration Template
+
+```json copy
+{
+  "$schema": "https://commitweave.dev/schema.json",
+  "ai": {
+    "enabled": false,
+    "fallbackToManual": true
+  },
+  "commit": {
+    "type": {
+      "required": true,
+      "enum": [
+        "feat", "fix", "docs", "style", "refactor",
+        "perf", "test", "build", "ci", "chore", "revert"
+      ]
+    },
+    "scope": {
+      "required": false,
+      "enum": [
+        "core", "api", "ui", "cli", "docs", "tests",
+        "build", "deps", "config", "examples"
+      ]
+    },
+    "emoji": {
+      "enabled": false,
+      "allowManual": true
+    },
+    "format": {
+      "maxLength": 72,
+      "minLength": 15,
+      "case": "lowercase",
+      "wrapBody": 72,
+      "enforceBlankLine": true
+    },
+    "breaking": {
+      "required": true,
+      "format": "BREAKING CHANGE:"
+    }
+  },
+  "git": {
+    "signoff": true,
+    "gpgSign": false,
+    "hooks": {
+      "skipVerify": false,
+      "validateMessage": true
+    }
+  },
+  "ui": {
+    "interactive": true,
+    "fancyUI": false,
+    "asciiArt": false,
+    "animations": false,
+    "colors": true,
+    "emoji": false,
+    "editor": "${EDITOR:-vim}",
+    "prompts": {
+      "confirmCommit": true,
+      "showPreview": true,
+      "allowEdit": true,
+      "requireDescription": true
+    }
+  },
+  "validation": {
+    "enabled": true,
+    "strict": true,
+    "rules": {
+      "typeRequired": true,
+      "scopeEnforced": false,
+      "maxLength": 72,
+      "minLength": 15,
+      "noEmoji": true,
+      "conventionalFormat": true,
+      "requireBody": false,
+      "breakingChangeFormat": true
+    }
+  },
+  "templates": {
+    "default": "{type}({scope}): {description}\n\n{body}\n\n{footer}",
+    "breaking": "{type}({scope})!: {description}\n\nBREAKING CHANGE: {breakingDescription}\n\n{body}\n\n{footer}"
+  }
+}
+```
+
+## Setup Instructions
+
+1. **Save the configuration** as `.commitweave.json` in your project root
+2. **Add to version control** so all contributors use consistent settings
+3. **Document in README** to guide new contributors
+4. **Set up CI validation** to enforce commit standards
+
+## Community Guidelines
+
+### Conventional Commit Examples
+
+**Feature additions:**
+```bash
+commitweave commit --type feat --scope api --message "add user authentication endpoint"
+# Result: feat(api): add user authentication endpoint
+```
+
+**Bug fixes:**
+```bash  
+commitweave commit --type fix --scope ui --message "resolve mobile layout overflow"
+# Result: fix(ui): resolve mobile layout overflow
+```
+
+**Breaking changes:**
+```bash
+commitweave commit --type feat --scope core --breaking --message "migrate to v2 API format"
+# Result: feat(core)!: migrate to v2 API format
+#
+# BREAKING CHANGE: API responses now use camelCase instead of snake_case
+```
+
+### Validation Workflow
+
+```bash
+# Validate all commits in pull request
+commitweave validate --range main..HEAD
+
+# Check specific commit message format
+commitweave validate --message "feat(docs): update contributing guidelines"
+
+# Generate compliant commit interactively
+commitweave commit --validate --interactive
+```
+
+<Callout type="info">
+**Recommended Practice**: Use `commitweave validate --strict` in CI pipelines to ensure all commits follow conventional standards before merging.
+</Callout>
+
+## Contributor Onboarding
+
+### Quick Start for Contributors
+```bash
+# Install CommitWeave
+npm install -g commitweave
+
+# Use interactive mode for guidance
+commitweave commit
+
+# Validate before pushing
+commitweave validate --range origin/main..HEAD
+```
+
+### Integration with GitHub Actions
+```yaml
+# .github/workflows/validate-commits.yml
+name: Validate Commits
+on: [pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: npm install -g commitweave
+      - run: commitweave validate --range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+```
+
+## Customization for Your Project
+
+### Project-Specific Scopes
+Update scopes to match your project structure:
+```json
+"scope": {
+  "enum": ["parser", "compiler", "runtime", "cli", "docs", "tests"]
+}
+```
+
+### Stricter Requirements
+For mature projects requiring more structure:
+```json
+"commit": {
+  "scope": { "required": true },
+  "format": { "minLength": 20 }
+},
+"validation": {
+  "rules": { "requireBody": true }
+}
+```
+
+---
+
+**Related Templates**: [Team Standard](/docs/commitweave/config-templates/team-standard) • [Enterprise Secure](/docs/commitweave/config-templates/enterprise-secure)

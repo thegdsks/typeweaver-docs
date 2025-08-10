@@ -1,0 +1,1021 @@
+---
+title: Dictionary Management
+description: Language dictionaries structure, customization, and extending with new words and languages
+---
+
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+
+Comprehensive guide to Glin-Profanity's multi-language dictionary system, including how to extend dictionaries with custom words, add new languages, and manage language-specific configurations for production deployments.
+
+<Callout type="info">
+Glin-Profanity uses a shared dictionary system with 23 supported languages, allowing for consistent profanity detection across JavaScript and Python implementations.
+</Callout>
+
+## Dictionary Structure
+
+The dictionary system is organized in a shared structure that both JavaScript and Python implementations access for consistent behavior across platforms.
+
+### Project Organization
+
+<Files>
+  <Folder name="glin-profanity" defaultOpen>
+    <Folder name="shared" defaultOpen>
+      <Folder name="dictionaries" defaultOpen>
+        <File name="english.json" />
+        <File name="spanish.json" />
+        <File name="french.json" />
+        <File name="german.json" />
+        <File name="italian.json" />
+        <File name="portuguese.json" />
+        <File name="russian.json" />
+        <File name="japanese.json" />
+        <File name="korean.json" />
+        <File name="chinese.json" />
+        <File name="arabic.json" />
+        <File name="hindi.json" />
+        <File name="turkish.json" />
+        <File name="polish.json" />
+        <File name="dutch.json" />
+        <File name="swedish.json" />
+        <File name="norwegian.json" />
+        <File name="danish.json" />
+        <File name="finnish.json" />
+        <File name="czech.json" />
+        <File name="hungarian.json" />
+        <File name="persian.json" />
+        <File name="thai.json" />
+        <File name="globalWhitelist.json" />
+        <File name="metadata.json" />
+      </Folder>
+    </Folder>
+    <Folder name="packages">
+      <Folder name="js">
+        <Folder name="src">
+          <Folder name="data">
+            <File name="dictionary.ts" />
+          </Folder>
+        </Folder>
+      </Folder>
+      <Folder name="py">
+        <Folder name="glin_profanity">
+          <Folder name="data">
+            <File name="dictionary.py" />
+          </Folder>
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
+
+## Supported Languages
+
+Glin-Profanity supports 23 languages with comprehensive profanity dictionaries maintained by the community:
+
+<TypeTable
+  type={{
+    "European Languages": {
+      description: "Western and Eastern European language support",
+      type: "13 languages",
+      default: "english, spanish, french, german, italian, portuguese, russian, polish, dutch, swedish, norwegian, danish, finnish, czech, hungarian"
+    },
+    "Asian Languages": {
+      description: "East Asian and South Asian language support", 
+      type: "6 languages",
+      default: "japanese, korean, chinese, arabic, hindi, thai"
+    },
+    "Middle Eastern": {
+      description: "Middle Eastern and Central Asian languages",
+      type: "2 languages", 
+      default: "persian, turkish"
+    },
+    "Constructed Languages": {
+      description: "Artificial languages with profanity detection",
+      type: "1 language",
+      default: "esperanto"
+    },
+    "Special Files": {
+      description: "Global configuration and metadata",
+      type: "System files",
+      default: "globalWhitelist.json, metadata.json"
+    }
+  }}
+/>
+
+### Complete Language List
+
+```typescript title="Supported Language Codes"
+// All 23 supported languages (alphabetical order)
+type Language = 
+  | "arabic" | "chinese" | "czech" | "danish" | "english" 
+  | "esperanto" | "finnish" | "french" | "german" | "hindi" 
+  | "hungarian" | "italian" | "japanese" | "korean" | "norwegian" 
+  | "persian" | "polish" | "portuguese" | "russian" | "spanish" 
+  | "swedish" | "thai" | "turkish"
+```
+
+## Dictionary File Format
+
+Each language dictionary follows a consistent JSON format for easy maintenance and updates:
+
+<Tabs items={['Basic Structure', 'Advanced Format', 'Metadata Schema']}>
+  <Tab value="Basic Structure">
+    ```json title="english.json (Example)"
+    [
+      "damn",
+      "shit", 
+      "fuck",
+      "bitch",
+      "ass",
+      "bastard",
+      "hell",
+      "crap"
+    ]
+    ```
+    
+    **Format Requirements:**
+    - JSON array of strings
+    - Lowercase entries only
+    - No duplicates within language
+    - Alphabetical ordering preferred (not required)
+    - UTF-8 encoding for international characters
+  </Tab>
+  
+  <Tab value="Advanced Format">
+    ```json title="spanish.json (Extended Example)"
+    [
+      "cabron",
+      "cabrón",
+      "coño", 
+      "hijo de puta",
+      "joder",
+      "maldito",
+      "mierda",
+      "pendejo",
+      "puto"
+    ]
+    ```
+    
+    **Advanced Features:**
+    - **Unicode Support**: Accented characters (á, é, í, ó, ú, ñ)
+    - **Multi-word Phrases**: "hijo de puta", "va te faire foutre"
+    - **Regional Variants**: Both "cabron" and "cabrón" included
+    - **Cultural Context**: Language-specific profanity patterns
+  </Tab>
+  
+  <Tab value="Metadata Schema">
+    ```json title="metadata.json (Dictionary Information)"
+    {
+      "version": "2.3.2",
+      "lastUpdated": "2024-08-01",
+      "languages": {
+        "english": {
+          "wordCount": 847,
+          "contributors": ["community", "moderators"],
+          "lastModified": "2024-07-15",
+          "encoding": "utf-8",
+          "notes": "Comprehensive English profanity dictionary"
+        },
+        "spanish": {
+          "wordCount": 523,
+          "contributors": ["native-speakers", "linguists"],
+          "lastModified": "2024-06-20",
+          "encoding": "utf-8", 
+          "notes": "Includes Latin American and European variants"
+        }
+      },
+      "globalWhitelist": {
+        "wordCount": 156,
+        "purpose": "Context-aware false positive reduction",
+        "categories": ["gaming", "movies", "products", "technical"]
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Adding Custom Words
+
+Extend existing language dictionaries with domain-specific or updated profanity terms using configuration options:
+
+<Steps>
+
+<Step>
+### Configure Custom Words
+
+Add custom profanity terms to your filter configuration without modifying core dictionary files:
+
+```javascript title="JavaScript Custom Words"
+import { Filter } from 'glin-profanity';
+
+const customFilter = new Filter({
+  languages: ['english', 'spanish'],
+  customWords: [
+    // Gaming-specific terms
+    'noob', 'scrub', 'pwned', 'rekt',
+    
+    // Internet slang
+    'simp', 'karen', 'chad',
+    
+    // Domain-specific profanity
+    'corporate-buzzword', 'synergy-bs'
+  ],
+  
+  // Additional configuration
+  severityLevels: true,
+  allowObfuscatedMatch: true
+});
+
+// Test custom words
+console.log(customFilter.isProfane('That noob got rekt!')); // true
+console.log(customFilter.isProfane('Stop being a simp'));   // true
+```
+
+```python title="Python Custom Words"
+from glin_profanity import Filter
+
+custom_filter = Filter({
+    "languages": ["english", "spanish"],
+    "custom_words": [
+        # Gaming-specific terms
+        "noob", "scrub", "pwned", "rekt",
+        
+        # Internet slang
+        "simp", "karen", "chad",
+        
+        # Domain-specific profanity  
+        "corporate-buzzword", "synergy-bs"
+    ],
+    
+    # Additional configuration
+    "severity_levels": True,
+    "allow_obfuscated_match": True
+})
+
+# Test custom words
+print(custom_filter.is_profane("That noob got rekt!"))  # True
+print(custom_filter.is_profane("Stop being a simp"))    # True
+```
+
+</Step>
+
+<Step>
+### Validate Custom Word Integration
+
+Test that custom words integrate properly with existing dictionary detection:
+
+```javascript title="Custom Word Validation"
+const filter = new Filter({
+  languages: ['english'],
+  customWords: ['noob', 'scrub', 'rekt'],
+  severityLevels: true,
+  replaceWith: '***'
+});
+
+// Test mixed content (dictionary + custom words)
+const testCases = [
+  'You damn noob!',           // Dictionary: damn, Custom: noob
+  'That was fucking rekt',    // Dictionary: fucking, Custom: rekt  
+  'Stop being a scrub',       // Custom: scrub only
+  'This is normal text'       // No profanity
+];
+
+testCases.forEach(text => {
+  const result = filter.checkProfanity(text);
+  console.log(`Text: "${text}"`);
+  console.log(`- Profanity detected: ${result.containsProfanity}`);
+  console.log(`- Detected words: ${result.profaneWords.join(', ')}`);
+  console.log(`- Processed: ${result.processedText}`);
+  console.log('---');
+});
+```
+
+</Step>
+
+<Step>
+### Implement Ignore Lists
+
+Use ignore lists to exclude words that might be false positives in your domain:
+
+```javascript title="Custom Ignore Lists"
+const contextualFilter = new Filter({
+  languages: ['english'],
+  customWords: ['kill', 'dead', 'murder'], // Potentially problematic in gaming
+  ignoreWords: [
+    // Gaming context exceptions
+    'kill',      // "kill the enemy" in gaming
+    'dead',      // "dead zone" in networking
+    'execution', // "code execution" in programming
+    
+    // Professional context exceptions  
+    'master',    // "master branch", "master key"
+    'slave',     // "slave server", "master-slave"
+    'penetration' // "penetration testing" in security
+  ]
+});
+
+// These won't trigger profanity detection
+console.log(contextualFilter.isProfane('Kill the enemy boss'));      // false
+console.log(contextualFilter.isProfane('Master-slave architecture')); // false
+console.log(contextualFilter.isProfane('Penetration testing'));       // false
+
+// But these still will
+console.log(contextualFilter.isProfane('Go kill yourself'));          // true (context)
+console.log(contextualFilter.isProfane('You fucking idiot'));         // true (profanity)
+```
+
+</Step>
+
+</Steps>
+
+## Adding New Languages
+
+Extend Glin-Profanity with additional language support by following the established dictionary format:
+
+<Steps>
+
+<Step>
+### Create Language Dictionary File
+
+Create a new JSON dictionary file following the established format:
+
+```json title="new-language.json (Template)"
+[
+  "profane-word-1",
+  "profane-word-2", 
+  "profane-word-3",
+  "multi word phrase",
+  "unicode-characters-ñáéíóú"
+]
+```
+
+**File Creation Guidelines:**
+- Use lowercase for all entries
+- Include accented/special characters where appropriate
+- Add multi-word phrases for comprehensive coverage
+- Sort alphabetically for maintainability
+- Ensure UTF-8 encoding
+- Target 100-500+ words for comprehensive coverage
+
+</Step>
+
+<Step>
+### Update Language Type Definitions
+
+Add your new language to the supported language types:
+
+```typescript title="types.ts (JavaScript/TypeScript)"
+// Add new language to the Language union type
+type Language = 
+  | "arabic" | "chinese" | "czech" | "danish" | "english" 
+  | "esperanto" | "finnish" | "french" | "german" | "hindi" 
+  | "hungarian" | "italian" | "japanese" | "korean" | "norwegian" 
+  | "persian" | "polish" | "portuguese" | "russian" | "spanish" 
+  | "swedish" | "thai" | "turkish"
+  | "your-new-language"  // Add your language here
+```
+
+```python title="types.py (Python)"
+# Add new language to the Language Literal type
+Language = Literal[
+    "arabic", "chinese", "czech", "danish", "english", "esperanto", 
+    "finnish", "french", "german", "hindi", "hungarian", "italian", 
+    "japanese", "korean", "norwegian", "persian", "polish", 
+    "portuguese", "russian", "spanish", "swedish", "thai", "turkish",
+    "your-new-language"  # Add your language here
+]
+```
+
+</Step>
+
+<Step>
+### Update Dictionary Loaders
+
+Modify the dictionary loading system to include your new language:
+
+```javascript title="dictionary.ts (JavaScript)"
+// Import your new dictionary
+import yourNewLanguage from '../../../shared/dictionaries/your-new-language.json';
+
+const dictionary: Record<Language, string[]> = {
+  arabic: require('../../../shared/dictionaries/arabic.json'),
+  chinese: require('../../../shared/dictionaries/chinese.json'),
+  // ... other languages
+  turkish: require('../../../shared/dictionaries/turkish.json'),
+  'your-new-language': yourNewLanguage  // Add your language
+};
+```
+
+```python title="dictionary.py (Python)"
+class DictionaryLoader:
+    def __init__(self) -> None:
+        self._dictionaries = {
+            "arabic": self._load_dictionary("arabic"),
+            "chinese": self._load_dictionary("chinese"),
+            # ... other languages
+            "turkish": self._load_dictionary("turkish"),
+            "your-new-language": self._load_dictionary("your-new-language")  # Add your language
+        }
+```
+
+</Step>
+
+<Step>
+### Test New Language Integration
+
+Verify that your new language works correctly with the profanity detection system:
+
+```javascript title="New Language Testing"
+import { Filter } from 'glin-profanity';
+
+// Test single language
+const newLanguageFilter = new Filter({
+  languages: ['your-new-language'],
+  severityLevels: true
+});
+
+// Test multi-language with new language
+const multiLanguageFilter = new Filter({
+  languages: ['english', 'spanish', 'your-new-language'],
+  allowObfuscatedMatch: true
+});
+
+// Test cases for your new language
+const testCases = [
+  'Clean text in your language',
+  'Text with profane-word-1 in it',
+  'Multiple profane-word-1 and profane-word-2 words',
+  'Mixed english damn and your-language profanity'
+];
+
+testCases.forEach(text => {
+  const result = multiLanguageFilter.checkProfanity(text);
+  console.log(`Text: "${text}"`);
+  console.log(`- Profanity: ${result.containsProfanity}`);
+  console.log(`- Words: ${result.profaneWords.join(', ')}`);
+  console.log('---');
+});
+```
+
+</Step>
+
+<Step>
+### Update Metadata and Documentation
+
+Add your new language to the metadata files and documentation:
+
+```json title="metadata.json Update"
+{
+  "version": "2.4.0",
+  "languages": {
+    // ... existing languages
+    "your-new-language": {
+      "wordCount": 234,
+      "contributors": ["your-name", "community"],
+      "lastModified": "2024-08-01",
+      "encoding": "utf-8",
+      "notes": "Comprehensive profanity detection for Your Language"
+    }
+  }
+}
+```
+
+**Documentation Updates:**
+- Update language count in README (24 languages instead of 23)
+- Add language to supported languages list
+- Include usage examples in documentation
+- Add any cultural or linguistic notes for maintainers
+
+</Step>
+
+</Steps>
+
+## Dictionary Maintenance
+
+Best practices for maintaining and updating language dictionaries in production environments:
+
+<Accordions>
+
+<Accordion title="Version Control and Updates" id="version-control">
+
+Maintain dictionary versioning and update strategies for production deployments:
+
+```javascript title="Dictionary Version Management"
+// Check dictionary version and update status
+import { Filter } from 'glin-profanity';
+
+class DictionaryManager {
+  constructor() {
+    this.filter = new Filter({
+      allLanguages: true,
+      severityLevels: true
+    });
+    this.currentVersion = "2.3.2";
+  }
+
+  async checkForUpdates() {
+    // Check for dictionary updates from TypeWeaver API
+    const response = await fetch('https://typeweaver.com/api/glin-profanity/dictionary/version');
+    const { latestVersion, updateAvailable, changelog } = await response.json();
+    
+    if (updateAvailable) {
+      console.log(`Dictionary update available: ${this.currentVersion} → ${latestVersion}`);
+      console.log('Changelog:', changelog);
+      return { updateAvailable: true, latestVersion, changelog };
+    }
+    
+    return { updateAvailable: false };
+  }
+
+  async updateDictionaries() {
+    // Download and apply dictionary updates
+    console.log('Updating dictionaries...');
+    
+    try {
+      // Download latest dictionary ZIP
+      const downloadResponse = await fetch('https://typeweaver.com/api/glin-profanity/dictionary/download?type=full&format=zip');
+      
+      if (!downloadResponse.ok) {
+        throw new Error(`Download failed: ${downloadResponse.status}`);
+      }
+      
+      const dictionaryBlob = await downloadResponse.blob();
+      console.log(`Downloaded ${dictionaryBlob.size} bytes of dictionary data`);
+      
+      // In production, you would:
+      // 1. Extract the ZIP file
+      // 2. Backup existing dictionaries  
+      // 3. Replace with new dictionary files
+      // 4. Validate integrity
+      // 5. Update version tracking
+      
+      console.log('Dictionary update completed successfully');
+      
+    } catch (error) {
+      console.error('Dictionary update failed:', error);
+      throw error;
+    }
+  }
+
+  validateDictionaryIntegrity() {
+    // Verify dictionary files are properly formatted
+    const languages = ['english', 'spanish', 'french']; // etc.
+    
+    languages.forEach(lang => {
+      try {
+        const testFilter = new Filter({ languages: [lang] });
+        const testResult = testFilter.checkProfanity('test profanity word');
+        console.log(`✓ ${lang} dictionary loaded successfully`);
+      } catch (error) {
+        console.error(`✗ ${lang} dictionary validation failed:`, error);
+      }
+    });
+  }
+}
+
+// Usage in production
+const dictManager = new DictionaryManager();
+await dictManager.checkForUpdates();
+dictManager.validateDictionaryIntegrity();
+```
+
+**Update Strategy:**
+- Regular dictionary reviews (monthly/quarterly)
+- Community contribution system
+- Automated validation testing
+- Staged rollout for production updates
+
+</Accordion>
+
+<Accordion title="Performance Optimization" id="performance-optimization">
+
+Optimize dictionary loading and memory usage for high-performance applications:
+
+```javascript title="Dictionary Performance Optimization"
+// Lazy loading for better startup performance
+class OptimizedFilter {
+  constructor(config) {
+    this.config = config;
+    this.loadedLanguages = new Set();
+    this.dictionaries = new Map();
+  }
+
+  async loadLanguage(language) {
+    if (this.loadedLanguages.has(language)) {
+      return this.dictionaries.get(language);
+    }
+
+    // Lazy load dictionary only when needed
+    const dictionary = await import(`../dictionaries/${language}.json`);
+    this.dictionaries.set(language, dictionary.default);
+    this.loadedLanguages.add(language);
+    
+    console.log(`Loaded ${language} dictionary (${dictionary.default.length} words)`);
+    return dictionary.default;
+  }
+
+  async checkProfanity(text) {
+    // Load required dictionaries on-demand
+    const requiredLanguages = this.config.languages || ['english'];
+    
+    await Promise.all(
+      requiredLanguages.map(lang => this.loadLanguage(lang))
+    );
+    
+    // Proceed with profanity checking
+    return this.performCheck(text);
+  }
+
+  // Memory management
+  unloadLanguage(language) {
+    this.dictionaries.delete(language);
+    this.loadedLanguages.delete(language);
+    console.log(`Unloaded ${language} dictionary to free memory`);
+  }
+
+  getMemoryUsage() {
+    let totalWords = 0;
+    this.dictionaries.forEach((dict, lang) => {
+      totalWords += dict.length;
+      console.log(`${lang}: ${dict.length} words`);
+    });
+    
+    const estimatedMemory = totalWords * 10; // Rough estimate: 10 bytes per word
+    console.log(`Total estimated memory: ${estimatedMemory / 1024}KB`);
+    
+    return { totalWords, estimatedMemory };
+  }
+}
+
+// Usage for high-performance scenarios
+const optimizedFilter = new OptimizedFilter({
+  languages: ['english', 'spanish']
+});
+
+// Dictionaries loaded only when first used
+await optimizedFilter.checkProfanity('Test text here');
+
+// Monitor memory usage
+optimizedFilter.getMemoryUsage();
+```
+
+**Performance Tips:**
+- Load only required languages
+- Use dictionary caching for repeated operations
+- Monitor memory usage in long-running applications
+- Consider dictionary compression for very large word lists
+
+</Accordion>
+
+<Accordion title="Quality Assurance and Testing" id="quality-assurance">
+
+Implement comprehensive testing for dictionary quality and accuracy:
+
+```javascript title="Dictionary Quality Testing"
+// Comprehensive dictionary testing suite
+class DictionaryQualityTester {
+  constructor() {
+    this.testResults = {
+      passed: 0,
+      failed: 0,
+      warnings: 0,
+      details: []
+    };
+  }
+
+  async testAllLanguages() {
+    const languages = [
+      'arabic', 'chinese', 'czech', 'danish', 'english', 'esperanto',
+      'finnish', 'french', 'german', 'hindi', 'hungarian', 'italian',
+      'japanese', 'korean', 'norwegian', 'persian', 'polish',
+      'portuguese', 'russian', 'spanish', 'swedish', 'thai', 'turkish'
+    ];
+
+    for (const language of languages) {
+      await this.testLanguageDictionary(language);
+    }
+
+    return this.generateReport();
+  }
+
+  async testLanguageDictionary(language) {
+    console.log(`Testing ${language} dictionary...`);
+    
+    try {
+      // Test 1: Dictionary loads without errors
+      const filter = new Filter({ languages: [language] });
+      this.recordTest(`${language}: Dictionary loading`, true);
+
+      // Test 2: No duplicate words
+      const dictionary = await this.loadRawDictionary(language);
+      const uniqueWords = new Set(dictionary);
+      const hasDuplicates = dictionary.length !== uniqueWords.size;
+      this.recordTest(`${language}: No duplicates`, !hasDuplicates);
+
+      // Test 3: All words are lowercase
+      const hasUppercase = dictionary.some(word => word !== word.toLowerCase());
+      this.recordTest(`${language}: All lowercase`, !hasUppercase);
+
+      // Test 4: No empty strings
+      const hasEmptyStrings = dictionary.some(word => word.trim() === '');
+      this.recordTest(`${language}: No empty strings`, !hasEmptyStrings);
+
+      // Test 5: Reasonable word count
+      const wordCount = dictionary.length;
+      const reasonableCount = wordCount >= 10 && wordCount <= 5000;
+      this.recordTest(`${language}: Reasonable word count (${wordCount})`, reasonableCount);
+
+      // Test 6: Basic profanity detection works
+      if (dictionary.length > 0) {
+        const testWord = dictionary[0];
+        const detected = filter.isProfane(testWord);
+        this.recordTest(`${language}: Basic detection works`, detected);
+      }
+
+    } catch (error) {
+      this.recordTest(`${language}: Error during testing`, false, error.message);
+    }
+  }
+
+  recordTest(testName, passed, details = '') {
+    const result = {
+      test: testName,
+      passed,
+      details,
+      timestamp: new Date().toISOString()
+    };
+
+    this.testResults.details.push(result);
+    
+    if (passed) {
+      this.testResults.passed++;
+    } else {
+      this.testResults.failed++;
+      console.error(`❌ ${testName}: ${details}`);
+    }
+  }
+
+  generateReport() {
+    const total = this.testResults.passed + this.testResults.failed;
+    const passRate = (this.testResults.passed / total) * 100;
+
+    const report = {
+      summary: {
+        total,
+        passed: this.testResults.passed,
+        failed: this.testResults.failed,
+        passRate: passRate.toFixed(2) + '%'
+      },
+      details: this.testResults.details
+    };
+
+    console.log('\n=== Dictionary Quality Report ===');
+    console.log(`Total Tests: ${total}`);
+    console.log(`Passed: ${this.testResults.passed}`);
+    console.log(`Failed: ${this.testResults.failed}`);
+    console.log(`Pass Rate: ${report.summary.passRate}`);
+
+    return report;
+  }
+
+  async loadRawDictionary(language) {
+    // Load raw dictionary file for analysis
+    const dictionary = await import(`../dictionaries/${language}.json`);
+    return dictionary.default;
+  }
+}
+
+// Run quality tests
+const qualityTester = new DictionaryQualityTester();
+const report = await qualityTester.testAllLanguages();
+
+// Save report for CI/CD pipeline
+console.log('Dictionary quality report generated:', report);
+```
+
+**Quality Standards:**
+- No duplicate words within dictionaries
+- Consistent lowercase formatting
+- Reasonable word counts per language (50-2000 words)
+- UTF-8 encoding validation
+- Regular accuracy audits by native speakers
+
+</Accordion>
+
+</Accordions>
+
+## Cross-Platform Considerations
+
+Ensure dictionary compatibility across JavaScript and Python implementations:
+
+### File Path Resolution
+
+```javascript title="JavaScript Path Resolution"
+// packages/js/src/data/dictionary.ts
+const dictionaryPath = '../../../shared/dictionaries/';
+
+const dictionary: Record<Language, string[]> = {
+  english: require(`${dictionaryPath}english.json`),
+  spanish: require(`${dictionaryPath}spanish.json`),
+  // ... other languages
+};
+```
+
+```python title="Python Path Resolution"
+# packages/py/glin_profanity/data/dictionary.py
+import json
+import os
+from pathlib import Path
+
+class DictionaryLoader:
+    def __init__(self) -> None:
+        # Resolve shared dictionary path
+        self.dictionary_path = Path(__file__).parent.parent.parent.parent / "shared" / "dictionaries"
+        
+    def _load_dictionary(self, language: str) -> list[str]:
+        dictionary_file = self.dictionary_path / f"{language}.json"
+        with open(dictionary_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+```
+
+### Encoding Consistency
+
+Both implementations must handle Unicode characters consistently:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript title="Unicode Handling (JavaScript)"
+    // Proper Unicode normalization for consistent matching
+    const normalizeText = (text) => {
+      return text
+        .normalize('NFD')  // Decompose accented characters
+        .replace(/[\u0300-\u036f]/g, ''); // Remove combining marks
+    };
+
+    // Example: "café" and "cafe" both normalize to "cafe"
+    console.log(normalizeText('café')); // "cafe"
+    console.log(normalizeText('naïve')); // "naive"
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python title="Unicode Handling (Python)"
+    import unicodedata
+
+    def normalize_text(text: str) -> str:
+        """Normalize Unicode text for consistent matching."""
+        # Decompose accented characters and remove combining marks
+        normalized = unicodedata.normalize('NFD', text)
+        return ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+
+    # Example: "café" and "cafe" both normalize to "cafe"  
+    print(normalize_text('café'))   # "cafe"
+    print(normalize_text('naïve'))  # "naive"
+    ```
+  </Tab>
+</Tabs>
+
+## TypeWeaver Dictionary API
+
+Access dictionary updates and statistics through the official TypeWeaver API:
+
+### API Endpoints
+
+<Tabs items={['Version Check', 'Download Dictionaries', 'Statistics']}>
+  <Tab value="Version Check">
+    ```javascript title="Check for Dictionary Updates"
+    // Check current version and available updates
+    const response = await fetch('https://typeweaver.com/api/glin-profanity/dictionary/version');
+    const versionInfo = await response.json();
+
+    console.log(`Current: ${versionInfo.currentVersion}`);
+    console.log(`Latest: ${versionInfo.latestVersion}`);
+
+    if (versionInfo.updateAvailable) {
+      console.log('Updates available:');
+      versionInfo.changelog.forEach(change => console.log(`- ${change}`));
+      
+      // Updated languages
+      console.log('Updated languages:', versionInfo.languages.updated);
+      console.log('Word counts:', versionInfo.languages.wordCounts);
+    }
+    ```
+    
+    **Response Format:**
+    ```json
+    {
+      "currentVersion": "2.3.2",
+      "latestVersion": "2.4.0",
+      "updateAvailable": true,
+      "changelog": ["Added 15 new Spanish terms", "Fixed Unicode handling"],
+      "languages": {
+        "total": 23,
+        "updated": ["spanish", "french", "chinese"],
+        "wordCounts": { "english": 847, "spanish": 538 }
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab value="Download Dictionaries">
+    ```javascript title="Download Dictionary Files"
+    // Download all dictionaries as ZIP
+    const downloadAll = async () => {
+      const response = await fetch('https://typeweaver.com/api/glin-profanity/dictionary/download?type=full&format=zip');
+      const blob = await response.blob();
+      
+      // Save to file (browser)
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'glin-profanity-dictionaries.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // Download specific languages
+    const downloadLanguages = async (languages) => {
+      const params = new URLSearchParams({
+        type: 'single',
+        languages: languages.join(','),
+        format: 'json'
+      });
+      
+      const response = await fetch(`https://typeweaver.com/api/glin-profanity/dictionary/download?${params}`);
+      const data = await response.json();
+      
+      return data.dictionaries;
+    };
+
+    // Example usage
+    await downloadAll();
+    const dictionaries = await downloadLanguages(['english', 'spanish', 'french']);
+    ```
+    
+    **Available Parameters:**
+    - `type`: `full`, `incremental`, `single`
+    - `languages`: comma-separated language codes
+    - `format`: `zip`, `json`
+    - `fromVersion`: for incremental updates
+  </Tab>
+  
+  <Tab value="Statistics">
+    ```javascript title="Dictionary Statistics API"
+    // Get comprehensive statistics
+    const getStats = async () => {
+      const response = await fetch('https://typeweaver.com/api/glin-profanity/dictionary/stats');
+      const stats = await response.json();
+      
+      console.log(`Total Languages: ${stats.overview.totalLanguages}`);
+      console.log(`Total Words: ${stats.overview.totalWords}`);
+      console.log(`Quality Score: ${stats.quality.overallScore}%`);
+      
+      // Language breakdown
+      Object.entries(stats.languageBreakdown).forEach(([lang, data]) => {
+        console.log(`${lang}: ${data.wordCount} words (${data.coverage})`);
+      });
+    };
+
+    // Get specific language stats
+    const getLanguageStats = async (language) => {
+      const response = await fetch(`https://typeweaver.com/api/glin-profanity/dictionary/stats?language=${language}`);
+      const stats = await response.json();
+      
+      return {
+        language: stats.language,
+        wordCount: stats.wordCount,
+        coverage: stats.coverage,
+        globalRanking: stats.globalRanking,
+        percentageOfTotal: stats.percentageOfTotal
+      };
+    };
+
+    // Example usage
+    await getStats();
+    const englishStats = await getLanguageStats('english');
+    console.log(`English: #${englishStats.globalRanking} with ${englishStats.wordCount} words`);
+    ```
+  </Tab>
+</Tabs>
+
+### API Features
+
+- **No Authentication Required**: Public API for community use
+- **CORS Enabled**: Works from any domain
+- **Rate Limited**: 1000 requests per hour per IP
+- **Cached Responses**: Optimized performance with appropriate cache headers
+- **Comprehensive Documentation**: Full API reference at `/api/glin-profanity`
+
+## Cross-References
+
+- **[Installation Guide](/docs/glin-profanity/installation)** - Setting up Glin-Profanity with language selection
+- **[Configuration](/docs/glin-profanity/configuration)** - Language configuration options and customWords setup
+- **[Core Functions](/docs/glin-profanity/core-functions)** - Using languages parameter in API calls
+- **[Filter Class](/docs/glin-profanity/filter-class)** - Object-oriented approach to language management
+- **[Python API](/docs/glin-profanity/python-api)** - Cross-language dictionary access patterns
+- **[Context Analysis](/docs/glin-profanity/context-analysis)** - Language-specific context understanding
+- **[TypeWeaver API Documentation](https://typeweaver.com/api/glin-profanity)** - Complete API reference and examples

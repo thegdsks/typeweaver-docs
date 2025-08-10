@@ -1,0 +1,510 @@
+---
+title: Configuration Basics
+description: Essential configuration options to customize Glin-Profanity behavior
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Glin-Profanity offers 16+ configuration options to customize filtering behavior. This guide covers the essential settings to get started, with links to comprehensive configuration documentation.
+
+## Basic Configuration
+
+### Default Settings
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    import { checkProfanity } from 'glin-profanity';
+    
+    // Default configuration (implicit)
+    const result = checkProfanity('Some text to check');
+    
+    // Equivalent explicit configuration
+    const config = {
+      languages: ['english'],           // Single language
+      allLanguages: false,             // Don't check all languages
+      caseSensitive: false,            // Case insensitive
+      enableContextAware: false,       // Basic word matching
+      fuzzyMatching: true,             // Enable fuzzy matching
+      fuzzyTolerance: 0.8,             // 80% similarity threshold
+      autoReplace: false,              // Don't auto-replace
+      replacementChar: '*'             // Replacement character
+    };
+    
+    const result2 = checkProfanity('Some text to check', config);
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    from glin_profanity import Filter
+    
+    # Default configuration
+    filter_instance = Filter()
+    result = filter_instance.check_profanity("Some text to check")
+    
+    # Equivalent explicit configuration
+    explicit_filter = Filter({
+        "languages": ["english"],           # Single language
+        "all_languages": False,             # Don't check all languages
+        "case_sensitive": False,            # Case insensitive
+        "enable_context_aware": False,      # Basic word matching
+        "fuzzy_matching": True,             # Enable fuzzy matching
+        "fuzzy_tolerance": 0.8,             # 80% similarity threshold
+        "auto_replace": False,              # Don't auto-replace
+        "replacement_char": "*"             # Replacement character
+    })
+    
+    result2 = explicit_filter.check_profanity("Some text to check")
+    ```
+  </Tab>
+</Tabs>
+
+## Essential Configuration Options
+
+### 1. Language Selection
+
+Choose which languages to check for profanity:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    // Single language
+    const englishOnly = checkProfanity('text', {
+      languages: ['english']
+    });
+    
+    // Multiple languages
+    const multiLang = checkProfanity('text', {
+      languages: ['english', 'spanish', 'french']
+    });
+    
+    // All 23 supported languages
+    const allLanguages = checkProfanity('text', {
+      allLanguages: true
+    });
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    # Single language
+    english_filter = Filter({"languages": ["english"]})
+    
+    # Multiple languages
+    multi_filter = Filter({"languages": ["english", "spanish", "french"]})
+    
+    # All 23 supported languages
+    all_filter = Filter({"all_languages": True})
+    ```
+  </Tab>
+</Tabs>
+
+**Supported Languages:**
+```
+english, spanish, french, german, italian, portuguese, russian,
+japanese, korean, chinese, arabic, hindi, turkish, polish,
+dutch, swedish, norwegian, danish, finnish, czech, hungarian,
+romanian, bulgarian
+```
+
+### 2. Context-Aware Filtering
+
+Enable intelligent sentiment analysis:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    const contextAware = checkProfanity('This is fucking awesome!', {
+      enableContextAware: true,
+      languages: ['english']
+    });
+    
+    console.log(contextAware.containsProfanity); // false (positive context)
+    console.log(contextAware.contextAnalysis);
+    // {
+    //   sentiment: 'positive',
+    //   confidence: 0.85,
+    //   domain: 'general',
+    //   reasonNotFlagged: 'positive_context'
+    // }
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    context_filter = Filter({
+        "enable_context_aware": True,
+        "languages": ["english"]
+    })
+    
+    result = context_filter.check_profanity("This is fucking awesome!")
+    print(result["contains_profanity"])  # False (positive context)
+    print(result["context_analysis"])
+    # {
+    #   'sentiment': 'positive',
+    #   'confidence': 0.85,
+    #   'domain': 'general',
+    #   'reason_not_flagged': 'positive_context'
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+**Context-Aware Benefits**: Reduces false positives by 60-80% in gaming, entertainment, and casual conversation contexts.
+</Callout>
+
+### 3. Fuzzy Matching
+
+Handle character substitution and typos:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    // Enable fuzzy matching for obfuscated words
+    const fuzzyConfig = {
+      fuzzyMatching: true,
+      fuzzyTolerance: 0.8,  // 80% similarity required
+      enableObfuscationDetection: true
+    };
+    
+    // Catches: sh1t, s**t, sh!t, etc.
+    const obfuscated = checkProfanity('What a sh1t day', fuzzyConfig);
+    console.log(obfuscated.containsProfanity); // true
+    console.log(obfuscated.detectedWords); // ['sh1t']
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    # Enable fuzzy matching for obfuscated words
+    fuzzy_filter = Filter({
+        "fuzzy_matching": True,
+        "fuzzy_tolerance": 0.8,  # 80% similarity required
+        "enable_obfuscation_detection": True
+    })
+    
+    # Catches: sh1t, s**t, sh!t, etc.
+    result = fuzzy_filter.check_profanity("What a sh1t day")
+    print(result["contains_profanity"])  # True
+    print(result["detected_words"])      # ['sh1t']
+    ```
+  </Tab>
+</Tabs>
+
+### 4. Auto-Replace Profanity
+
+Automatically clean text:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    const autoReplace = checkProfanity('This is damn good!', {
+      autoReplace: true,
+      replacementChar: '●',
+      preserveLength: true
+    });
+    
+    console.log(autoReplace.cleanText); // "This is ●●●● good!"
+    console.log(autoReplace.originalWords); // ['damn']
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    auto_filter = Filter({
+        "auto_replace": True,
+        "replacement_char": "●",
+        "preserve_length": True
+    })
+    
+    result = auto_filter.check_profanity("This is damn good!")
+    print(result["clean_text"])      # "This is ●●●● good!"
+    print(result["original_words"])  # ['damn']
+    ```
+  </Tab>
+</Tabs>
+
+### 5. Severity Filtering
+
+Filter by profanity severity levels:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    // Only flag moderate and severe profanity
+    const severityFilter = checkProfanity('What the hell is this damn thing?', {
+      severityFilter: 'MODERATE',  // MILD | MODERATE | SEVERE
+      returnSeverity: true
+    });
+    
+    console.log(severityFilter.detectedWords);
+    // [{ word: 'hell', severity: 'MILD' }, { word: 'damn', severity: 'MILD' }]
+    console.log(severityFilter.containsProfanity); // false (only MILD found)
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    severity_filter = Filter({
+        "severity_filter": "MODERATE",  # MILD | MODERATE | SEVERE
+        "return_severity": True
+    })
+    
+    result = severity_filter.check_profanity("What the hell is this damn thing?")
+    print(result["detected_words"])
+    # [{'word': 'hell', 'severity': 'MILD'}, {'word': 'damn', 'severity': 'MILD'}]
+    print(result["contains_profanity"])  # False (only MILD found)
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Profiles
+
+### Strict Filtering (Social Media)
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    const strictConfig = {
+      languages: ['english'],
+      enableContextAware: false,    // No context analysis
+      fuzzyMatching: true,
+      severityFilter: 'MILD',       // Flag everything
+      autoReplace: true,
+      caseSensitive: false
+    };
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    strict_config = {
+        "languages": ["english"],
+        "enable_context_aware": False,    # No context analysis
+        "fuzzy_matching": True,
+        "severity_filter": "MILD",        # Flag everything
+        "auto_replace": True,
+        "case_sensitive": False
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Lenient Filtering (Gaming/Entertainment)
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    const lenientConfig = {
+      languages: ['english'],
+      enableContextAware: true,     // Context analysis enabled
+      enableWhitelisting: true,
+      customWhitelist: ['gaming', 'movie'],
+      severityFilter: 'SEVERE',     // Only severe profanity
+      fuzzyTolerance: 0.9          // Higher tolerance
+    };
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    lenient_config = {
+        "languages": ["english"],
+        "enable_context_aware": True,     # Context analysis enabled
+        "enable_whitelisting": True,
+        "custom_whitelist": ["gaming", "movie"],
+        "severity_filter": "SEVERE",      # Only severe profanity
+        "fuzzy_tolerance": 0.9           # Higher tolerance
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Balanced Filtering (General Use)
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    const balancedConfig = {
+      languages: ['english', 'spanish'],
+      enableContextAware: true,
+      severityFilter: 'MODERATE',
+      fuzzyMatching: true,
+      autoReplace: false,           // Manual handling
+      returnConfidence: true
+    };
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    balanced_config = {
+        "languages": ["english", "spanish"],
+        "enable_context_aware": True,
+        "severity_filter": "MODERATE",
+        "fuzzy_matching": True,
+        "auto_replace": False,           # Manual handling
+        "return_confidence": True
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Environment-Based Configuration
+
+Set different configs for different environments:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    const getConfig = () => {
+      const isDev = process.env.NODE_ENV === 'development';
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      if (isDev) {
+        return {
+          languages: ['english'],
+          enableContextAware: true,
+          logLevel: 'DEBUG'          // Extra logging in dev
+        };
+      }
+      
+      if (isProduction) {
+        return {
+          languages: ['english', 'spanish', 'french'],
+          enableContextAware: true,
+          enableCaching: true,       // Performance optimization
+          severityFilter: 'MODERATE'
+        };
+      }
+      
+      return {}; // Default config
+    };
+    
+    const result = checkProfanity('text', getConfig());
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    import os
+    
+    def get_config():
+        env = os.getenv('ENVIRONMENT', 'development')
+        
+        if env == 'development':
+            return {
+                "languages": ["english"],
+                "enable_context_aware": True,
+                "log_level": "DEBUG"          # Extra logging in dev
+            }
+        
+        if env == 'production':
+            return {
+                "languages": ["english", "spanish", "french"],
+                "enable_context_aware": True,
+                "enable_caching": True,       # Performance optimization
+                "severity_filter": "MODERATE"
+            }
+        
+        return {}  # Default config
+    
+    filter_instance = Filter(get_config())
+    ```
+  </Tab>
+</Tabs>
+
+## Validation and Testing
+
+Validate your configuration:
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tab value="JavaScript">
+    ```javascript copy
+    import { validateConfig, checkProfanity } from 'glin-profanity';
+    
+    const config = {
+      languages: ['english', 'invalid-lang'],  // Invalid language
+      fuzzyTolerance: 1.5,                     // Invalid range (0-1)
+      enableContextAware: 'true'               // Wrong type (should be boolean)
+    };
+    
+    // Validate configuration
+    const validation = validateConfig(config);
+    console.log(validation);
+    // {
+    //   valid: false,
+    //   errors: [
+    //     'Invalid language: invalid-lang',
+    //     'fuzzyTolerance must be between 0 and 1',
+    //     'enableContextAware must be boolean'
+    //   ],
+    //   correctedConfig: { /* auto-corrected version */ }
+    // }
+    ```
+  </Tab>
+  
+  <Tab value="Python">
+    ```python copy
+    from glin_profanity import Filter, validate_config
+    
+    config = {
+        "languages": ["english", "invalid-lang"],  # Invalid language
+        "fuzzy_tolerance": 1.5,                    # Invalid range (0-1)
+        "enable_context_aware": "true"             # Wrong type (should be bool)
+    }
+    
+    # Validate configuration
+    validation = validate_config(config)
+    print(validation)
+    # {
+    #   'valid': False,
+    #   'errors': [
+    #     'Invalid language: invalid-lang',
+    #     'fuzzy_tolerance must be between 0 and 1',
+    #     'enable_context_aware must be boolean'
+    #   ],
+    #   'corrected_config': { /* auto-corrected version */ }
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="warning">
+**Configuration Validation**: Always validate configurations in development to catch issues early. Invalid configs will fall back to defaults but may not behave as expected.
+</Callout>
+
+## What's Next?
+
+<Cards>
+  <Card
+    title="📖 Complete Configuration Reference"
+    description="All 16+ configuration options with examples"
+    href="/docs/glin-profanity/configuration-reference"
+  />
+  <Card
+    title="🧠 Context-Aware Configuration"
+    description="Advanced sentiment and domain settings"
+    href="/docs/glin-profanity/context-aware-filtering"
+  />
+  <Card
+    title="🌍 Multi-Language Setup"
+    description="Language-specific configuration options"
+    href="/docs/glin-profanity/multi-language"
+  />
+  <Card
+    title="⚡ Performance Optimization"
+    description="Caching and performance configuration"
+    href="/docs/glin-profanity/performance"
+  />
+</Cards>
+
+---
+
+<Callout type="info">
+**Pro Tip**: Start with context-aware filtering enabled and adjust severity levels based on your specific use case. Most applications benefit from `MODERATE` severity filtering with context awareness.
+</Callout>

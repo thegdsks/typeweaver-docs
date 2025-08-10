@@ -1,0 +1,28 @@
+{
+  "name": "TypeWeaver - Professional Dev Tools by Glincker",
+  "short_name": "TypeWeaver",
+  "description": "Open-source developer tools: ML profanity detection, AI commits. By Glincker LLC.",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#8B5CF6",
+  "background_color": "#000000",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["developer", "productivity", "tools", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr"
+}

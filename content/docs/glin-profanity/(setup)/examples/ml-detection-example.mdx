@@ -1,0 +1,368 @@
+---
+title: ML Detection Examples
+description: Real-world examples of ML-powered content moderation
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Practical examples demonstrating ML-powered toxicity detection in different scenarios.
+
+## Chat Application
+
+Complete example of a chat moderation system using HybridFilter.
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+class ChatModerator {
+  private filter: HybridFilter;
+  private initialized = false;
+
+  constructor() {
+    this.filter = new HybridFilter({
+      // Rule-based settings
+      languages: ['english'],
+      detectLeetspeak: true,
+      allowObfuscatedMatch: true,
+
+      // ML settings
+      enableML: true,
+      mlThreshold: 0.85,
+      mlLabels: ['insult', 'threat', 'toxicity'],
+
+      // Strategy
+      combinationMode: 'rules-first',
+    });
+  }
+
+  async init() {
+    if (!this.initialized) {
+      await this.filter.initialize();
+      this.initialized = true;
+      console.log('Chat moderator ready');
+    }
+  }
+
+  async moderate(message: string, userId: string) {
+    await this.init();
+
+    const result = await this.filter.checkProfanityAsync(message);
+
+    if (result.isToxic) {
+      return {
+        allowed: false,
+        action: this.determineAction(result),
+        reason: result.reason,
+        originalMessage: message,
+      };
+    }
+
+    return {
+      allowed: true,
+      message,
+    };
+  }
+
+  private determineAction(result: any) {
+    // Escalate threats
+    if (result.mlResult?.matchedCategories.includes('threat')) {
+      return 'block_and_report';
+    }
+
+    // Block severe content
+    if (result.confidence > 0.9) {
+      return 'block';
+    }
+
+    // Warn for borderline
+    return 'warn';
+  }
+}
+
+// Usage
+const moderator = new ChatModerator();
+
+app.post('/chat/send', async (req, res) => {
+  const { message, userId } = req.body;
+
+  const result = await moderator.moderate(message, userId);
+
+  if (!result.allowed) {
+    return res.status(400).json({
+      error: 'Message not allowed',
+      action: result.action,
+    });
+  }
+
+  // Send message...
+  broadcastMessage(result.message, userId);
+  res.json({ success: true });
+});
+```
+
+## Comment Moderation API
+
+API endpoint for moderating user comments with ML.
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+// Singleton filter
+let filter: HybridFilter | null = null;
+
+async function getFilter() {
+  if (!filter) {
+    filter = new HybridFilter({
+      enableML: true,
+      combinationMode: 'or',
+      mlThreshold: 0.85,
+    });
+    await filter.initialize();
+  }
+  return filter;
+}
+
+// Express/Next.js API route
+export async function POST(req: Request) {
+  const { comment, postId } = await req.json();
+
+  const moderator = await getFilter();
+  const result = await moderator.checkProfanityAsync(comment);
+
+  if (result.isToxic) {
+    // Log for review
+    await logModeration({
+      postId,
+      comment,
+      reason: result.reason,
+      categories: result.mlResult?.matchedCategories,
+      confidence: result.confidence,
+    });
+
+    return Response.json({
+      success: false,
+      error: 'Comment contains inappropriate content',
+      suggestion: 'Please revise your comment and try again',
+    }, { status: 400 });
+  }
+
+  // Save comment
+  const saved = await saveComment(postId, comment);
+
+  return Response.json({
+    success: true,
+    commentId: saved.id,
+  });
+}
+```
+
+## Batch Processing Comments
+
+Process multiple comments efficiently using batch ML analysis.
+
+```typescript
+import { HybridFilter } from 'glin-profanity/ml';
+
+async function moderateCommentBatch(comments: Array<{ id: string; text: string }>) {
+  const filter = new HybridFilter({
+    enableML: true,
+    combinationMode: 'or',
+  });
+  await filter.initialize();
+
+  // Extract texts for batch processing
+  const texts = comments.map(c => c.text);
+
+  // Single batch ML call (much faster than individual)
+  const results = await filter.checkProfanityBatchAsync(texts);
+
+  // Map results back to comments
+  return comments.map((comment, i) => ({
+    id: comment.id,
+    text: comment.text,
+    moderation: {
+      allowed: !results[i].isToxic,
+      confidence: results[i].confidence,
+      reason: results[i].reason,
+      categories: results[i].mlResult?.matchedCategories ?? [],
+    },
+  }));
+}
+
+// Usage
+const pendingComments = await db.comments.findPending();
+const moderated = await moderateCommentBatch(pendingComments);
+
+// Process results
+for (const comment of moderated) {
+  if (comment.moderation.allowed) {
+    await db.comments.approve(comment.id);
+  } else {
+    await db.comments.reject(comment.id, comment.moderation.reason);
+  }
+}
+```
+
+## React Real-Time Validation
+
+React component with real-time ML-powered validation.
+
+<Callout type="warning">
+For browser ML, ensure TensorFlow.js is bundled. Consider server-side moderation for production.
+</Callout>
+
+```tsx
+import { useState, useCallback } from 'react';
+import { HybridFilter } from 'glin-profanity/ml';
+import debounce from 'lodash/debounce';
+
+// Initialize filter once
+const filter = new HybridFilter({
+  enableML: true,
+  combinationMode: 'rules-first',
+  mlThreshold: 0.85,
+});
+
+export function ModeratedInput() {
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState<'idle' | 'checking' | 'clean' | 'toxic'>('idle');
+  const [warning, setWarning] = useState<string | null>(null);
+
+  // Debounced check to avoid excessive ML calls
+  const checkContent = useCallback(
+    debounce(async (value: string) => {
+      if (!value.trim()) {
+        setStatus('idle');
+        setWarning(null);
+        return;
+      }
+
+      setStatus('checking');
+
+      try {
+        const result = await filter.checkProfanityAsync(value);
+
+        if (result.isToxic) {
+          setStatus('toxic');
+          setWarning(result.reason);
+        } else {
+          setStatus('clean');
+          setWarning(null);
+        }
+      } catch (error) {
+        console.error('Moderation error:', error);
+        setStatus('idle');
+      }
+    }, 500),
+    []
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setText(value);
+    checkContent(value);
+  };
+
+  return (
+    <div className="space-y-2">
+      <textarea
+        value={text}
+        onChange={handleChange}
+        className={`w-full p-3 border rounded ${
+          status === 'toxic' ? 'border-red-500' : 'border-gray-300'
+        }`}
+        placeholder="Type your message..."
+      />
+
+      {status === 'checking' && (
+        <p className="text-gray-500 text-sm">Checking content...</p>
+      )}
+
+      {status === 'toxic' && warning && (
+        <p className="text-red-500 text-sm">
+          {warning}
+        </p>
+      )}
+
+      {status === 'clean' && (
+        <p className="text-green-500 text-sm">Content looks good!</p>
+      )}
+
+      <button
+        disabled={status === 'toxic' || status === 'checking'}
+        className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+      >
+        Submit
+      </button>
+    </div>
+  );
+}
+```
+
+## Standalone ToxicityDetector
+
+Using just the ML detector without rule-based filtering.
+
+```typescript
+import { ToxicityDetector } from 'glin-profanity/ml';
+
+async function analyzeContent(texts: string[]) {
+  const detector = new ToxicityDetector({
+    threshold: 0.8,
+    labels: ['toxicity', 'insult', 'threat', 'identity_attack'],
+  });
+
+  // Preload model
+  await detector.loadModel();
+
+  // Analyze batch
+  const results = await detector.analyzeBatch(texts);
+
+  // Generate report
+  const report = results.map((result, i) => ({
+    text: texts[i].substring(0, 50) + '...',
+    toxic: result.isToxic,
+    score: result.overallScore.toFixed(2),
+    categories: result.matchedCategories,
+  }));
+
+  console.table(report);
+
+  // Cleanup
+  detector.dispose();
+
+  return report;
+}
+
+// Usage
+const userMessages = [
+  'Great article, thanks for sharing!',
+  'You are such an idiot',
+  'I disagree with your analysis here',
+  'Kill yourself loser',
+  'This could be improved by...',
+];
+
+analyzeContent(userMessages);
+```
+
+Output:
+```
+┌─────────┬──────────────────────────────────┬───────┬───────┬─────────────────────────┐
+│ (index) │ text                             │ toxic │ score │ categories              │
+├─────────┼──────────────────────────────────┼───────┼───────┼─────────────────────────┤
+│ 0       │ 'Great article, thanks for sha…' │ false │ '0.12'│ []                      │
+│ 1       │ 'You are such an idiot...'       │ true  │ '0.91'│ ['insult', 'toxicity']  │
+│ 2       │ 'I disagree with your analysis…' │ false │ '0.18'│ []                      │
+│ 3       │ 'Kill yourself loser...'         │ true  │ '0.97'│ ['threat', 'toxicity']  │
+│ 4       │ 'This could be improved by...'   │ false │ '0.08'│ []                      │
+└─────────┴──────────────────────────────────┴───────┴───────┴─────────────────────────┘
+```
+
+## Cross-References
+
+- **[ToxicityDetector API](/docs/glin-profanity/ml-toxicity-detector)** — API reference
+- **[HybridFilter API](/docs/glin-profanity/hybrid-filter)** — Combined detection
+- **[ML Integration Guide](/docs/glin-profanity/ml-integration)** — Best practices
+- **[Toxicity Labels](/docs/glin-profanity/toxicity-labels)** — Category explanations

@@ -1,0 +1,248 @@
+---
+title: Team Standard Configuration
+description: Balanced setup for collaborative development teams with AI assistance and conventional commits
+---
+
+## When to Use
+
+Perfect for development teams that want:
+
+- **AI-powered commit generation** with fallback options
+- **Conventional commit compliance** with team-specific scopes  
+- **Consistent formatting** across team members
+- **Interactive prompts** for guided commit creation
+- **Emoji support** for visual commit history
+
+This configuration balances productivity with standardization, making it ideal for mid-size teams working on collaborative projects.
+
+## Configuration Template
+
+```json tab="JSON" title="commitweave.json"
+{
+  "$schema": "https://commitweave.dev/schema.json",
+  "ai": {
+    "enabled": true,
+    "provider": "openai", 
+    "model": "gpt-4-turbo",
+    "apiKey": "${OPENAI_API_KEY}",
+    "temperature": 0.6,
+    "maxTokens": 120,
+    "timeout": 8000,
+    "fallback": {
+      "provider": "anthropic",
+      "model": "claude-3-5-haiku-20241022", 
+      "apiKey": "${CLAUDE_API_KEY}"
+    }
+  },
+  "commit": {
+    "type": {
+      "required": true,
+      "enum": [
+        "feat",
+        "fix",
+        "docs", 
+        "style",
+        "refactor",
+        "perf",
+        "test",
+        "build",
+        "ci",
+        "chore",
+        "revert"
+      ]
+    },
+    "scope": {
+      "required": false,
+      "enum": [
+        "api",
+        "ui",
+        "auth",
+        "db", 
+        "config",
+        "tests",
+        "docs",
+        "deps",
+        "core",
+        "utils"
+      ]
+    },
+    "emoji": {
+      "enabled": true,
+      "style": "conventional"
+    },
+    "format": {
+      "maxLength": 72,
+      "minLength": 10,
+      "case": "lowercase",
+      "wrapBody": 72
+    }
+  },
+  "git": {
+    "signoff": false,
+    "gpgSign": false,
+    "hooks": {
+      "skipVerify": false
+    }
+  },
+  "ui": {
+    "interactive": true,
+    "fancyUI": true,
+    "asciiArt": false,
+    "animations": true,
+    "colors": true,
+    "emoji": true,
+    "editor": "code --wait",
+    "prompts": {
+      "confirmCommit": true,
+      "showPreview": true,
+      "allowEdit": true
+    }
+  },
+  "validation": {
+    "enabled": true,
+    "rules": {
+      "typeRequired": true,
+      "scopeRequired": false,
+      "maxLength": 72,
+      "minLength": 10,
+      "emojiAllowed": true
+    }
+  }
+}
+```
+
+```yaml tab="YAML" title="commitweave.yaml"
+$schema: https://commitweave.dev/schema.json
+ai:
+  enabled: true
+  provider: openai
+  model: gpt-4-turbo
+  apiKey: "${OPENAI_API_KEY}"
+  temperature: 0.6
+  maxTokens: 120
+  timeout: 8000
+  fallback:
+    provider: anthropic
+    model: claude-3-5-haiku-20241022
+    apiKey: "${CLAUDE_API_KEY}"
+
+commit:
+  type:
+    required: true
+    enum:
+      - feat
+      - fix
+      - docs
+      - style
+      - refactor
+      - perf
+      - test
+      - build
+      - ci
+      - chore
+      - revert
+  scope:
+    required: false
+    enum:
+      - api
+      - ui
+      - auth
+      - db
+      - config
+      - tests
+      - docs
+      - deps
+      - core
+      - utils
+  emoji:
+    enabled: true
+    style: conventional
+  format:
+    maxLength: 72
+    minLength: 10
+    case: lowercase
+    wrapBody: 72
+
+git:
+  signoff: false
+  gpgSign: false
+  hooks:
+    skipVerify: false
+
+ui:
+  interactive: true
+  fancyUI: true
+  asciiArt: false
+  animations: true
+  colors: true
+  emoji: true
+  editor: code --wait
+  prompts:
+    confirmCommit: true
+    showPreview: true
+    allowEdit: true
+
+validation:
+  enabled: true
+  rules:
+    typeRequired: true
+    scopeRequired: false
+    maxLength: 72
+    minLength: 10
+    emojiAllowed: true
+```
+
+## Setup Instructions
+
+1. **Save the configuration** as `.commitweave.json` in your project root
+2. **Set environment variables** for AI providers:
+   ```bash
+   export OPENAI_API_KEY="your-openai-key"
+   export CLAUDE_API_KEY="your-anthropic-key"  # Optional fallback
+   ```
+3. **Customize scopes** in the config to match your project structure
+4. **Test the setup** with `commitweave doctor`
+
+<Callout type="info">
+**Recommended CLI Flags**: Use `commitweave ai --context` to provide additional context for complex changes, and `commitweave validate --range` to check existing commit history compliance.
+</Callout>
+
+## Team Workflow
+
+### Daily Development
+```bash
+# AI-powered commits for complex changes
+commitweave ai --context "Refactoring authentication module"
+
+# Quick interactive commits for simple changes  
+commitweave commit --type fix --scope auth
+```
+
+### Code Reviews
+```bash
+# Validate commit messages before merging
+commitweave validate --range main..feature-branch
+
+# Generate consistent commit for merge fixes
+commitweave quick --type fix
+```
+
+## Customization Tips
+
+### Adjust Scopes for Your Project
+Replace the default scopes with your project's modules:
+```json
+"scope": {
+  "enum": ["frontend", "backend", "mobile", "shared", "infra"]
+}
+```
+
+### Team Preferences
+- **Disable emojis**: Set `"emoji": { "enabled": false }`
+- **Require scopes**: Set `"scope": { "required": true }`  
+- **Shorter limits**: Reduce `"maxLength"` to 50 for concise messages
+- **Custom editor**: Change `"editor"` to your team's preferred editor
+
+---
+
+**Related Templates**: [Open Source Friendly](/docs/commitweave/config-templates/open-source-friendly) • [Enterprise Secure](/docs/commitweave/config-templates/enterprise-secure)

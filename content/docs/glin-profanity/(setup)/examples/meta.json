@@ -1,0 +1,5 @@
+{
+  "title": "Examples",
+  "defaultOpen": false,
+  "pages": ["python-cli", "react-form-example", "server-integration", "ml-detection-example"]
+}

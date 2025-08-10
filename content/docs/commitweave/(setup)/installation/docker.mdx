@@ -1,0 +1,302 @@
+---
+title: Docker Installation
+description: Run CommitWeave in Docker containers and containerized environments
+---
+
+CommitWeave can run in Docker containers, making it perfect for CI/CD pipelines and consistent development environments.
+
+## Docker Images
+
+### Official Images (Coming Soon)
+
+<Callout type="info" title="In Development">
+Official Docker images are in development and will be available on Docker Hub.
+</Callout>
+
+```bash
+# Coming soon
+docker run -it typeweaver/commitweave:latest
+```
+
+### Build Your Own
+
+For now, create your own Docker image using this Dockerfile:
+
+```dockerfile title="Dockerfile"
+FROM node:18-alpine
+
+# Install Git (required for CommitWeave)
+RUN apk add --no-cache git
+
+# Install CommitWeave globally
+RUN npm install -g @typeweaver/commitweave
+
+# Set working directory
+WORKDIR /app
+
+# Copy git repository (mount as volume in practice)
+# COPY . .
+
+# Default command
+CMD ["commitweave", "--help"]
+```
+
+Build the image:
+
+```bash
+docker build -t commitweave:local .
+```
+
+## Usage Patterns
+
+### Interactive Mode
+
+Run CommitWeave interactively in a container:
+
+```bash
+# Mount your Git repository
+docker run -it --rm \
+  -v $(pwd):/app \
+  -v ~/.gitconfig:/root/.gitconfig:ro \
+  commitweave:local \
+  commitweave --ai
+```
+
+### CI/CD Pipeline
+
+Use in automated workflows:
+
+```bash
+# Non-interactive validation
+docker run --rm \
+  -v $(pwd):/app \
+  commitweave:local \
+  commitweave check --format json
+```
+
+## Docker Compose
+
+For development environments, use Docker Compose:
+
+```yaml title="docker-compose.yml"
+version: '3.8'
+services:
+  commitweave:
+    build: .
+    volumes:
+      - .:/app
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - ~/.ssh:/root/.ssh:ro
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    working_dir: /app
+    command: commitweave --help
+```
+
+Run with:
+
+```bash
+docker-compose run --rm commitweave commitweave --ai
+```
+
+## Multi-Stage Build
+
+For production use, create optimized multi-stage builds:
+
+```dockerfile title="Dockerfile.production"
+# Build stage
+FROM node:18-alpine AS builder
+WORKDIR /build
+RUN npm install -g @typeweaver/commitweave
+
+# Runtime stage  
+FROM node:18-alpine AS runtime
+RUN apk add --no-cache git
+COPY --from=builder /usr/local/lib/node_modules/@typeweaver/commitweave /usr/local/lib/node_modules/@typeweaver/commitweave
+COPY --from=builder /usr/local/bin/commitweave /usr/local/bin/commitweave
+
+WORKDIR /app
+CMD ["commitweave"]
+```
+
+## Environment Variables
+
+Configure CommitWeave using environment variables in containers:
+
+```bash
+docker run --rm \
+  -e OPENAI_API_KEY=your-key \
+  -e ANTHROPIC_API_KEY=your-key \
+  -e COMMITWEAVE_AI_MODEL=gpt-4 \
+  -v $(pwd):/app \
+  commitweave:local \
+  commitweave --ai
+```
+
+## Kubernetes
+
+Deploy CommitWeave in Kubernetes for team environments:
+
+```yaml title="commitweave-job.yaml"
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: commitweave-validation
+spec:
+  template:
+    spec:
+      containers:
+      - name: commitweave
+        image: commitweave:local
+        command: ["commitweave", "check"]
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-secrets
+              key: openai-key
+        volumeMounts:
+        - name: repo
+          mountPath: /app
+      volumes:
+      - name: repo
+        persistentVolumeClaim:
+          claimName: git-repo-pvc
+      restartPolicy: Never
+```
+
+## GitHub Actions
+
+Use CommitWeave in GitHub Actions with Docker:
+
+```yaml title=".github/workflows/commit-validation.yml"
+name: Validate Commits
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Install Git
+        run: apk add --no-cache git
+      
+      - name: Install CommitWeave
+        run: npm install -g @typeweaver/commitweave
+      
+      - name: Validate Commits
+        run: commitweave check
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+## Volume Mounts
+
+Important directories to mount:
+
+<Files>
+  <Folder name="Container Mounts">
+    <File name="/app - Your Git repository" />
+    <File name="/root/.gitconfig - Git configuration" />
+    <File name="/root/.ssh - SSH keys for Git" />
+    <File name="/root/.commitweave - Config cache" />
+  </Folder>
+</Files>
+
+```bash
+docker run -it --rm \
+  -v $(pwd):/app \
+  -v ~/.gitconfig:/root/.gitconfig:ro \
+  -v ~/.ssh:/root/.ssh:ro \
+  -v ~/.commitweave:/root/.commitweave \
+  commitweave:local
+```
+
+## Security Considerations
+
+### API Keys
+
+Never embed API keys in Docker images:
+
+<Callout type="warn" title="Security Warning">
+Always use environment variables or secrets management for API keys, never bake them into Docker images.
+</Callout>
+
+```bash
+# ✅ Good - environment variables
+docker run -e OPENAI_API_KEY=${OPENAI_API_KEY} commitweave:local
+
+# ❌ Bad - embedded in image
+ENV OPENAI_API_KEY=sk-your-key-here
+```
+
+### SSH Keys
+
+Mount SSH keys as read-only:
+
+```bash
+-v ~/.ssh:/root/.ssh:ro
+```
+
+### Git Configuration
+
+Use read-only mounts for Git config:
+
+```bash
+-v ~/.gitconfig:/root/.gitconfig:ro
+```
+
+## Troubleshooting
+
+### Git Repository Not Found
+
+Ensure you mount the repository correctly:
+
+```bash
+# Check if .git directory exists in container
+docker run --rm -v $(pwd):/app commitweave:local ls -la /app
+```
+
+### Permission Issues
+
+Fix file permissions between host and container:
+
+```bash
+# Match user IDs
+docker run --user $(id -u):$(id -g) ...
+
+# Or fix permissions after
+docker run --rm -v $(pwd):/app alpine chown -R $(id -u):$(id -g) /app
+```
+
+### Memory Limits
+
+For large repositories, increase memory limits:
+
+```bash
+docker run --memory=2g --memory-swap=4g commitweave:local
+```
+
+## Performance Tips
+
+1. **Layer Caching**: Structure Dockerfile to cache npm install
+2. **Multi-stage Builds**: Reduce final image size
+3. **Alpine Images**: Use Alpine Linux for smaller images
+4. **Volume Caching**: Cache node_modules between runs
+
+```dockerfile
+# Cache npm dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy application code
+COPY . .
+```
+
+This Docker setup provides a consistent, reproducible environment for running CommitWeave across different platforms and CI/CD systems.

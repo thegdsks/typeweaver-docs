@@ -1,0 +1,68 @@
+---
+title: Getting Started
+description: Multi-language profanity detection library with advanced context-aware filtering
+---
+
+<GlinProfanityOverview />
+
+## Why Glin-Profanity?
+
+Unlike traditional profanity filters that rely on simple word matching, Glin-Profanity uses advanced context-aware analysis to understand the sentiment and intent behind text. This sophisticated approach dramatically reduces false positives while maintaining high accuracy in detecting truly inappropriate content.
+
+### The Problem with Traditional Filters
+
+Most profanity detection systems suffer from high false positive rates because they can't understand context:
+
+- **"This movie is fucking amazing!"** → ❌ Flagged as inappropriate (but it's positive!)  
+- **"That boss fight is badass!"** → ❌ Flagged in gaming contexts (but it's praise!)
+- **"Damn good coffee!"** → ❌ Flagged as profane (but it's a compliment!)
+
+### The Glin-Profanity Difference
+
+Our context-aware system understands nuance and intent:
+
+- **Advanced NLP Analysis** - Examines surrounding words and sentiment patterns
+- **Domain Intelligence** - Recognizes gaming, movie, and product contexts
+- **Cross-Language Consistency** - 23 languages with identical behavior
+- **Production Testing** - 130+ comprehensive tests ensure reliability
+
+## Cross-Platform Excellence  
+
+Perfect feature parity between JavaScript/TypeScript and Python implementations:
+
+```javascript title="JavaScript/TypeScript"
+import { checkProfanity } from 'glin-profanity';
+
+const result = checkProfanity('This is damn good!', {
+  enableContextAware: true,
+  languages: ['english']
+});
+
+console.log(result.containsProfanity); // false - positive context detected
+```
+
+```python title="Python"
+from glin_profanity import Filter
+
+filter_instance = Filter({
+    "enable_context_aware": True,
+    "languages": ["english"]
+})
+
+result = filter_instance.check_profanity("This is damn good!")
+print(result["contains_profanity"])  # False - positive context detected
+```
+
+## Enterprise Ready
+
+Glin-Profanity is built for production environments with enterprise-grade features:
+
+- **Comprehensive Testing** - 130+ tests covering all features and edge cases
+- **Semantic Versioning** - Reliable upgrade paths with clear change documentation  
+- **Performance Optimized** - Sub-millisecond detection with intelligent caching
+- **Memory Efficient** - Optimized for high-volume applications
+- **Error Resilient** - Graceful degradation and comprehensive error handling
+
+---
+
+*Glin-Profanity is part of the [GLINR Studio](/) ecosystem, bringing the same attention to quality and developer experience as our other professional tools like [CommitWeave](/docs/commitweave).*

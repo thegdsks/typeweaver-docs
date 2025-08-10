@@ -1,0 +1,282 @@
+---
+title: Usage
+order: 3  
+status: published
+description: Learn how to use CommitWeave for generating beautiful, conventional Git commits
+---
+
+## Core Commands
+
+CommitWeave provides a comprehensive set of commands for different workflows and needs.
+
+### AI Command
+
+Generate intelligent commit messages using AI analysis of your staged changes.
+
+```bash
+# Basic AI commit generation
+commitweave ai
+
+# Specify AI model
+commitweave ai --model claude-3-5-sonnet
+
+# Include additional context
+commitweave ai --context "Refactoring authentication system"
+```
+
+**Synopsis**: Analyzes staged changes using AI models (GPT-4, Claude) to generate contextual commit messages following conventional commit standards.
+
+<Callout type="tip">
+**AI Performance Tip**: Stage related files together and provide context with `--context` for more accurate commit messages. The AI analyzes file diffs, so meaningful staging leads to better results.
+</Callout>
+
+[Learn more about AI configuration →](/docs/commitweave/cli-reference#commitweave-ai)
+
+### Commit Command
+
+Interactive commit creation with guided prompts for conventional commits.
+
+```bash
+# Interactive commit builder
+commitweave commit
+
+# Quick commit with type and message
+commitweave commit --type feat --message "add user authentication"
+
+# Include scope and body
+commitweave commit --type fix --scope auth --body "Resolves token expiration issues"
+```
+
+**Synopsis**: Provides step-by-step guidance for creating well-structured conventional commits with proper formatting and metadata.
+
+[View commit options →](/docs/commitweave/cli-reference#commitweave-commit)
+
+### Quick Command
+
+Streamlined commit workflow for rapid development cycles.
+
+```bash
+# Fastest commit generation
+commitweave quick
+
+# Quick commit with auto-detected type
+commitweave quick --auto
+
+# Skip confirmations
+commitweave quick --yes
+```
+
+**Synopsis**: Optimized for speed, automatically detects likely commit types and generates commits with minimal user interaction.
+
+[See quick options →](/docs/commitweave/cli-reference#commitweave-quick)
+
+### Validate Command
+
+Verify commit message format and compliance with conventional commit standards.
+
+```bash
+# Validate current commit message
+commitweave validate
+
+# Validate specific message
+commitweave validate --message "feat(auth): add JWT support"
+
+# Validate commit history
+commitweave validate --range HEAD~5..HEAD
+```
+
+**Synopsis**: Ensures commit messages follow conventional commit format, validates structure, and checks for required components.
+
+[Explore validation rules →](/docs/commitweave/cli-reference#commitweave-validate)
+
+### Doctor Command
+
+Comprehensive health check and diagnostic tool for CommitWeave configuration.
+
+```bash
+# Run full system diagnostics
+commitweave doctor
+
+# Check specific components
+commitweave doctor --check config,ai,git
+
+# Generate detailed report
+commitweave doctor --verbose --output doctor-report.txt
+```
+
+**Synopsis**: Analyzes system configuration, Git setup, AI model connectivity, and identifies potential issues or optimization opportunities.
+
+[View doctor checks →](/docs/commitweave/cli-reference#commitweave-doctor)
+
+## Utility Commands
+
+### Aliases Command
+
+Manage Git aliases for CommitWeave commands to streamline your workflow.
+
+```bash
+# List current aliases
+commitweave aliases
+
+# Create common aliases
+commitweave aliases --setup
+
+# Add custom alias
+commitweave aliases --add cw="commitweave ai"
+```
+
+**Synopsis**: Simplifies CommitWeave usage by creating convenient Git aliases for frequently used commands.
+
+<Callout type="info">
+**Workflow Optimization**: Set up aliases with `commitweave aliases --setup` to use shortcuts like `git cw` instead of `commitweave ai`. This dramatically speeds up your daily commit workflow.
+</Callout>
+
+[Configure aliases →](/docs/commitweave/cli-reference#global-options)
+
+### Version Command
+
+Display CommitWeave version and build information.
+
+```bash
+# Show version info
+commitweave v
+# or
+commitweave --version
+
+# Detailed version information
+commitweave v --detailed
+```
+
+**Synopsis**: Shows current version, build date, and compatibility information for troubleshooting and support.
+
+### List Command
+
+Explore available commit types, scopes, and templates.
+
+```bash
+# List all commit types
+commitweave ls types
+
+# Show available scopes
+commitweave ls scopes
+
+# Display templates
+commitweave ls templates
+```
+
+**Synopsis**: Provides quick reference for conventional commit types, configured scopes, and available message templates.
+
+[Browse available options →](/docs/commitweave/cli-reference#commitweave-list)
+
+### Health Command
+
+Quick status check for CommitWeave functionality.
+
+```bash
+# Basic health check
+commitweave health
+
+# Include AI model connectivity
+commitweave health --full
+
+# Monitor mode
+commitweave health --watch
+```
+
+**Synopsis**: Performs lightweight system checks to ensure CommitWeave is functioning correctly with your Git repository and configuration.
+
+[Health monitoring guide →](/docs/commitweave/cli-reference#commitweave-doctor)
+
+## Workflow Examples
+
+### AI-Powered Development
+
+```bash
+# Make changes to authentication system
+git add src/auth/
+
+# Generate intelligent commit message
+commitweave ai
+
+# Result: feat(auth): ✨ implement OAuth2 integration with JWT refresh tokens
+```
+
+### Quick Development Cycle
+
+```bash
+# Rapid feature development
+git add src/components/UserDashboard.tsx
+
+# Fast commit with auto-detection
+commitweave quick --auto
+
+# Result: feat(ui): add user dashboard component
+```
+
+### Validation-Driven Workflow
+
+```bash
+# Validate existing commits
+commitweave validate --range HEAD~3..HEAD
+
+# Ensure new commit follows standards
+git add src/utils/helpers.ts
+commitweave commit --type refactor --validate
+```
+
+### Health Monitoring
+
+```bash
+# Check system before important commits
+commitweave health --full
+
+# Run diagnostics for troubleshooting
+commitweave doctor --verbose
+```
+
+## Best Practices
+
+1. **Use AI for Complex Changes**: Let AI analyze intricate modifications
+2. **Quick for Simple Updates**: Use quick command for straightforward commits  
+3. **Validate Regularly**: Check commit history compliance with validate
+4. **Monitor System Health**: Run health checks before major releases
+5. **Configure Aliases**: Set up shortcuts for frequently used commands
+
+## Command Quick Reference
+
+| Command | Primary Use Case | Key Features |
+|---------|-----------------|--------------|
+| [`commitweave ai`](/docs/commitweave/cli-reference#commitweave-ai) | Complex changes requiring context | AI analysis, model selection |
+| [`commitweave commit`](/docs/commitweave/cli-reference#commitweave-commit) | Standard interactive commits | Step-by-step guidance |
+| [`commitweave quick`](/docs/commitweave/cli-reference#commitweave-quick) | Rapid development cycles | Auto-detection, minimal prompts |
+| [`commitweave validate`](/docs/commitweave/cli-reference#commitweave-validate) | Quality assurance | Format validation, compliance |
+| [`commitweave doctor`](/docs/commitweave/cli-reference#commitweave-doctor) | System diagnostics | Health checks, troubleshooting |
+| `commitweave aliases` | Workflow optimization | Git alias management |
+| `commitweave v` | Version information | Build details, compatibility |
+| `commitweave ls` | Reference lookup | Available types, scopes, templates |
+| `commitweave health` | Status monitoring | Quick functionality check |
+
+## Related Reading
+
+Explore these related topics to enhance your CommitWeave workflow:
+
+<Cards>
+  <Card 
+    title="CLI Reference" 
+    description="Complete command documentation with options, examples, and exit codes for all CommitWeave commands"
+    href="/docs/commitweave/cli-reference"
+    icon="Terminal"
+  />
+  <Card 
+    title="Configuration Guide" 
+    description="Customize CommitWeave behavior, AI settings, and team-specific commit conventions"
+    href="/docs/commitweave/configuration"
+    icon="Settings"
+  />
+  <Card 
+    title="VS Code Extension" 
+    description="Seamless IDE integration with intelligent commit generation and SCM view shortcuts"
+    href="/docs/commitweave/vscode-extension"
+    icon="Code"
+  />
+</Cards>
