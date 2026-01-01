@@ -83,7 +83,7 @@ export default async function Page(props: {
           <div className="flex flex-row gap-2 items-center border-b pt-2 pb-6">
             <LLMCopyButton markdownUrl={`${page.url}.mdx`} />
             <ViewOptions markdownUrl={`${page.url}.mdx`} />
-            <EditOnGitHub filePath={page.url} />
+            <EditOnGitHub filePath={page.file.path} />
           </div>
           <div className="prose flex-1 text-fd-foreground/80">
             <MDXContent

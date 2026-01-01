@@ -22,10 +22,9 @@ const GITHUB_REPO = 'https://github.com/thegdsks/typeweaver-docs';
 const GITHUB_BRANCH = 'main';
 
 export function EditOnGitHub({ filePath }: { filePath: string }) {
-  // Convert URL path to file path in content directory
-  // e.g., /docs/glin-profanity/installation -> content/docs/glin-profanity/installation/index.mdx
-  const contentPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-  const editUrl = `${GITHUB_REPO}/edit/${GITHUB_BRANCH}/content/${contentPath}/index.mdx`;
+  // filePath comes from page.file.path which is the actual file path
+  // e.g., "glin-profanity/(setup)/installation/index.mdx"
+  const editUrl = `${GITHUB_REPO}/edit/${GITHUB_BRANCH}/content/docs/${filePath}`;
 
   return (
     <a
