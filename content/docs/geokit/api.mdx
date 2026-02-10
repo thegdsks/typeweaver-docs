@@ -1,0 +1,149 @@
+---
+title: API Reference
+description: Use GeoKit programmatically in your Node.js applications
+---
+
+# API Reference
+
+Use GeoKit programmatically in your Node.js applications.
+
+## Installation
+
+```bash
+npm install @glincker/geo-audit
+```
+
+## Basic Usage
+
+```typescript
+import { audit } from '@glincker/geo-audit';
+
+const result = await audit('https://example.com');
+
+console.log(`Score: ${result.score}/100 (${result.grade})`);
+console.log(`Categories:`, result.categories);
+```
+
+## API
+
+### `audit(url, options?)`
+
+Runs an AI-readiness audit on the specified URL.
+
+#### Parameters
+
+- `url` (string, required): The URL to audit
+- `options` (object, optional): Audit configuration options
+
+#### Returns
+
+`Promise<AuditResult>`
+
+## Types
+
+### `AuditResult`
+
+```typescript
+interface AuditResult {
+  url: string;
+  score: number;           // 0-100
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  categories: Category[];
+  rules: RuleResult[];
+  recommendations: Recommendation[];
+  timestamp: string;
+  duration: number;        // milliseconds
+  version: string;
+}
+```
+
+### `Category`
+
+```typescript
+interface Category {
+  name: string;
+  slug: string;
+  maxPoints: number;
+  score: number;
+  rules: RuleResult[];
+}
+```
+
+### `RuleResult`
+
+```typescript
+interface RuleResult {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  status: 'pass' | 'warn' | 'fail' | 'skip';
+  score: number;
+  maxScore: number;
+  message: string;
+  recommendation?: string;
+  details?: Record<string, unknown>;
+}
+```
+
+### `Recommendation`
+
+```typescript
+interface Recommendation {
+  rule: string;
+  message: string;
+  impact: number;
+  fix?: string;
+}
+```
+
+## Examples
+
+### Check Score Threshold
+
+```typescript
+const result = await audit('https://example.com');
+
+if (result.score < 80) {
+  console.error('❌ AI-readiness score too low');
+  process.exit(1);
+}
+```
+
+### Generate Report
+
+```typescript
+const result = await audit('https://example.com');
+
+console.log(`## AI-Readiness Report for ${result.url}`);
+console.log(`Score: ${result.score}/100 (${result.grade})`);
+console.log(`\n### Categories:`);
+
+result.categories.forEach(cat => {
+  console.log(`- ${cat.name}: ${cat.score}/${cat.maxPoints}`);
+});
+```
+
+### Handle Failed Rules
+
+```typescript
+const result = await audit('https://example.com');
+
+const failedRules = result.rules.filter(r => r.status === 'fail');
+
+if (failedRules.length > 0) {
+  console.log('Failed Rules:');
+  failedRules.forEach(rule => {
+    console.log(`- ${rule.name}: ${rule.message}`);
+    if (rule.recommendation) {
+      console.log(`  Fix: ${rule.recommendation}`);
+    }
+  });
+}
+```
+
+## Next Steps
+
+- [Scoring System](/docs/geokit/scoring) - Understand how scores are calculated
+- [Rules](/docs/geokit/rules) - View all audit rules
+- [CLI Usage](/docs/geokit/cli) - Use from command line

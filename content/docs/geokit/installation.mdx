@@ -1,0 +1,89 @@
+---
+title: Installation
+description: Install GeoKit using your preferred package manager
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Installation
+
+Install GeoKit using your preferred package manager.
+
+## Requirements
+
+- **Node.js**: version 18.0.0 or higher
+- **Package Manager**: npm, yarn, or pnpm
+
+## Quick Start (npx)
+
+The fastest way to use GeoKit is via npx. This doesn't require any installation:
+
+```bash
+npx @glincker/geokit audit https://example.com
+```
+
+## Global Installation
+
+Install GeoKit globally to use the `geokit` command anywhere on your system:
+
+<Tabs items={['npm', 'yarn', 'pnpm']}>
+  <Tab value="npm">
+    ```bash
+    npm install -g @glincker/geokit
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn global add @glincker/geokit
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add -g @glincker/geokit
+    ```
+  </Tab>
+</Tabs>
+
+## Local Installation
+
+For project-specific use, install GeoKit as a development dependency:
+
+<Tabs items={['npm', 'yarn', 'pnpm']}>
+  <Tab value="npm">
+    ```bash
+    npm install --save-dev @glincker/geokit
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add -D @glincker/geokit
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add -D @glincker/geokit
+    ```
+  </Tab>
+</Tabs>
+
+## Verify Installation
+
+Verify that GeoKit is installed correctly by checking the version:
+
+```bash
+geokit --version
+```
+
+You should see output similar to:
+
+```
+@glincker/geokit v0.3.0
+```
+
+## Next Steps
+
+Now that GeoKit is installed, learn how to use it:
+
+- [CLI Usage](/docs/geokit/cli) - Command-line interface reference
+- [GitHub Action](/docs/geokit/github-action) - Integrate with CI/CD
+- [API Reference](/docs/geokit/api) - Use programmatically

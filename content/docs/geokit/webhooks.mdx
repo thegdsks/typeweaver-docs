@@ -1,0 +1,116 @@
+---
+title: Webhooks
+description: Real-time notifications for audit events via webhooks
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Webhooks
+
+Receive real-time notifications when audits complete, alerts trigger, or scores change.
+
+<Callout type="info">
+  Webhooks are available in [GeoKit Cloud](https://geokit.dev). The CLI and npm package don't support webhooks.
+</Callout>
+
+## Supported Providers
+
+GeoKit Cloud supports 4 webhook providers:
+
+### Generic HTTP
+Send POST requests to any HTTP endpoint with HMAC signature verification.
+
+### Slack
+Rich block messages with custom channel, username, and emoji support.
+
+### Discord
+Color-coded embeds with custom username and avatar.
+
+### Telegram
+HTML-formatted messages via Bot API with bot token and chat ID.
+
+## Webhook Events
+
+### `audit.completed`
+Fired when an audit finishes running.
+
+**Payload**:
+```json
+{
+  "event": "audit.completed",
+  "timestamp": "2026-02-09T12:34:56Z",
+  "data": {
+    "siteId": "abc123",
+    "url": "https://example.com",
+    "score": 87,
+    "grade": "B",
+    "duration": 2341
+  }
+}
+```
+
+### `alert.triggered`
+Fired when an alert condition is met (e.g., score drops below threshold).
+
+### `score.changed`
+Fired when a site's score changes from the previous audit.
+
+## Setup
+
+Create webhooks from the [GeoKit Cloud dashboard](https://geokit.dev) Settings page.
+
+### Required Fields
+- **URL**: The endpoint to receive webhook payloads
+- **Events**: Select which events trigger this webhook
+- **Provider**: Choose generic, Slack, Discord, or Telegram
+
+## HMAC Signature Verification
+
+All generic webhooks include an `X-GeoKit-Signature` header for verification:
+
+```typescript
+import crypto from 'crypto';
+
+function verifyWebhook(payload, signature, secret) {
+  const hmac = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(`sha256=${hmac}`)
+  );
+}
+
+// Usage
+const isValid = verifyWebhook(
+  req.body,
+  req.headers['x-geokit-signature'],
+  process.env.WEBHOOK_SECRET
+);
+```
+
+## Retry Logic
+
+Webhook delivery uses exponential backoff with 3 retry attempts:
+
+1. Initial attempt: Immediate
+2. Retry 1: After 10 seconds
+3. Retry 2: After 60 seconds
+4. Retry 3: After 5 minutes
+
+## Rate Limits
+
+| Plan | Webhooks | Events/Month |
+|------|----------|--------------|
+| Trial | 1 | 100 |
+| Starter | 3 | 500 |
+| Pro | 10 | 5,000 |
+| Team | Unlimited | Unlimited |
+
+## Next Steps
+
+- [GeoKit Cloud](https://geokit.dev) - Create webhook configurations
+- [API Reference](/docs/geokit/api) - Use GeoKit programmatically
+- [Scoring System](/docs/geokit/scoring) - Understand alert triggers

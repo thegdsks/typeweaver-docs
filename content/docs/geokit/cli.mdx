@@ -1,0 +1,93 @@
+---
+title: CLI Usage
+description: Command-line interface for running GeoKit audits
+---
+
+# CLI Usage
+
+The GeoKit CLI provides a simple interface for auditing websites from the command line.
+
+## Basic Usage
+
+```bash
+npx @glincker/geokit audit <url>
+```
+
+### Example
+
+```bash
+npx @glincker/geokit audit https://example.com
+```
+
+## CLI Flags
+
+### `--json`
+
+Output results in JSON format for programmatic use:
+
+```bash
+geokit audit https://example.com --json
+```
+
+### `--badge`
+
+Generate shields.io badge snippets for README files:
+
+```bash
+geokit audit https://example.com --badge
+```
+
+Output:
+
+```markdown
+![GeoKit Score](https://img.shields.io/badge/GeoKit-87%2F100%20(B)-green)
+```
+
+### `--fail-under <score>`
+
+Exit with code 1 if the score is below the specified threshold:
+
+```bash
+geokit audit https://example.com --fail-under 80
+```
+
+This is useful in CI/CD pipelines to fail builds when AI-readiness drops.
+
+## Exit Codes
+
+- `0`: Audit passed (or no threshold specified)
+- `1`: Audit failed (score below `--fail-under` threshold)
+- `2`: Error during audit execution
+
+## Examples
+
+### CI/CD Integration
+
+```bash
+#!/bin/bash
+geokit audit https://staging.example.com --fail-under 85
+if [ $? -eq 0 ]; then
+  echo "✅ AI-readiness check passed"
+else
+  echo "❌ AI-readiness score too low"
+  exit 1
+fi
+```
+
+### Generate Badge for README
+
+```bash
+geokit audit https://example.com --badge >> README.md
+```
+
+### JSON Output for Processing
+
+```bash
+geokit audit https://example.com --json | jq '.score'
+```
+
+## Next Steps
+
+- [GitHub Action](/docs/geokit/github-action) - Automate audits in CI/CD
+- [API Reference](/docs/geokit/api) - Use programmatically in Node.js
+- [Scoring System](/docs/geokit/scoring) - Understand how scores are calculated

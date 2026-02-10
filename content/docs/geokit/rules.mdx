@@ -1,0 +1,148 @@
+---
+title: Rules
+description: Complete reference of all 20 GeoKit audit rules
+---
+
+# Rules Reference
+
+GeoKit evaluates your website using 20 rules across 4 categories. Each rule checks for specific AI-readiness criteria.
+
+## Overview
+
+| Category | Rules | Total Points |
+|----------|-------|--------------|
+| SEO | 8 | 50 |
+| Semantic HTML | 6 | 34 |
+| Performance | 4 | 30 |
+| Accessibility | 2 | 20 |
+| **Total** | **20** | **134** |
+
+## SEO Rules (50 points)
+
+### Title Tag
+**Points**: 10 | **ID**: `seo-title`
+
+Checks if the page has a descriptive `<title>` tag between 30-60 characters.
+
+```html
+<!-- ✅ Good -->
+<title>GeoKit - AI-Readiness Audit Toolkit</title>
+
+<!-- ❌ Bad -->
+<title>Home</title>
+```
+
+### Meta Description
+**Points**: 8 | **ID**: `seo-meta-description`
+
+Validates presence of meta description (120-160 characters).
+
+```html
+<!-- ✅ Good -->
+<meta name="description" content="GeoKit audits your website for AI optimization with 20+ checks">
+
+<!-- ❌ Bad -->
+<meta name="description" content="Website">
+```
+
+### Structured Data
+**Points**: 12 | **ID**: `seo-structured-data`
+
+Checks for JSON-LD structured data to help AI understand your content.
+
+### Canonical URL
+**Points**: 6 | **ID**: `seo-canonical`
+
+Validates canonical link to prevent duplicate content issues.
+
+### Open Graph Tags
+**Points**: 5 | **ID**: `seo-og-tags`
+
+Checks for `og:title`, `og:description`, and `og:image`.
+
+### Robots.txt
+**Points**: 4 | **ID**: `seo-robots`
+
+Validates robots.txt file exists and is properly configured.
+
+### Sitemap
+**Points**: 3 | **ID**: `seo-sitemap`
+
+Checks for XML sitemap presence and robots.txt reference.
+
+### HTTPS
+**Points**: 2 | **ID**: `seo-https`
+
+Ensures site uses HTTPS protocol.
+
+## Semantic HTML Rules (34 points)
+
+### Header Hierarchy
+**Points**: 8 | **ID**: `semantic-headers`
+
+Validates proper h1-h6 hierarchy (single h1, logical nesting).
+
+### Main Element
+**Points**: 6 | **ID**: `semantic-main`
+
+Checks for single `<main>` element containing primary content.
+
+### Article Elements
+**Points**: 6 | **ID**: `semantic-article`
+
+Validates use of `<article>` for independent content.
+
+### Navigation
+**Points**: 5 | **ID**: `semantic-nav`
+
+Checks for `<nav>` elements wrapping navigation links.
+
+### Figure and Figcaption
+**Points**: 5 | **ID**: `semantic-figure`
+
+Validates proper use of `<figure>` and `<figcaption>`.
+
+### Time Elements
+**Points**: 4 | **ID**: `semantic-time`
+
+Checks for `<time>` elements with datetime attribute.
+
+## Performance Rules (30 points)
+
+### Page Load Speed
+**Points**: 10 | **ID**: `perf-load-speed`
+
+Measures time to first byte (TTFB) and total load time.
+
+### Image Optimization
+**Points**: 8 | **ID**: `perf-images`
+
+Checks for modern image formats (WebP, AVIF) and lazy loading.
+
+### Resource Compression
+**Points**: 7 | **ID**: `perf-compression`
+
+Validates gzip/brotli compression for text resources.
+
+### Caching Headers
+**Points**: 5 | **ID**: `perf-cache`
+
+Checks for proper cache-control headers.
+
+## Accessibility Rules (20 points)
+
+### Image Alt Text
+**Points**: 12 | **ID**: `a11y-img-alt`
+
+Validates all images have descriptive alt text.
+
+### ARIA Labels
+**Points**: 8 | **ID**: `a11y-aria`
+
+Checks for proper ARIA labels on interactive elements.
+
+## Next Steps
+
+- [Scoring System](/docs/geokit/scoring) - Understand how scores are calculated
+- [CLI Usage](/docs/geokit/cli) - Run audits from command line
+- [API Reference](/docs/geokit/api) - Use programmatically

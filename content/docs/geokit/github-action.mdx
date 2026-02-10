@@ -1,0 +1,95 @@
+---
+title: GitHub Action
+description: Automate GeoKit audits in your CI/CD pipeline
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# GitHub Action
+
+Integrate GeoKit into your GitHub Actions workflow to automatically audit your website's AI-readiness on every push.
+
+<Callout type="warn">
+  The GeoKit GitHub Action will be published to the GitHub Marketplace soon. For now, use the CLI directly in workflows.
+</Callout>
+
+## Quick Setup
+
+Add this workflow to `.github/workflows/geokit.yml`:
+
+```yaml title=".github/workflows/geokit.yml"
+name: GeoKit Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run GeoKit Audit
+        run: npx @glincker/geokit audit https://example.com --fail-under 80
+```
+
+## Input Parameters
+
+| Parameter | Description | Required | Default |
+|-----------|-------------|----------|---------|
+| `url` | Website URL to audit | Yes | - |
+| `fail-under` | Minimum score threshold | No | `0` |
+| `json` | Output JSON format | No | `false` |
+
+## Output Variables
+
+The action provides these outputs:
+
+- `score` - Numeric score (0-100)
+- `grade` - Letter grade (A-F)
+- `passed` - Boolean indicating pass/fail
+
+## Advanced Usage
+
+### Generate Badge in PR Comments
+
+```yaml
+- name: Run Audit
+  id: audit
+  run: |
+    npx @glincker/geokit audit https://example.com --json > audit.json
+    echo "score=$(jq '.score' audit.json)" >> $GITHUB_OUTPUT
+
+- name: Comment PR
+  uses: actions/github-script@v7
+  with:
+    script: |
+      const score = '${{ steps.audit.outputs.score }}';
+      github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: `## GeoKit AI-Readiness Score: ${score}/100`
+      });
+```
+
+### Fail on Score Drop
+
+```yaml
+- name: Audit Production
+  run: npx @glincker/geokit audit https://prod.example.com --fail-under 85
+```
+
+## Next Steps
+
+- [CLI Usage](/docs/geokit/cli) - Learn all CLI options
+- [Webhooks](/docs/geokit/webhooks) - Get notifications for score changes
+- [API Reference](/docs/geokit/api) - Integrate programmatically

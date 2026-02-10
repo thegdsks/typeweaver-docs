@@ -1,0 +1,111 @@
+---
+title: Scoring System
+description: Understand how GeoKit calculates AI-readiness scores
+---
+
+# Scoring System
+
+GeoKit evaluates your website using a comprehensive scoring system based on 20 rules across 4 categories.
+
+## Overview
+
+- **Total Rules**: 20
+- **Total Points**: 134 raw points
+- **Normalized Score**: 0-100
+- **Letter Grades**: A, B, C, D, F
+
+## Score Calculation
+
+### Raw Points
+
+Each rule awards points based on its importance:
+
+```
+Total Raw Points = Sum of all rule scores
+Maximum Raw Points = 134
+```
+
+### Normalization
+
+Raw points are normalized to a 0-100 scale:
+
+```
+Final Score = (Total Raw Points / 134) × 100
+```
+
+### Letter Grades
+
+Scores are assigned letter grades:
+
+| Grade | Score Range |
+|-------|-------------|
+| A     | 90-100      |
+| B     | 75-89       |
+| C     | 60-74       |
+| D     | 40-59       |
+| F     | 0-39        |
+
+## Categories
+
+Rules are grouped into 4 categories:
+
+### SEO (50 points)
+
+Checks for search engine optimization elements that help AI crawlers understand your content:
+- Title tags
+- Meta descriptions
+- Structured data
+- Canonical URLs
+- Robots.txt
+
+### Semantic HTML (34 points)
+
+Validates proper use of semantic HTML5 elements:
+- Header hierarchy (h1-h6)
+- Main, article, section tags
+- Nav elements
+- Figure and figcaption
+- Time elements
+
+### Performance (30 points)
+
+Measures website performance metrics:
+- Page load speed
+- Image optimization
+- Resource compression
+- HTTP/2 support
+- Caching headers
+
+### Accessibility (20 points)
+
+Evaluates accessibility features:
+- Alt text for images
+- ARIA labels
+- Color contrast
+- Keyboard navigation
+- Form labels
+
+## Example Calculation
+
+```
+SEO:            45/50  (90%)
+Semantic HTML:  28/34  (82%)
+Performance:    12/30  (40%)
+Accessibility:  18/20  (90%)
+
+Total: 103/134 raw points
+Normalized Score: (103/134) × 100 = 77
+Grade: B
+```
+
+## Weighted vs Unweighted
+
+GeoKit uses **unweighted scoring** - each point has equal value. This means:
+- A 1-point SEO rule contributes the same as a 1-point performance rule
+- Categories with more total points have more impact on the final score
+
+## Next Steps
+
+- [Rules](/docs/geokit/rules) - View all 20 rules and their point values
+- [CLI Usage](/docs/geokit/cli) - Run audits from command line
+- [API Reference](/docs/geokit/api) - Integrate programmatically

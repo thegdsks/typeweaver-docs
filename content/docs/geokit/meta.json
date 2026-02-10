@@ -1,0 +1,20 @@
+{
+  "title": "GeoKit",
+  "description": "AI-Readiness Audit Toolkit for Modern Websites",
+  "icon": "Zap",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "installation",
+    "---Usage---",
+    "cli",
+    "github-action",
+    "api",
+    "---Reference---",
+    "scoring",
+    "rules",
+    "---Integrations---",
+    "webhooks"
+  ]
+}

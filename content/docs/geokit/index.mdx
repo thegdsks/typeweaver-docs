@@ -1,0 +1,51 @@
+---
+title: Introduction
+description: AI-Readiness Audit Toolkit for Modern Websites
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# GeoKit
+
+<Callout type="info">
+  GeoKit helps you optimize your website for AI agents, LLMs, and modern crawlers that power tools like Claude, ChatGPT, and Perplexity.
+</Callout>
+
+## What is GeoKit?
+
+GeoKit is a comprehensive audit toolkit that analyzes your website's readiness for AI crawlers, LLMs, and modern search engines. It evaluates 20+ rules across SEO, semantic HTML, performance, and accessibility categories.
+
+```bash
+$ geokit audit https://geokit.dev
+# Auditing https://geokit.dev ...
+Score: 87/100 (B)
+
+# Category Scores:
+SEO:            45/50
+Semantic HTML:  28/34
+Performance:    12/30
+Accessibility:  18/20
+```
+
+## Key Features
+
+- **Comprehensive Audit**: 20 rules checking 134 total points across 4 categories
+- **Actionable Scores**: Normalized 0-100 scoring with letter grades (A-F)
+- **Multi-channel**: Use it via CLI, GitHub Actions, or programmatically via API
+- **CI/CD Ready**: Fail builds if your AI-readiness score drops below a threshold
+
+## Quick Start
+
+Run your first audit in seconds without installing anything:
+
+```bash
+npx @glincker/geokit audit https://yoursite.com
+```
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/geokit/installation" title="Installation" description="Install GeoKit globally or in your project" />
+  <Card href="/docs/geokit/cli" title="CLI Usage" description="Learn CLI commands and options" />
+  <Card href="https://geokit.dev" title="Live Dashboard" description="View the GeoKit Cloud dashboard" />
+</Cards>
