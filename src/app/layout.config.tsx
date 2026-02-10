@@ -22,7 +22,24 @@ export const baseOptions: BaseLayoutProps = {
         TypeWeaver
       </>
     ),
+    transparentMode: 'top',
   },
   // see https://fumadocs.dev/docs/ui/navigation/links
-  links: [],
+  links: [
+    {
+      text: 'Documentation',
+      url: '/docs',
+      active: 'nested-url',
+    },
+    {
+      text: 'Tools',
+      url: 'https://typeweaver.com/tools',
+      external: true,
+    },
+    {
+      text: 'GitHub',
+      url: 'https://github.com/thegdsks/typeweaver-docs',
+      external: true,
+    },
+  ],
 };

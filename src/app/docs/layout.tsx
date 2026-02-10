@@ -6,6 +6,8 @@ import { LargeSearchToggle } from "fumadocs-ui/components/layout/search-toggle";
 import { GitHubLogoIcon, RocketIcon } from "@radix-ui/react-icons";
 
 export default function Layout({ children }: { children: ReactNode }) {
+  // Dynamic links based on current section - will be populated client-side via CSS or use pathname
+  // For now, show all project links
   return (
     <DocsLayout
       tree={source.pageTree}
@@ -52,7 +54,9 @@ export default function Layout({ children }: { children: ReactNode }) {
         },
       }}
     >
-      {children}
+      <div className="glass-card-3d rounded-2xl p-6 sm:p-8 animate-fade-in">
+        {children}
+      </div>
     </DocsLayout>
   );
 }

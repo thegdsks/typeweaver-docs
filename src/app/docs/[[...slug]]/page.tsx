@@ -24,6 +24,7 @@ import {
 import {
   MultipleStructuredData,
 } from "@/components/seo/structured-data";
+import { Github, Package, Rocket } from "lucide-react";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -96,9 +97,46 @@ export default async function Page(props: {
           <PageFooter />
         </PageArticle>
         {toc.length > 0 && (
-          <PageTOC>
-            <PageTOCTitle />
-            <PageTOCItems variant="clerk" />
+          <PageTOC className="xl:ps-12 2xl:ps-16">
+            <div className="glass-card-3d rounded-xl p-4 sticky top-4 ms-4">
+              <PageTOCTitle className="text-sm font-semibold gradient-text mb-3" />
+              <PageTOCItems
+                variant="clerk"
+                className="text-sm space-y-1.5"
+              />
+              <div className="mt-4 pt-4 border-t border-neutral-200/50 dark:border-white/[0.08]">
+                <p className="text-[10px] text-muted-foreground mb-2">Quick Links</p>
+                <div className="flex flex-col gap-1.5">
+                  <a
+                    href="https://github.com/glincker/geokit"
+                    className="text-xs hover:text-primary transition-colors flex items-center gap-1.5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Github className="w-3.5 h-3.5" />
+                    GitHub
+                  </a>
+                  <a
+                    href="https://npmjs.com/package/@glincker/geokit"
+                    className="text-xs hover:text-primary transition-colors flex items-center gap-1.5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    npm
+                  </a>
+                  <a
+                    href="https://geokit.dev"
+                    className="text-xs hover:text-primary transition-colors flex items-center gap-1.5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Rocket className="w-3.5 h-3.5" />
+                    GeoKit Cloud
+                  </a>
+                </div>
+              </div>
+            </div>
           </PageTOC>
         )}
       </PageRoot>
